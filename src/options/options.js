@@ -30,8 +30,9 @@ const elements = {
   panelHistory: document.getElementById('panel-history'),
   panelRules: document.getElementById('panel-rules'),
   tabRulesBadge: document.getElementById('tab-rules-badge'),
+  tabHistoryBadge: document.getElementById('tab-history-badge'),
 
-  // 模块 A：批量清理
+  // 历史批量清理
   searchInput: document.getElementById('search-input'),
   btnClearSearch: document.getElementById('btn-clear-search'),
   timeFilters: document.querySelectorAll('.filter-capsule'),
@@ -44,7 +45,7 @@ const elements = {
   btnDeleteText: document.getElementById('btn-delete-text'),
   btnDeleteAndAddRule: document.getElementById('btn-delete-and-add-rule'),
 
-  // 模块 B：规则管理
+  // 防护规则管理
   newRuleInput: document.getElementById('new-rule-input'),
   newRuleType: document.getElementById('new-rule-type'),
   btnAddRule: document.getElementById('btn-add-rule'),
@@ -214,7 +215,7 @@ async function refreshGlobalStats() {
 }
 
 /* ==========================================================================
-   模块 A：按搜索结果批量大扫除
+   历史记录批量清理
    ========================================================================== */
 
 /**
@@ -316,6 +317,10 @@ async function performHistorySearch() {
     checkedUrls = new Set(currentHistoryResults.map(i => i.url));
 
     elements.searchResultsSummary.textContent = `共检索到 ${currentHistoryResults.length} 条`;
+    if (elements.tabHistoryBadge) {
+      elements.tabHistoryBadge.textContent = currentHistoryResults.length;
+    }
+
     renderHistoryList();
   } catch (err) {
     console.error('Search history failed:', err);
@@ -441,7 +446,7 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
 });
 
 /* ==========================================================================
-   模块 B：自动防护规则管理
+   防护规则管理
    ========================================================================== */
 
 /**
@@ -539,7 +544,7 @@ elements.newRuleInput.addEventListener('keydown', (e) => {
   }
 });
 
-// 模块 B 底部操作：一键全部启用
+// 底部操作：一键全部启用
 if (elements.btnEnableAll) {
   elements.btnEnableAll.addEventListener('click', async () => {
     const rules = await getRules();
@@ -550,7 +555,7 @@ if (elements.btnEnableAll) {
   });
 }
 
-// 模块 B 工具栏：反转状态
+// 工具栏：反转状态
 if (elements.btnToggleAll) {
   elements.btnToggleAll.addEventListener('click', async () => {
     const rules = await getRules();
@@ -561,7 +566,7 @@ if (elements.btnToggleAll) {
   });
 }
 
-// 模块 B 底部操作：清理已停用规则
+// 底部操作：清理已停用规则
 if (elements.btnClearDisabled) {
   elements.btnClearDisabled.addEventListener('click', async () => {
     const rules = await getRules();

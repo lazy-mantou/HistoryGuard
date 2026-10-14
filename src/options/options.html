@@ -44,18 +44,28 @@
       <aside class="sidebar-nav">
         <nav class="nav-tabs" aria-label="设置导航">
           <button class="nav-tab active" data-tab="history" id="tab-btn-history">
-            <span class="tab-icon">🔍</span>
+            <div class="tab-icon-box">
+              <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
             <div class="tab-info">
               <span class="tab-title">历史批量大扫除</span>
-              <span class="tab-desc">搜索检索与批量清理</span>
+              <span class="tab-desc">搜索检索与批量删除</span>
             </div>
+            <span id="tab-history-badge" class="tab-count-badge" title="检索到的历史条目">0</span>
           </button>
 
           <button class="nav-tab" data-tab="rules" id="tab-btn-rules">
-            <span class="tab-icon">🛡️</span>
+            <div class="tab-icon-box">
+              <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
             <div class="tab-info">
               <span class="tab-title">防护规则管理</span>
-              <span class="tab-desc">自动拦截与规则备份</span>
+              <span class="tab-desc">自动拦截与备份恢复</span>
             </div>
             <span id="tab-rules-badge" class="tab-count-badge" title="当前已配置规则数">0</span>
           </button>
@@ -76,11 +86,10 @@
 
       <!-- 右侧主内容区域 (根据 Tab 切换显示) -->
       <main class="tab-content-area">
-        <!-- 面板 A：历史批量大扫除 -->
+        <!-- 面板 A：历史记录批量大扫除 -->
         <section id="panel-history" class="tab-panel active">
           <div class="card-header">
             <div class="card-title-group">
-              <span class="module-tag tag-a">模块 A</span>
               <h2 class="card-title">历史记录批量大扫除</h2>
             </div>
             <div class="time-filters">
@@ -128,7 +137,7 @@
             </div>
           </div>
 
-          <!-- 模块 A 底部操作栏 -->
+          <!-- 底部操作栏 -->
           <div class="card-footer">
             <button id="btn-delete-selected" class="btn btn-danger" disabled>
               <span class="btn-icon">🗑️</span>
@@ -145,7 +154,6 @@
         <section id="panel-rules" class="tab-panel hidden">
           <div class="card-header">
             <div class="card-title-group">
-              <span class="module-tag tag-b">模块 B</span>
               <h2 class="card-title">自动防护规则管理</h2>
             </div>
             <div class="header-tools">
@@ -200,7 +208,7 @@
             </div>
           </div>
 
-          <!-- 模块 B 底部操作栏 -->
+          <!-- 底部操作栏 -->
           <div class="card-footer">
             <button id="btn-enable-all" class="btn btn-secondary">
               <span class="btn-icon">⚡</span>

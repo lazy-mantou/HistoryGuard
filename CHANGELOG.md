@@ -4,6 +4,22 @@
 
 ---
 
+## [1.0.3] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **左侧 Tab 导航字体严格对齐优化**：
+   - 彻底解决由于 Emoji 字符宽度不一致导致的 Tab 文本左侧缩进偏差：将原本不确定宽度的 Emoji 替换为定长 32px x 32px 居中的矢量 SVG 图标盒（`.tab-icon-box`），使文本左边缘严格保持 56px 的绝对对齐基线。
+   - 统一全局表单与按钮字体继承（`button, input, select { font-family: inherit; }`），显式重置文本 `line-height`，并在 Tab 1 与 Tab 2 两侧对称加入微标徽章（`#tab-history-badge` 与 `#tab-rules-badge`），消除垂直与水平视觉微差。
+2. **界面视觉净化（去除开发占位标签）**：
+   - 全面移除 Options 控制台页面内所有“模块 A”、“模块 B”这类开发占位符标签，直接采用极简优雅的业务功能标题（“历史记录批量大扫除”、“自动防护规则管理”），提升产品化质感。
+
+### 变更明细 (Detailed Changes)
+- `style(options)`: 在 `src/options/options.css` 中重构 `.tab-icon-box` 尺寸体系、统一按钮字体继承规则，并删除 `.module-tag`、`.tag-a`、`.tag-b` 等旧样式。
+- `feat(options)`: 更新 `src/options/options.html`，使用精细 SVG 图标替换 Emoji，并彻底清除所有“模块 A / B”标签。
+- `feat(options)`: 更新 `src/options/options.js`，接入 `#tab-history-badge` 实时检索统计同步并净化注释。
+
+---
+
 ## [1.0.2] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

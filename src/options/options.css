@@ -1,4 +1,4 @@
-/* HistGuard Options 极简暗黑控制台样式 - 左侧 Tab 垂直导航与自适应面板 */
+/* HistGuard Options 极简暗黑控制台样式 - 左侧 Tab 垂直导航与严格像素级字体对齐 */
 :root {
   --bg-color: #0f1117;
   --card-bg: #181b23;
@@ -46,6 +46,12 @@ html, body {
   font-size: 13px;
   line-height: 1.5;
   overflow-x: hidden;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
 }
 
 .app-layout {
@@ -161,8 +167,8 @@ html, body {
 
 /* 左侧 Tab 侧边栏 */
 .sidebar-nav {
-  width: 250px;
-  min-width: 250px;
+  width: 256px;
+  min-width: 256px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -194,12 +200,13 @@ html, body {
   }
 }
 
+/* 单个 Tab 按钮项 - 严格像素级字体与图标对齐 */
 .nav-tab {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -222,47 +229,85 @@ html, body {
   box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
 }
 
-.tab-icon {
-  font-size: 18px;
-  line-height: 1;
+/* 图标容器：固定 32px x 32px 严格居中，消除不同 emoji 字符间距差异 */
+.tab-icon-box {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  transition: var(--transition);
 }
 
+.nav-tab:hover .tab-icon-box {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.nav-tab.active .tab-icon-box {
+  background-color: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #c7d2fe;
+}
+
+.tab-svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+}
+
+/* Tab 文本容器 - 严格左对齐与基线对齐 */
 .tab-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
   flex: 1;
   min-width: 0;
+  text-align: left;
+  justify-content: center;
 }
 
 .tab-title {
   font-size: 13px;
   font-weight: 600;
-  color: inherit;
+  color: var(--text-main);
   white-space: nowrap;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.nav-tab.active .tab-title {
+  color: #ffffff;
 }
 
 .tab-desc {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
+  line-height: 1.3;
+  text-align: left;
 }
 
 .nav-tab.active .tab-desc {
   color: #a5b4fc;
 }
 
+/* Tab 数量微标 */
 .tab-count-badge {
   background: rgba(99, 102, 241, 0.2);
   color: #c7d2fe;
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.35);
   font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 999px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   flex-shrink: 0;
+  line-height: 1.2;
 }
 
 /* 侧边栏底部说明卡片 */
@@ -289,7 +334,7 @@ html, body {
 .sidebar-card-text {
   font-size: 10.5px;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 /* 右侧主内容区域 */
@@ -334,28 +379,6 @@ html, body {
   min-width: 0;
 }
 
-.module-tag {
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.tag-a {
-  background-color: rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.4);
-}
-
-.tag-b {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-}
-
 .card-title {
   font-size: 15px;
   font-weight: 700;
@@ -397,7 +420,7 @@ html, body {
   color: #ffffff;
 }
 
-/* 模块 B 顶部工具 */
+/* 顶部工具栏 */
 .header-tools {
   display: flex;
   align-items: center;
