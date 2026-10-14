@@ -193,3 +193,120 @@ export function convertSearchTermToRule(searchTerm) {
     type: 'domain'
   };
 }
+
+/**
+ * 标准化域名字符串，统一转小写并移除协议、端口、路径与开头的 *.
+ * @param {string} raw
+ * @returns {string}
+ */
+export function normalizeDomain(raw) {
+  if (!raw) return '';
+  let d = raw.trim().toLowerCase().replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
+  if (d.startsWith('*.')) d = d.slice(2);
+  else if (d.startsWith('*')) d = d.slice(1);
+  return d;
+}
+
+/**
+ * 判断 candDomain 是否为 parentDomain 的子级域名 (即被父级域名覆盖保护)
+ * 例如: candDomain = 'aa.bb.cc.dd', parentDomain = 'cc.dd' -> true
+ *      candDomain = 'bb.cc.dd', parentDomain = 'cc.dd' -> true
+ *      candDomain = 'cc.dd', parentDomain = 'cc.dd' -> false (相同不算覆盖，属于自身完全匹配)
+ * @param {string} candDomain
+ * @param {string} parentDomain
+ * @returns {boolean}
+ */
+export function isSubdomainOf(candDomain, parentDomain) {
+  const c = normalizeDomain(candDomain);
+  const p = normalizeDomain(parentDomain);
+  if (!c || !p || c === p) return false;
+  return c.endsWith('.' + p);
+}
+
+/**
+ * 计算候选规则相对于现有规则列表的层级覆盖状态
+ * @param {Object} candidate - { rule: string, type?: 'domain'|'path' }
+ * @param {Array<Object>} existingRules - 已保存的规则列表
+ * @returns {{ isExactMatch: boolean, isCovered: boolean, coveringRule: Object|null, exactRule: Object|null }}
+ */
+export function computeCandidateStatus(candidate, existingRules) {
+  const result = {
+    isExactMatch: false,
+    isCovered: false,
+    coveringRule: null,
+    exactRule: null
+  };
+
+  if (!candidate || !candidate.rule || !Array.isArray(existingRules) || existingRules.length === 0) {
+    return result;
+  }
+
+  const candType = candidate.type || 'domain';
+  const candRule = candidate.rule.trim().toLowerCase();
+
+  // 1. 完全匹配判定 (自身已在规则列表中)
+  for (const r of existingRules) {
+    if (r.enabled === false) continue;
+    const rPattern = (r.pattern || '').trim().toLowerCase();
+
+    if (candType === 'domain') {
+      const candNorm = normalizeDomain(candRule);
+      const rNorm = normalizeDomain(rPattern);
+      if (candNorm && candNorm === rNorm) {
+        result.isExactMatch = true;
+        result.exactRule = r;
+        return result;
+      }
+    } else {
+      if (candRule === rPattern) {
+        result.isExactMatch = true;
+        result.exactRule = r;
+        return result;
+      }
+    }
+  }
+
+  // 2. 层级覆盖判定 (上级父域名或前缀路径已拦截)
+  // 用户需求: 例如 aa.bb.cc.dd，当 cc.dd 加入列表后，aa.bb.cc.dd 和 bb.cc.dd 判定为被覆盖变灰且不能选中
+  if (candType === 'domain') {
+    const candDomain = normalizeDomain(candRule);
+    for (const r of existingRules) {
+      if (r.enabled === false) continue;
+      const rType = r.type || 'domain';
+      if (rType === 'domain') {
+        const rDomain = normalizeDomain(r.pattern);
+        if (rDomain && isSubdomainOf(candDomain, rDomain)) {
+          result.isCovered = true;
+          result.coveringRule = r;
+          return result;
+        }
+      }
+    }
+  } else if (candType === 'path') {
+    for (const r of existingRules) {
+      if (r.enabled === false) continue;
+      if (r.type === 'domain') {
+        const rDomain = normalizeDomain(r.pattern);
+        const urlHost = normalizeDomain(candRule);
+        if (rDomain && (urlHost === rDomain || isSubdomainOf(urlHost, rDomain))) {
+          result.isCovered = true;
+          result.coveringRule = r;
+          return result;
+        }
+      } else if (r.type === 'path') {
+        const rPattern = (r.pattern || '').trim().toLowerCase();
+        if (rPattern.endsWith('*')) {
+          const prefix = rPattern.slice(0, -1);
+          if (candRule !== rPattern && candRule.startsWith(prefix)) {
+            result.isCovered = true;
+            result.coveringRule = r;
+            return result;
+          }
+        }
+      }
+    }
+  }
+
+  return result;
+}
+

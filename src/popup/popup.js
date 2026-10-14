@@ -6,7 +6,7 @@
 
 import { browserApi } from '../adapters/index.js';
 import { parseUrl } from '../core/urlParser.js';
-import { filterHistoryByRule, findMatchingRule } from '../core/ruleMatcher.js';
+import { filterHistoryByRule, findMatchingRule, computeCandidateStatus, normalizeDomain } from '../core/ruleMatcher.js';
 import { t, initI18n, localizeCapsule } from '../core/i18n.js';
 import { initTheme } from '../core/theme.js';
 import {
@@ -35,8 +35,6 @@ const elements = {
   btnHideText: document.getElementById('btn-hide-text'),
   btnCleanOnly: document.getElementById('btn-clean-only'),
   btnCleanText: document.getElementById('btn-clean-text'),
-  footerLink: document.getElementById('btn-footer-link'),
-  footerLinkText: document.getElementById('footer-link-text'),
   toast: document.getElementById('toast')
 };
 
@@ -111,28 +109,50 @@ async function updateSilentModeState() {
   }
 }
 
+
 /**
- * 更新选中胶囊所联动的复选框与按钮文字
+ * 更新选中胶囊所联动的复选框与按钮文字及禁用态
  */
 function updateActionButtons() {
-  if (!selectedRule) return;
+  if (!selectedRule) {
+    elements.btnHideAndClean.disabled = true;
+    elements.btnCleanOnly.disabled = true;
+    return;
+  }
 
   const count = selectedRule.count || 0;
-  elements.btnHideText.textContent = t('popup.hideAndClean');
-  elements.btnHideAndClean.title = t('popup.hideAndCleanWithRule', { rule: selectedRule.rule });
-  elements.btnCleanText.textContent = t('popup.cleanOnly', { count });
 
-  // 若匹配数量为 0，允许点击以清理当前已在历史中的本页或提示
-  elements.btnCleanOnly.disabled = false;
-  elements.btnCleanOnly.style.opacity = (count === 0) ? '0.75' : '1';
+  // 副按钮：仅删 X 条 (为 0 条时 disabled，且 hover 不高亮)
+  elements.btnCleanText.textContent = t('popup.cleanOnly', { count });
+  elements.btnCleanOnly.disabled = (count === 0);
+
+  // 主按钮：隐藏并清理 (若已在规则列表中或已被上级规则覆盖，则 disabled)
+  if (selectedRule.isExactMatch) {
+    elements.btnHideAndClean.disabled = true;
+    elements.btnHideText.textContent = t('popup.alreadyHidden');
+    elements.btnHideAndClean.title = t('popup.badgeInList');
+  } else if (selectedRule.isCovered) {
+    elements.btnHideAndClean.disabled = true;
+    elements.btnHideText.textContent = t('popup.coveredByParent');
+    elements.btnHideAndClean.title = t('popup.badgeCoveredDetail', { rule: selectedRule.coveringRule?.pattern || '' });
+  } else {
+    elements.btnHideAndClean.disabled = false;
+    elements.btnHideText.textContent = t('popup.hideAndClean');
+    elements.btnHideAndClean.title = t('popup.hideAndCleanWithRule', { rule: selectedRule.rule });
+  }
+
+  elements.retroactiveLabelText.textContent = t('popup.retroactiveLabel', { count });
 }
 
 /**
- * 选中某条候选规则胶囊
+ * 选中某条候选规则胶囊 (被上级覆盖变灰的规则禁止选中)
  * @param {Object} candidate
  */
 function selectRuleCapsule(candidate) {
   if (!candidate) return;
+  // 若已被父级域名覆盖，严禁选中
+  if (candidate.isCovered) return;
+
   selectedRule = candidate;
 
   // 移除所有已选中的高亮样式
@@ -168,7 +188,14 @@ function renderCapsuleGroup(container, candidates) {
 
   candidates.forEach(cand => {
     const capsuleEl = document.createElement('div');
-    capsuleEl.className = `rule-capsule ${selectedRule?.rule === cand.rule ? 'selected' : ''}`;
+    const isSelected = selectedRule?.rule === cand.rule;
+
+    const stateClasses = [];
+    if (isSelected && !cand.isCovered) stateClasses.push('selected');
+    if (cand.isCovered) stateClasses.push('covered', 'disabled');
+    else if (cand.isExactMatch) stateClasses.push('in-list');
+
+    capsuleEl.className = `rule-capsule ${stateClasses.join(' ')}`;
     capsuleEl.dataset.rule = cand.rule;
 
     const { label, description } = localizeCapsule(cand);
@@ -176,19 +203,32 @@ function renderCapsuleGroup(container, candidates) {
     const matchesTitle = t('popup.matchesCount', { count });
     const countText = t('popup.itemsCount', { count });
 
+    let statusTagHtml = '';
+    if (cand.isCovered) {
+      const coverHint = t('popup.badgeCoveredDetail', { rule: cand.coveringRule?.pattern || '' });
+      statusTagHtml = `<div class="capsule-status-tag tag-covered" title="${coverHint}">${t('popup.badgeCovered')}</div>`;
+      capsuleEl.title = coverHint;
+    } else if (cand.isExactMatch) {
+      statusTagHtml = `<div class="capsule-status-tag tag-in-list" title="${matchesTitle}">${t('popup.badgeInList')}</div>`;
+    } else {
+      statusTagHtml = `<div class="capsule-count" title="${matchesTitle}">${countText}</div>`;
+    }
+
     capsuleEl.innerHTML = `
       <div class="capsule-main">
         <span class="capsule-pattern" title="${cand.rule}">${cand.rule}</span>
         <span class="capsule-sub">
           <span>${label}</span>
           <span>·</span>
-          <span>${description}</span>
+          <span>${cand.isCovered ? (cand.coveringRule ? t('popup.badgeCoveredDetail', { rule: cand.coveringRule.pattern }) : t('popup.coveredByParent')) : description}</span>
         </span>
       </div>
-      <div class="capsule-count" title="${matchesTitle}">${countText}</div>
+      ${statusTagHtml}
     `;
 
     capsuleEl.addEventListener('click', () => {
+      // 若已被上级规则覆盖，变灰且不能选中
+      if (cand.isCovered) return;
       selectRuleCapsule(cand);
     });
 
@@ -214,16 +254,22 @@ async function refreshPageData() {
     cachedHistoryItems = [];
   }
 
-  // 2. 为每个规则统计匹配历史条目数
+  // 2. 获取现有启用规则，并计算各候选规则的状态 (已在列表中 / 已由上级覆盖)
+  const existingRules = await getRules();
   allCandidateRules = [...parsedUrlInfo.domainRules, ...parsedUrlInfo.pathRules];
   allCandidateRules.forEach(cand => {
     const matchedItems = filterHistoryByRule(cand.rule, cachedHistoryItems);
     cand.count = matchedItems.length;
     cand.matchingHistory = matchedItems;
+
+    const status = computeCandidateStatus(cand, existingRules);
+    cand.isExactMatch = status.isExactMatch;
+    cand.isCovered = status.isCovered;
+    cand.coveringRule = status.coveringRule;
+    cand.exactRule = status.exactRule;
   });
 
   // 3. 检查当前 URL 是否已命中现有启用规则
-  const existingRules = await getRules();
   const { matched, rule } = findMatchingRule(existingRules, currentTab.url);
 
   if (matched && rule) {
@@ -234,24 +280,32 @@ async function refreshPageData() {
     elements.tabStatusBadge.textContent = t('popup.statusNormal');
   }
 
-  // 4. 更新底部总规则数
-  elements.footerLinkText.textContent = t('popup.footerLink', { count: existingRules.length });
+  // 4. 智能推荐选中的候选规则：优先选择未在列表且未被覆盖的规则
+  const findBestCandidate = () => {
+    const available = allCandidateRules.find(c => !c.isExactMatch && !c.isCovered);
+    if (available) return available;
+    const exact = allCandidateRules.find(c => c.isExactMatch);
+    if (exact) return exact;
+    return allCandidateRules.find(c => !c.isCovered) || null;
+  };
+
+  if (!selectedRule || selectedRule.isCovered) {
+    selectedRule = findBestCandidate();
+  } else {
+    const refreshed = allCandidateRules.find(r => r.rule === selectedRule.rule);
+    if (refreshed) {
+      selectedRule = refreshed.isCovered ? findBestCandidate() : refreshed;
+    }
+  }
 
   // 5. 渲染胶囊组
   renderCapsuleGroup(elements.domainCapsulesGroup, parsedUrlInfo.domainRules);
   renderCapsuleGroup(elements.pathCapsulesGroup, parsedUrlInfo.pathRules);
 
-  // 6. 默认选中第一条规则
-  if (!selectedRule && parsedUrlInfo.domainRules.length > 0) {
-    selectRuleCapsule(parsedUrlInfo.domainRules[0]);
-  } else if (!selectedRule && parsedUrlInfo.pathRules.length > 0) {
-    selectRuleCapsule(parsedUrlInfo.pathRules[0]);
-  } else if (selectedRule) {
-    // 重新校准当前选中的 candidate 对象数据
-    const refreshed = allCandidateRules.find(r => r.rule === selectedRule.rule);
-    if (refreshed) {
-      selectedRule = refreshed;
-    }
+  if (selectedRule && !selectedRule.isCovered) {
+    selectRuleCapsule(selectedRule);
+  } else {
+    selectedRule = null;
     updateActionButtons();
   }
 }
@@ -283,8 +337,6 @@ async function initPopup() {
     elements.tabStatusBadge.className = 'badge badge-internal';
     elements.tabStatusBadge.textContent = t('popup.statusUnavailable');
     await updateSilentModeState();
-    const existingRules = await getRules();
-    elements.footerLinkText.textContent = t('popup.footerLink', { count: existingRules.length });
     return;
   }
 
@@ -300,8 +352,6 @@ async function initPopup() {
     elements.internalPageTip.classList.remove('hidden');
     elements.mainContent.classList.add('hidden');
     await updateSilentModeState();
-    const existingRules = await getRules();
-    elements.footerLinkText.textContent = t('popup.footerLink', { count: existingRules.length });
     return;
   }
 
@@ -326,13 +376,12 @@ elements.btnSilentMode.addEventListener('click', async () => {
   await updateSilentModeState();
 });
 
-// B. 打开设置页齿轮与底部入口
+// B. 打开设置页齿轮入口
 const openOptions = () => {
   browserApi.runtime.openOptionsPage();
   window.close();
 };
 elements.btnOpenOptions.addEventListener('click', openOptions);
-elements.footerLink.addEventListener('click', openOptions);
 
 // C. 主按钮：隐藏并清理 (当前选中规则)
 elements.btnHideAndClean.addEventListener('click', async () => {
@@ -393,7 +442,6 @@ elements.btnHideAndClean.addEventListener('click', async () => {
     showToast(t('popup.toastFailed', { error: err.message }));
   } finally {
     setTimeout(() => {
-      elements.btnHideAndClean.disabled = false;
       elements.btnHideAndClean.style.opacity = '1';
       updateActionButtons();
     }, 1200);
@@ -442,8 +490,8 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     console.error('Clean only error:', err);
     showToast(t('popup.toastFailed', { error: err.message }));
   } finally {
-    elements.btnCleanOnly.disabled = false;
     elements.btnCleanOnly.style.opacity = '1';
+    updateActionButtons();
   }
 });
 

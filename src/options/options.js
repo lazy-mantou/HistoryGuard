@@ -386,9 +386,6 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
   const startTime = getStartTimeByFilter(currentSearchTimeFilter);
 
   elements.btnClearSearch.classList.toggle('hidden', query.length === 0);
-  if (elements.btnDeepClean) {
-    elements.btnDeepClean.classList.toggle('hidden', query.length === 0);
-  }
 
   if (isReset) {
     cursorEndTime = 0;
@@ -398,6 +395,9 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     elements.historyPreviewList.innerHTML = '';
     elements.loadMoreSection.classList.add('hidden');
     elements.noMoreHint.classList.add('hidden');
+    if (elements.btnDeepClean) {
+      elements.btnDeepClean.classList.add('hidden');
+    }
   }
 
   isLoadingBatch = true;
@@ -467,6 +467,11 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     elements.searchResultsSummary.textContent = t('options.loadedSummary', { count: currentHistoryResults.length });
     if (elements.tabHistoryBadge) {
       elements.tabHistoryBadge.textContent = currentHistoryResults.length;
+    }
+
+    // 历史批量删除页面，全部清空按钮应该在数据超过当前能显示的数量后才出现
+    if (elements.btnDeepClean) {
+      elements.btnDeepClean.classList.toggle('hidden', !hasMoreHistory || currentHistoryResults.length === 0);
     }
   } catch (err) {
     console.error('Fetch history batch failed:', err);

@@ -122,7 +122,7 @@
               id="search-input" 
               class="search-input" 
               data-i18n-placeholder="options.searchPlaceholder"
-              placeholder="搜索域名、URL 路径片段或页面标题 (支持防抖实时检索)..." 
+              placeholder="搜索域名、URL 路径片段或页面标题..." 
               autocomplete="off"
               spellcheck="false"
             >
@@ -182,9 +182,9 @@
               <span class="btn-icon">🛡️</span>
               <span data-i18n="options.btnDeleteAndAddRule">删除记录并将搜索词加入永久隐藏</span>
             </button>
-            <button id="btn-deep-clean" class="btn btn-secondary-danger hidden" data-i18n-title="options.btnDeepCleanTitle" title="直接流式遍历清理当前搜索词匹配的所有历史 (即使超过10万条也可分批无阻塞秒级清理)">
+            <button id="btn-deep-clean" class="btn btn-secondary-danger hidden" data-i18n-title="options.btnDeepCleanTitle" title="一键清空匹配当前条件的所有历史记录 (即使超过10万条也可分批无阻塞秒级清理)">
               <span class="btn-icon">⚡</span>
-              <span data-i18n="options.btnDeepClean">流式全量清空</span>
+              <span data-i18n="options.btnDeepClean">全部清空</span>
             </button>
           </div>
         </section>
@@ -465,11 +465,11 @@
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title" data-i18n="options.settingConfirmDeepCleanTitle">流式全量清空前二次确认</div>
-                    <div class="setting-desc" data-i18n="options.settingConfirmDeepCleanDesc">针对十万级匹配结果点击“⚡ 流式全量清空”前，是否弹出系统警告对话框二次确认，防止误触误删。</div>
+                    <div class="setting-title" data-i18n="options.settingConfirmDeepCleanTitle">全部清空前二次确认</div>
+                    <div class="setting-desc" data-i18n="options.settingConfirmDeepCleanDesc">针对匹配结果点击“全部清空”前，是否弹出系统警告对话框二次确认，防止误触误删。</div>
                   </div>
                   <div class="setting-control">
-                    <label class="toggle-switch" data-i18n-title="options.settingConfirmDeepCleanTitle" title="切换是否开启流式全量清空二次确认">
+                    <label class="toggle-switch" data-i18n-title="options.settingConfirmDeepCleanTitle" title="切换是否开启全部清空二次确认">
                       <input type="checkbox" id="setting-confirm-deep-clean" checked>
                       <span class="toggle-slider"></span>
                     </label>

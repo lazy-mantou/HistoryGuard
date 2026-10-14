@@ -14,7 +14,10 @@ import {
   matchesRule,
   findMatchingRule,
   filterHistoryByRule,
-  convertSearchTermToRule
+  convertSearchTermToRule,
+  normalizeDomain,
+  isSubdomainOf,
+  computeCandidateStatus
 } from '../src/core/ruleMatcher.js';
 
 describe('ruleMatcher - detectRuleType', () => {
@@ -163,3 +166,102 @@ describe('ruleMatcher - convertSearchTermToRule (智能搜索词转规则)', () 
     assert.strictEqual(empty.type, 'domain');
   });
 });
+
+describe('ruleMatcher - normalizeDomain & isSubdomainOf', () => {
+  it('normalizeDomain 应当正确剥离协议、端口、路径与通配符', () => {
+    assert.strictEqual(normalizeDomain('https://aa.bb.cc.dd/path/test'), 'aa.bb.cc.dd');
+    assert.strictEqual(normalizeDomain('http://*.google.com:8080/'), 'google.com');
+    assert.strictEqual(normalizeDomain('*.bb.cc.dd'), 'bb.cc.dd');
+    assert.strictEqual(normalizeDomain('cc.dd'), 'cc.dd');
+    assert.strictEqual(normalizeDomain(''), '');
+  });
+
+  it('isSubdomainOf 应当准确判断父子级域名覆盖关系', () => {
+    // 覆盖判定: aa.bb.cc.dd 和 bb.cc.dd 是 cc.dd 的子域
+    assert.strictEqual(isSubdomainOf('aa.bb.cc.dd', 'cc.dd'), true);
+    assert.strictEqual(isSubdomainOf('bb.cc.dd', 'cc.dd'), true);
+    assert.strictEqual(isSubdomainOf('*.bb.cc.dd', 'cc.dd'), true);
+    assert.strictEqual(isSubdomainOf('*.bb.cc.dd', '*.cc.dd'), true);
+
+    // 相同域名不属于被覆盖 (属于完全匹配)
+    assert.strictEqual(isSubdomainOf('cc.dd', 'cc.dd'), false);
+    assert.strictEqual(isSubdomainOf('*.cc.dd', 'cc.dd'), false);
+
+    // 兄弟或同名后缀不同域严禁误判为覆盖 (防误杀)
+    assert.strictEqual(isSubdomainOf('notcc.dd', 'cc.dd'), false);
+    assert.strictEqual(isSubdomainOf('my-cc.dd', 'cc.dd'), false);
+    assert.strictEqual(isSubdomainOf('cc.dd.cn', 'cc.dd'), false);
+    assert.strictEqual(isSubdomainOf('cc.dd', 'aa.bb.cc.dd'), false);
+  });
+});
+
+describe('ruleMatcher - computeCandidateStatus (多级域名层级覆盖与状态计算)', () => {
+  const existingRules = [
+    { id: '1', pattern: 'cc.dd', type: 'domain', enabled: true },
+    { id: '2', pattern: 'disabled.com', type: 'domain', enabled: false },
+    { id: '3', pattern: 'example.com/api/*', type: 'path', enabled: true }
+  ];
+
+  it('当上级域名已在列表中时，下级子域名候选应判定为 isCovered', () => {
+    // 用户需求场景: 当前域名 aa.bb.cc.dd，当 cc.dd 加入列表后，aa.bb.cc.dd 和 bb.cc.dd 变灰且不能选中
+    const candA = { rule: 'aa.bb.cc.dd', type: 'domain' };
+    const statusA = computeCandidateStatus(candA, existingRules);
+    assert.strictEqual(statusA.isCovered, true);
+    assert.strictEqual(statusA.isExactMatch, false);
+    assert.strictEqual(statusA.coveringRule.id, '1');
+
+    const candB = { rule: 'bb.cc.dd', type: 'domain' };
+    const statusB = computeCandidateStatus(candB, existingRules);
+    assert.strictEqual(statusB.isCovered, true);
+    assert.strictEqual(statusB.isExactMatch, false);
+    assert.strictEqual(statusB.coveringRule.id, '1');
+
+    const candWildcard = { rule: '*.bb.cc.dd', type: 'domain' };
+    const statusW = computeCandidateStatus(candWildcard, existingRules);
+    assert.strictEqual(statusW.isCovered, true);
+    assert.strictEqual(statusW.isExactMatch, false);
+    assert.strictEqual(statusW.coveringRule.id, '1');
+  });
+
+  it('当候选规则自身已在列表中时，应判定为 isExactMatch', () => {
+    const candExact = { rule: 'cc.dd', type: 'domain' };
+    const statusExact = computeCandidateStatus(candExact, existingRules);
+    assert.strictEqual(statusExact.isExactMatch, true);
+    assert.strictEqual(statusExact.isCovered, false);
+    assert.strictEqual(statusExact.exactRule.id, '1');
+
+    const candExactWildcard = { rule: '*.cc.dd', type: 'domain' };
+    const statusExactW = computeCandidateStatus(candExactWildcard, existingRules);
+    assert.strictEqual(statusExactW.isExactMatch, true);
+    assert.strictEqual(statusExactW.isCovered, false);
+  });
+
+  it('未命中规则的域名应保持未匹配且未覆盖状态', () => {
+    const candOther = { rule: 'other.org', type: 'domain' };
+    const statusOther = computeCandidateStatus(candOther, existingRules);
+    assert.strictEqual(statusOther.isExactMatch, false);
+    assert.strictEqual(statusOther.isCovered, false);
+  });
+
+  it('已停用的规则不应触发覆盖或完全匹配', () => {
+    const candDisabledSub = { rule: 'sub.disabled.com', type: 'domain' };
+    const statusDisabled = computeCandidateStatus(candDisabledSub, existingRules);
+    assert.strictEqual(statusDisabled.isCovered, false);
+    assert.strictEqual(statusDisabled.isExactMatch, false);
+  });
+
+  it('路径规则层级覆盖：父级通配路径或域名规则应覆盖子路径', () => {
+    // 域名规则覆盖全站路径
+    const candPathUnderDomain = { rule: 'aa.bb.cc.dd/user/profile', type: 'path' };
+    const statusP1 = computeCandidateStatus(candPathUnderDomain, existingRules);
+    assert.strictEqual(statusP1.isCovered, true);
+    assert.strictEqual(statusP1.coveringRule.id, '1');
+
+    // 通配路径覆盖子路径
+    const candSubPath = { rule: 'example.com/api/v1/users', type: 'path' };
+    const statusP2 = computeCandidateStatus(candSubPath, existingRules);
+    assert.strictEqual(statusP2.isCovered, true);
+    assert.strictEqual(statusP2.coveringRule.id, '3');
+  });
+});
+

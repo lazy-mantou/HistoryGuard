@@ -4,6 +4,37 @@
 
 ---
 
+## [1.0.17] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **Popup 弹窗界面精简与多级域名级联覆盖防护 (Cascading Coverage)**：
+   - **底部冗余入口精简**：彻底移除底部“按搜索结果批量删除历史记录/管理规则”条，右上角齿轮按钮作为前往 Options 的唯一专职入口，页面结构更清爽精炼；
+   - **0 条历史时副按钮悬停与交互规范**：当匹配历史记录为 0 条时，副按钮“仅删 0 条”设为 disabled，并通过 CSS `pointer-events: none !important;` 彻底杜绝鼠标 hover 时的红色高亮与位移动画；
+   - **隐藏列表已收录域名主按钮联动**：当选中域名已在隐藏规则列表中时，“隐藏并清理”主按钮设为 disabled，文字自动切换为“已在隐藏列表”，防范重复添加；
+   - **多级域名层级覆盖算法 (Hierarchical Domain Cascading Coverage)**：
+     - 当更上级父域名加入隐藏列表后（例如当前访问 `aa.bb.cc.dd`，当 `cc.dd` 或 `*.cc.dd` 被加入规则列表），其所有下级子域名（如 `aa.bb.cc.dd` 与 `bb.cc.dd`）均判定为受上级规则全面覆盖；
+     - 被上级覆盖的胶囊在界面上整体半透明变灰、右侧显示 `已由上级覆盖` 徽标，并在 DOM 事件层拦截点击，禁止被选中；
+     - 智能候选推荐算法优先推荐未入库且未被覆盖的规则，若全部被覆盖则安全回退，主按钮安全禁用；
+   - **入库状态直观可视化体现**：已加入列表的域名胶囊附带绿色高亮边框与 `✓ 已在列表中` 标签，形成未加入 / 已入库 / 已由上级覆盖的三态视觉体系。
+2. **Options 历史批量删除页面精炼与全部清空体验升级**：
+   - **搜索框提示词精简**：删除搜索框 placeholder 中的“ (支持防抖实时检索)”字样；
+   - **“全部清空”命名统一**：原“流式全量清空”统一更名为“全部清空”（英文为 `Clear All`），涵盖操作按钮、高级偏好设置选项、二次确认提示等所有层级；
+   - **全部清空按钮智能动态显示**：仅在当前匹配的历史记录总量超过单页所能呈现的批次上限（存在更多未加载数据）时，才动态呈现“全部清空”按钮，避免在少量结果下造成视觉干扰。
+
+### 变更明细 (Detailed Changes)
+- `feat(core)`: 在 `src/core/ruleMatcher.js` 中新增并导出 `normalizeDomain`、`isSubdomainOf` 与 `computeCandidateStatus` 级联覆盖计算引擎，在 `tests/ruleMatcher.test.js` 中添加针对父子域级联与多级通配的完整单元测试。
+- `feat(popup)`: 
+  - `popup.html`: 移除底部 `<footer class="footer">` 结构；
+  - `popup.css`: 增加 `.rule-capsule.in-list`、`.rule-capsule.covered`、`.capsule-status-tag` 状态样式；规范 `.btn:disabled` 强制屏蔽 hover 高亮；
+  - `popup.js`: 接入级联计算逻辑，动态驱动主按钮 disabled 与副按钮 0 条禁用，移除废弃的 footer 事件绑定。
+- `feat(options)`:
+  - `options.html`: 搜索框 placeholder 移除防抖检索字样；将流式全量清空按钮与设置项文案统一调整为全部清空；
+  - `options.js`: 在 `fetchHistoryBatch` 中根据 `hasMoreHistory` 动态切换 `#btn-deep-clean` 的可见性，仅在超过能显示数量时显示。
+- `i18n(core)`: 在 `src/core/locales/zh-CN.js` 与 `en.js` 中同步新增 `badgeInList`、`badgeCovered`、`alreadyHidden` 等键值，更新 `btnDeepClean` 系列文案。
+- `test`: 测试用例总数扩充至 97 项，全部自动化执行通过。
+
+---
+
 ## [1.0.16] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
