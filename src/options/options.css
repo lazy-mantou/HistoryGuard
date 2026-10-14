@@ -46,6 +46,7 @@
   --tab-badge-bg: rgba(99, 102, 241, 0.2);
   --tab-badge-border: rgba(99, 102, 241, 0.35);
   --tab-badge-text: #c7d2fe;
+  --sidebar-card-title: #a5b4fc;
   --toggle-off-bg: #374151;
   --btn-secondary-bg: rgba(255, 255, 255, 0.05);
   --btn-secondary-text: var(--text-main);
@@ -105,12 +106,13 @@
   --sidebar-card-border: #e2e8f0;
   --sidebar-icon-box-bg: rgba(0, 0, 0, 0.04);
   --sidebar-icon-box-border: rgba(0, 0, 0, 0.06);
-  --tab-active-bg: rgba(79, 70, 229, 0.08);
-  --tab-active-color: #4f46e5;
-  --tab-active-desc: #6366f1;
+  --tab-active-bg: rgba(79, 70, 229, 0.1);
+  --tab-active-color: #3730a3;
+  --tab-active-desc: #4f46e5;
   --tab-badge-bg: rgba(79, 70, 229, 0.1);
   --tab-badge-border: rgba(79, 70, 229, 0.25);
   --tab-badge-text: #4338ca;
+  --sidebar-card-title: #4338ca;
   --toggle-off-bg: #cbd5e1;
   --btn-secondary-bg: #f1f5f9;
   --btn-secondary-text: var(--text-main);
@@ -166,12 +168,13 @@
     --sidebar-card-border: #e2e8f0;
     --sidebar-icon-box-bg: rgba(0, 0, 0, 0.04);
     --sidebar-icon-box-border: rgba(0, 0, 0, 0.06);
-    --tab-active-bg: rgba(79, 70, 229, 0.08);
-    --tab-active-color: #4f46e5;
-    --tab-active-desc: #6366f1;
+    --tab-active-bg: rgba(79, 70, 229, 0.1);
+    --tab-active-color: #3730a3;
+    --tab-active-desc: #4f46e5;
     --tab-badge-bg: rgba(79, 70, 229, 0.1);
     --tab-badge-border: rgba(79, 70, 229, 0.25);
     --tab-badge-text: #4338ca;
+    --sidebar-card-title: #4338ca;
     --toggle-off-bg: #cbd5e1;
     --btn-secondary-bg: #f1f5f9;
     --btn-secondary-text: var(--text-main);
@@ -444,7 +447,7 @@ button, input, select, textarea {
 }
 
 .nav-tab.active .tab-title {
-  color: #ffffff;
+  color: var(--tab-active-color);
 }
 
 .tab-desc {
@@ -456,7 +459,7 @@ button, input, select, textarea {
 }
 
 .nav-tab.active .tab-desc {
-  color: #a5b4fc;
+  color: var(--tab-active-desc);
 }
 
 /* Tab 数量微标 */
@@ -491,7 +494,7 @@ button, input, select, textarea {
 .sidebar-card-title {
   font-size: 11px;
   font-weight: 600;
-  color: #a5b4fc;
+  color: var(--sidebar-card-title);
 }
 
 .sidebar-card-text {
@@ -595,7 +598,7 @@ button, input, select, textarea {
 }
 
 .tool-btn {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: var(--btn-secondary-bg);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-size: 11.5px;

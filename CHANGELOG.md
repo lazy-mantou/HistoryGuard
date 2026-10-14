@@ -35,7 +35,7 @@
 - `feat(settings)`: 在 `src/core/storage.js` 默认设置中增加 `theme: 'auto'`。
 - `feat(options)`: 在 `options.html` 设置中心首组加入外观主题下拉选择框；在 `options.js` 中接入 `initTheme` 与即时切换监听。
 - `feat(popup)`: 在 `popup.js` 初始化生命周期中接入 `initTheme`，同步遵循全局外观。
-- `style`: 重构 `options.css` 与 `popup.css`，支持完整的白天浅色与夜间深色主题 CSS 变量系统与 Anti-FOUC 机制。
+- `style`: 重构 `options.css` 与 `popup.css`，支持完整的白天浅色与夜间深色主题 CSS 变量系统与 Anti-FOUC 机制；修复浅色模式下左侧激活 Tab 标题与描述硬编码白色导致对比度缺失的显示问题。
 - `i18n`: 在 `zh-CN.js` 与 `en.js` 中新增主题配置多语言字典与 Toast 提示。
 - `test`: 新增 `tests/theme.test.js` 并更新 `tests/run-all.js` 与 `tests/storage.test.js`。
 
