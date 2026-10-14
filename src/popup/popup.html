@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HistGuard - 历史记录管理</title>
+  <title data-i18n="popup.title">HistGuard - 历史记录管理</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -15,11 +15,11 @@
         <span class="brand-title">HistGuard</span>
       </div>
       <div class="header-actions">
-        <button id="btn-silent-mode" class="capsule-btn silent-btn" title="开启后 30 分钟内一切新浏览均不留痕">
+        <button id="btn-silent-mode" class="capsule-btn silent-btn" data-i18n-title="popup.silentTooltip" title="开启后 30 分钟内一切新浏览均不留痕">
           <span class="silent-icon">⏸️</span>
-          <span id="silent-text">暂停记录 30m</span>
+          <span id="silent-text" data-i18n="popup.silentBtn">暂停记录 30m</span>
         </button>
-        <button id="btn-open-options" class="icon-btn" title="打开管理控制台">
+        <button id="btn-open-options" class="icon-btn" data-i18n-title="popup.optionsTooltip" title="打开管理控制台">
           <svg class="gear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -31,18 +31,18 @@
     <!-- 当前页状态框 -->
     <div id="status-card" class="card status-card">
       <div class="status-header">
-        <span class="status-label">当前标签页</span>
-        <span id="tab-status-badge" class="badge badge-normal">● 检测中...</span>
+        <span class="status-label" data-i18n="popup.currentTab">当前标签页</span>
+        <span id="tab-status-badge" class="badge badge-normal" data-i18n="popup.statusChecking">● 检测中...</span>
       </div>
-      <div id="tab-url-text" class="tab-url" title="">加载中...</div>
+      <div id="tab-url-text" class="tab-url" title="" data-i18n="popup.statusLoading">加载中...</div>
     </div>
 
     <!-- 内部页面提示 (默认隐藏) -->
     <div id="internal-page-tip" class="card alert-card hidden">
       <div class="alert-icon">⚠️</div>
       <div class="alert-content">
-        <div class="alert-title">浏览器内部页面</div>
-        <div class="alert-desc">内部系统页面不产生历史记录，无需设置隐藏规则。</div>
+        <div class="alert-title" data-i18n="popup.internalTitle">浏览器内部页面</div>
+        <div class="alert-desc" data-i18n="popup.internalDesc">内部系统页面不产生历史记录，无需设置隐藏规则。</div>
       </div>
     </div>
 
@@ -51,8 +51,8 @@
       <!-- 区块 1：按域名层级隐藏 -->
       <section class="section">
         <div class="section-title">
-          <span>按域名层级隐藏</span>
-          <span class="section-hint">单选</span>
+          <span data-i18n="popup.domainSection">按域名层级隐藏</span>
+          <span class="section-hint" data-i18n="popup.domainHint">单选</span>
         </div>
         <div id="domain-capsules-group" class="capsule-group">
           <!-- 动态注入域名胶囊 -->
@@ -62,7 +62,7 @@
       <!-- 区块 2：按 URL 路径层级隐藏 -->
       <section class="section">
         <div class="section-title">
-          <span>按 URL 路径层级隐藏</span>
+          <span data-i18n="popup.pathSection">按 URL 路径层级隐藏</span>
         </div>
         <div id="path-capsules-group" class="capsule-group">
           <!-- 动态注入路径胶囊 -->
@@ -80,9 +80,9 @@
         <div class="btn-group">
           <button id="btn-hide-and-clean" class="btn btn-primary">
             <span class="btn-icon">🛡️</span>
-            <span id="btn-hide-text">隐藏并清理</span>
+            <span id="btn-hide-text" data-i18n="popup.hideAndClean">隐藏并清理</span>
           </button>
-          <button id="btn-clean-only" class="btn btn-danger-outline" title="仅清理匹配的历史记录，不增加规则">
+          <button id="btn-clean-only" class="btn btn-danger-outline" data-i18n-title="popup.cleanOnlyTitle" title="仅清理匹配的历史记录，不增加规则">
             <span class="btn-icon">🗑️</span>
             <span id="btn-clean-text">仅删 0 条</span>
           </button>

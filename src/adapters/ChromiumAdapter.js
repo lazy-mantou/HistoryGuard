@@ -163,6 +163,19 @@ export class ChromiumAdapter extends IBrowserAdapter {
       }
     };
 
+    // I18n API
+    this.i18n = {
+      getUILanguage: () => {
+        if (typeof chrome !== 'undefined' && chrome.i18n?.getUILanguage) {
+          return chrome.i18n.getUILanguage();
+        }
+        if (typeof navigator !== 'undefined' && navigator.language) {
+          return navigator.language;
+        }
+        return 'zh-CN';
+      }
+    };
+
     // Alarms API
     this.alarms = {
       create: (name, alarmInfo) => {

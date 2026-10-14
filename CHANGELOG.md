@@ -4,6 +4,38 @@
 
 ---
 
+## [1.0.8] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **前端模板化国际化 (i18n) 核心驱动架构设计与零依赖纯原生实现**：
+   - **痛点与需求**：插件原本全部采用硬编码中文文案，缺乏多语言拓展能力。要求在前端使用标准 HTML 模板机制实现国际化 (i18n)，能够自动适配浏览器当前语言，并在设置页中提供界面语言切换选项。
+   - **零依赖现代前端模板引擎 (`src/core/i18n.js`)**：
+     - 构建纯原生轻量级 i18n 引擎，支持 `data-i18n`（元素 textContent）、`data-i18n-placeholder`（输入框占位符）、`data-i18n-title`（气泡浮层提示）与 `data-i18n-aria-label`（无障碍读屏标签）四维声明式模板语法；
+     - 统一提供 `t(key, params)` 动态格式化函数，支持点路径深层寻址与 `{count}`, `{pattern}`, `{val}` 变量插值替换；
+     - 建立中英双语标准语言包字典（`src/core/locales/zh-CN.js` 与 `src/core/locales/en.js`），覆盖 Popup 弹窗与 Options 控制台 100% 的静态标签、动态列表微标、对话框与 Toast 提示文案。
+2. **浏览器原生语言环境自动感知与智能适配**：
+   - 当偏好设置为 `auto`（默认值）时，自动通过 `browserApi.i18n.getUILanguage()` 嗅探当前宿主浏览器界面语言（以 `navigator.language` 兜底）；
+   - 若系统语言以 `zh` 开头（如 `zh`, `zh-CN`, `zh-TW`, `zh-HK`）自动解析为简体中文（`zh-CN`），其他语言环境一律优雅回退至英文（`en`），保障全球用户开箱即用体验。
+3. **Options 控制台高级偏好设置增加「界面显示语言」选项与即时热生效**：
+   - 在设置面板首位新增「语言与区域设置」独立卡片（配备 🌐 矢量图标），提供 `<select id="setting-language">` 下拉选项：
+     - `auto`：自动跟随浏览器 (Auto / Follow Browser)
+     - `zh-CN`：简体中文 (Simplified Chinese)
+     - `en`：English
+   - 切换选择后即时持久化到 `histguard_settings` 本地存储，并触发 `applyI18nToDOM()` 无刷新原地重绘所有模板节点；
+   - 联动重新格式化全局拦截统计、实时相对时间（刚刚 / Just now）、胶囊拆解规则标签及历史列表概览，实现零白屏平滑热更新；
+   - 借助 `browserApi.storage.onChanged` 实现多窗口与弹窗间的跨视窗语言实时同步。
+4. **统一浏览器抽象层 Adapter 规范补齐**：
+   - 在基类 `IBrowserAdapter.js`、`ChromiumAdapter.js` 与 `FirefoxAdapter.js` 中补齐 `i18n.getUILanguage()` 规范封装，严守业务逻辑零全局 API 污染的核心架构约束。
+
+### 变更明细 (Detailed Changes)
+- `feat(adapters)`: 在 `IBrowserAdapter.js`、`ChromiumAdapter.js` 与 `FirefoxAdapter.js` 中新增 `i18n.getUILanguage()` 抽象接口与跨浏览器实现。
+- `feat(storage)`: 在 `src/core/storage.js` 的 `DEFAULT_SETTINGS` 中添加 `language: 'auto'` 语言偏好项。
+- `feat(i18n)`: 新增 `src/core/locales/zh-CN.js`、`src/core/locales/en.js` 语言包与 `src/core/i18n.js` 模板翻译驱动引擎。
+- `feat(popup)`: 在 `src/popup/popup.html` 中注入模板属性，在 `src/popup/popup.js` 中接入 `initI18n()`、动态胶囊本地化与 Toast 翻译。
+- `feat(options)`: 在 `src/options/options.html` 中全量重构模板属性并新增语言设置分组；在 `src/options/options.js` 中实现双向绑定、热切换重绘与存储跨页监听。
+
+---
+
 ## [1.0.7] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

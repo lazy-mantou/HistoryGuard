@@ -7,6 +7,7 @@
 import { browserApi } from '../adapters/index.js';
 import { parseUrl } from '../core/urlParser.js';
 import { filterHistoryByRule, findMatchingRule } from '../core/ruleMatcher.js';
+import { t, initI18n, localizeCapsule } from '../core/i18n.js';
 import {
   getRules,
   addRule,
@@ -90,22 +91,22 @@ async function updateSilentModeState() {
   const silent = await getSilentMode();
   if (silent.active && silent.remainingMs > 0) {
     elements.btnSilentMode.classList.add('active');
-    elements.silentText.textContent = `${formatRemainingTime(silent.remainingMs)} 暂停中`;
+    elements.silentText.textContent = t('popup.silentBtnActive', { time: formatRemainingTime(silent.remainingMs) });
 
     silentCountdownTimer = setInterval(async () => {
       const current = await getSilentMode();
       if (current.active && current.remainingMs > 0) {
-        elements.silentText.textContent = `${formatRemainingTime(current.remainingMs)} 暂停中`;
+        elements.silentText.textContent = t('popup.silentBtnActive', { time: formatRemainingTime(current.remainingMs) });
       } else {
         clearInterval(silentCountdownTimer);
         silentCountdownTimer = null;
         elements.btnSilentMode.classList.remove('active');
-        elements.silentText.textContent = '暂停记录 30m';
+        elements.silentText.textContent = t('popup.silentBtn');
       }
     }, 1000);
   } else {
     elements.btnSilentMode.classList.remove('active');
-    elements.silentText.textContent = '暂停记录 30m';
+    elements.silentText.textContent = t('popup.silentBtn');
   }
 }
 
@@ -116,9 +117,9 @@ function updateActionButtons() {
   if (!selectedRule) return;
 
   const count = selectedRule.count || 0;
-  elements.retroactiveLabelText.textContent = `加入隐藏规则的同时，清理已有的 ${count} 条历史记录`;
-  elements.btnHideText.textContent = `隐藏并清理 (${selectedRule.rule})`;
-  elements.btnCleanText.textContent = `仅删 ${count} 条`;
+  elements.retroactiveLabelText.textContent = t('popup.retroactiveLabel', { count });
+  elements.btnHideText.textContent = t('popup.hideAndCleanWithRule', { rule: selectedRule.rule });
+  elements.btnCleanText.textContent = t('popup.cleanOnly', { count });
 
   // 若匹配数量为 0，允许点击以清理当前已在历史中的本页或提示
   elements.btnCleanOnly.disabled = false;
@@ -159,7 +160,7 @@ function renderCapsuleGroup(container, candidates) {
     const emptyEl = document.createElement('div');
     emptyEl.className = 'capsule-sub';
     emptyEl.style.padding = '4px';
-    emptyEl.textContent = '暂无候选规则';
+    emptyEl.textContent = t('popup.emptyCandidates');
     container.appendChild(emptyEl);
     return;
   }
@@ -169,16 +170,21 @@ function renderCapsuleGroup(container, candidates) {
     capsuleEl.className = `rule-capsule ${selectedRule?.rule === cand.rule ? 'selected' : ''}`;
     capsuleEl.dataset.rule = cand.rule;
 
+    const { label, description } = localizeCapsule(cand);
+    const count = cand.count || 0;
+    const matchesTitle = t('popup.matchesCount', { count });
+    const countText = t('popup.itemsCount', { count });
+
     capsuleEl.innerHTML = `
       <div class="capsule-main">
         <span class="capsule-pattern" title="${cand.rule}">${cand.rule}</span>
         <span class="capsule-sub">
-          <span>${cand.label}</span>
+          <span>${label}</span>
           <span>·</span>
-          <span>${cand.description}</span>
+          <span>${description}</span>
         </span>
       </div>
-      <div class="capsule-count" title="匹配到 ${cand.count || 0} 条已有历史">${cand.count || 0} 条</div>
+      <div class="capsule-count" title="${matchesTitle}">${countText}</div>
     `;
 
     capsuleEl.addEventListener('click', () => {
@@ -221,14 +227,14 @@ async function refreshPageData() {
 
   if (matched && rule) {
     elements.tabStatusBadge.className = 'badge badge-matched';
-    elements.tabStatusBadge.textContent = `⚡ 已命中隐藏规则 (${rule.pattern})`;
+    elements.tabStatusBadge.textContent = t('popup.statusMatched', { pattern: rule.pattern });
   } else {
     elements.tabStatusBadge.className = 'badge badge-normal';
-    elements.tabStatusBadge.textContent = '● 未隐藏';
+    elements.tabStatusBadge.textContent = t('popup.statusNormal');
   }
 
   // 4. 更新底部总规则数
-  elements.footerLinkText.textContent = `🔍 按搜索结果批量删除历史 / 管理规则 (${existingRules.length})`;
+  elements.footerLinkText.textContent = t('popup.footerLink', { count: existingRules.length });
 
   // 5. 渲染胶囊组
   renderCapsuleGroup(elements.domainCapsulesGroup, parsedUrlInfo.domainRules);
@@ -253,7 +259,16 @@ async function refreshPageData() {
  * 初始化 Popup 页面
  */
 async function initPopup() {
-  // 1. 获取当前活动标签页
+  // 1. 加载偏好设置并初始化 i18n
+  try {
+    const settings = await getSettings();
+    initI18n(settings.language || 'auto');
+  } catch (err) {
+    console.warn('Failed to load settings for i18n:', err);
+    initI18n('auto');
+  }
+
+  // 2. 获取当前活动标签页
   try {
     currentTab = await browserApi.tabs.getCurrentActiveTab();
   } catch (err) {
@@ -261,33 +276,33 @@ async function initPopup() {
   }
 
   if (!currentTab || !currentTab.url) {
-    elements.tabUrlText.textContent = '无法获取当前页面信息 (请在常规网页标签页中打开)';
+    elements.tabUrlText.textContent = t('popup.cannotGetPageInfo');
     elements.tabStatusBadge.className = 'badge badge-internal';
-    elements.tabStatusBadge.textContent = '● 无法获取';
+    elements.tabStatusBadge.textContent = t('popup.statusUnavailable');
     await updateSilentModeState();
     const existingRules = await getRules();
-    elements.footerLinkText.textContent = `🔍 按搜索结果批量删除历史 / 管理规则 (${existingRules.length})`;
+    elements.footerLinkText.textContent = t('popup.footerLink', { count: existingRules.length });
     return;
   }
 
   elements.tabUrlText.textContent = currentTab.url;
   elements.tabUrlText.title = currentTab.url;
 
-  // 2. 解析 URL
+  // 3. 解析 URL
   parsedUrlInfo = parseUrl(currentTab.url);
 
   if (!parsedUrlInfo.isValid) {
     elements.tabStatusBadge.className = 'badge badge-internal';
-    elements.tabStatusBadge.textContent = '⚠️ 内部页面';
+    elements.tabStatusBadge.textContent = t('popup.statusInternal');
     elements.internalPageTip.classList.remove('hidden');
     elements.mainContent.classList.add('hidden');
     await updateSilentModeState();
     const existingRules = await getRules();
-    elements.footerLinkText.textContent = `🔍 按搜索结果批量删除历史 / 管理规则 (${existingRules.length})`;
+    elements.footerLinkText.textContent = t('popup.footerLink', { count: existingRules.length });
     return;
   }
 
-  // 3. 正常页面：加载数据与规则
+  // 4. 正常页面：加载数据与规则
   await updateSilentModeState();
   await refreshPageData();
 }
@@ -298,12 +313,12 @@ elements.btnSilentMode.addEventListener('click', async () => {
   const silent = await getSilentMode();
   if (silent.active) {
     await clearSilentMode();
-    showToast('已退出静默模式，恢复正常记录');
+    showToast(t('popup.toastSilentExit'));
   } else {
     const settings = await getSettings();
     const duration = settings.silentModeDuration || 30;
     await setSilentMode(duration);
-    showToast(`已开启静默免记录模式 (${duration}分钟)`);
+    showToast(t('popup.toastSilentEnter', { duration }));
   }
   await updateSilentModeState();
 });
@@ -326,7 +341,7 @@ elements.btnHideAndClean.addEventListener('click', async () => {
   }
 
   if (!selectedRule) {
-    showToast('请先选择一条要隐藏的候选规则');
+    showToast(t('popup.toastSelectRule'));
     return;
   }
 
@@ -335,7 +350,7 @@ elements.btnHideAndClean.addEventListener('click', async () => {
   try {
     elements.btnHideAndClean.disabled = true;
     elements.btnHideAndClean.style.opacity = '0.7';
-    elements.btnHideText.textContent = '正在处理...';
+    elements.btnHideText.textContent = t('popup.toastProcessing');
 
     // 1. 添加隐藏规则到存储
     const { rule, isNew } = await addRule({
@@ -363,15 +378,16 @@ elements.btnHideAndClean.addEventListener('click', async () => {
       }
     }
 
-    elements.btnHideText.textContent = `✓ 已${isNew ? '添加' : '更新'}并清理`;
-    showToast(`已${isNew ? '添加' : '更新'}规则并清理 ${deletedCount} 条历史记录`);
+    const actionText = isNew ? t('popup.actionAdd') : t('popup.actionUpdate');
+    elements.btnHideText.textContent = t('popup.btnDone', { action: actionText });
+    showToast(t('popup.toastAddedAndCleaned', { action: actionText, count: deletedCount }));
 
     // 3. 刷新数据
     await refreshPageData();
   } catch (err) {
     console.error('Hide and clean error:', err);
     elements.btnHideText.textContent = originalText;
-    showToast(`操作失败: ${err.message}`);
+    showToast(t('popup.toastFailed', { error: err.message }));
   } finally {
     setTimeout(() => {
       elements.btnHideAndClean.disabled = false;
@@ -388,7 +404,7 @@ elements.btnCleanOnly.addEventListener('click', async () => {
   }
 
   if (!selectedRule) {
-    showToast('请先选择要清理的历史规则');
+    showToast(t('popup.toastSelectRule'));
     return;
   }
 
@@ -397,7 +413,7 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     : (currentTab?.url ? [{ url: currentTab.url }] : []);
 
   if (itemsToDelete.length === 0) {
-    showToast('暂无匹配的历史记录可清理');
+    showToast(t('popup.toastCleanOnlyEmpty'));
     return;
   }
 
@@ -417,11 +433,11 @@ elements.btnCleanOnly.addEventListener('click', async () => {
       }
     }
 
-    showToast(`成功物理删除 ${deletedCount} 条历史记录`);
+    showToast(t('popup.toastCleanOnlyDone', { count: deletedCount }));
     await refreshPageData();
   } catch (err) {
     console.error('Clean only error:', err);
-    showToast(`清理失败: ${err.message}`);
+    showToast(t('popup.toastFailed', { error: err.message }));
   } finally {
     elements.btnCleanOnly.disabled = false;
     elements.btnCleanOnly.style.opacity = '1';

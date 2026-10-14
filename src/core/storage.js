@@ -265,6 +265,7 @@ export async function exportRules() {
  * 默认偏好配置项
  */
 export const DEFAULT_SETTINGS = {
+  language: 'auto',              // 界面显示语言 ('auto' | 'zh-CN' | 'en')
   enableHitTracking: true,       // 是否统计规则拦截次数
   silentModeDuration: 30,        // 默认静默模式时长 (分钟)
   historyBatchSize: 100,         // 历史大扫除单批次加载条数 (50 | 100 | 200)

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HistGuard - 历史记录管理与控制台</title>
+  <title data-i18n="options.title">HistGuard - 历史记录管理与控制台</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
@@ -14,24 +14,24 @@
         <div class="brand-area">
           <span class="brand-logo">🛡️</span>
           <div>
-            <h1 class="brand-title">HistGuard 控制台</h1>
-            <p class="brand-subtitle">轻量级跨浏览器历史记录智能管理与自动隐私拦截</p>
+            <h1 class="brand-title" data-i18n="options.brandTitle">HistGuard 控制台</h1>
+            <p class="brand-subtitle" data-i18n="options.brandSubtitle">轻量级跨浏览器历史记录智能管理与自动隐私拦截</p>
           </div>
         </div>
 
         <div class="stats-bar">
           <div class="stat-item">
-            <span class="stat-label">启用规则</span>
+            <span class="stat-label" data-i18n="options.statActiveRules">启用规则</span>
             <span id="stat-active-rules" class="stat-value">0</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <span class="stat-label">累计拦截</span>
+            <span class="stat-label" data-i18n="options.statTotalHits">累计拦截</span>
             <span id="stat-total-hits" class="stat-value highlight-hits">0</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <span class="stat-label">静默模式</span>
+            <span class="stat-label" data-i18n="options.statSilentStatus">静默模式</span>
             <span id="stat-silent-status" class="stat-value silent-off">未开启</span>
           </div>
         </div>
@@ -51,8 +51,8 @@
               </svg>
             </div>
             <div class="tab-info">
-              <span class="tab-title">历史批量大扫除</span>
-              <span class="tab-desc">分批检索与流式清理</span>
+              <span class="tab-title" data-i18n="options.navHistoryTitle">历史批量大扫除</span>
+              <span class="tab-desc" data-i18n="options.navHistoryDesc">分批检索与流式清理</span>
             </div>
             <span id="tab-history-badge" class="tab-count-badge" title="当前已加载历史条数">0</span>
           </button>
@@ -64,8 +64,8 @@
               </svg>
             </div>
             <div class="tab-info">
-              <span class="tab-title">防护规则管理</span>
-              <span class="tab-desc">自动拦截与规则维护</span>
+              <span class="tab-title" data-i18n="options.navRulesTitle">防护规则管理</span>
+              <span class="tab-desc" data-i18n="options.navRulesDesc">自动拦截与规则维护</span>
             </div>
             <span id="tab-rules-badge" class="tab-count-badge" title="当前已配置规则数">0</span>
           </button>
@@ -78,8 +78,8 @@
               </svg>
             </div>
             <div class="tab-info">
-              <span class="tab-title">高级偏好设置</span>
-              <span class="tab-desc">数据备份与运行参数</span>
+              <span class="tab-title" data-i18n="options.navSettingsTitle">高级偏好设置</span>
+              <span class="tab-desc" data-i18n="options.navSettingsDesc">数据备份与运行参数</span>
             </div>
             <span class="tab-count-badge tab-settings-badge">⚙️</span>
           </button>
@@ -89,9 +89,9 @@
         <div class="sidebar-footer">
           <div class="sidebar-card">
             <div class="sidebar-card-title">
-              <span>💡 海量数据分批防护</span>
+              <span data-i18n="options.sidebarTipTitle">💡 海量数据分批防护</span>
             </div>
-            <p class="sidebar-card-text">
+            <p class="sidebar-card-text" data-i18n="options.sidebarTipText">
               支持数十万级历史数据游标分批拉取与流式异步删除，保障系统低内存占用与 0 卡顿。
             </p>
           </div>
@@ -104,13 +104,13 @@
         <section id="panel-history" class="tab-panel active">
           <div class="card-header">
             <div class="card-title-group">
-              <h2 class="card-title">历史记录批量大扫除</h2>
+              <h2 class="card-title" data-i18n="options.historyTitle">历史记录批量大扫除</h2>
             </div>
             <div class="time-filters">
-              <button class="filter-capsule active" data-time="all">全部时间</button>
-              <button class="filter-capsule" data-time="1h">最近 1 小时</button>
-              <button class="filter-capsule" data-time="today">今天</button>
-              <button class="filter-capsule" data-time="7d">最近 7 天</button>
+              <button class="filter-capsule active" data-time="all" data-i18n="options.filterAll">全部时间</button>
+              <button class="filter-capsule" data-time="1h" data-i18n="options.filter1h">最近 1 小时</button>
+              <button class="filter-capsule" data-time="today" data-i18n="options.filterToday">今天</button>
+              <button class="filter-capsule" data-time="7d" data-i18n="options.filter7d">最近 7 天</button>
             </div>
           </div>
 
@@ -121,11 +121,12 @@
               type="text" 
               id="search-input" 
               class="search-input" 
+              data-i18n-placeholder="options.searchPlaceholder"
               placeholder="搜索域名、URL 路径片段或页面标题 (支持防抖实时检索)..." 
               autocomplete="off"
               spellcheck="false"
             >
-            <button id="btn-clear-search" class="clear-search-btn hidden" title="清空搜索">✕</button>
+            <button id="btn-clear-search" class="clear-search-btn hidden" data-i18n-title="options.searchClearTitle" title="清空搜索">✕</button>
           </div>
 
           <!-- 列表控制工具栏 -->
@@ -136,15 +137,15 @@
               <span id="selected-summary" class="selected-summary">已勾选 0 条</span>
             </div>
             <div class="toolbar-right">
-              <button id="btn-select-all" class="text-btn">全选已加载</button>
-              <button id="btn-invert-select" class="text-btn">反选</button>
+              <button id="btn-select-all" class="text-btn" data-i18n="options.btnSelectAll">全选已加载</button>
+              <button id="btn-invert-select" class="text-btn" data-i18n="options.btnInvertSelect">反选</button>
             </div>
           </div>
 
           <!-- 异步执行进度条 (在巨量清理时展示，杜绝卡死) -->
           <div id="progress-container" class="progress-bar-container hidden">
             <div class="progress-info">
-              <span id="progress-status-text">正在批量清理中...</span>
+              <span id="progress-status-text" data-i18n="options.progressCleaning">正在批量清理中...</span>
               <span id="progress-percent-text">0%</span>
             </div>
             <div class="progress-track">
@@ -157,7 +158,7 @@
             <div id="history-preview-list" class="preview-list">
               <div class="empty-state">
                 <span class="empty-icon">🔎</span>
-                <p>输入搜索词开始检索，或选择上方时间范围查看历史</p>
+                <p data-i18n="options.emptyHistoryStart">输入搜索词开始检索，或选择上方时间范围查看历史</p>
               </div>
             </div>
 
@@ -168,7 +169,7 @@
                 <span id="load-more-text">加载下一批历史记录 (100 条)...</span>
               </button>
             </div>
-            <div id="no-more-hint" class="no-more-hint hidden">—— 已加载全部匹配的历史记录 ——</div>
+            <div id="no-more-hint" class="no-more-hint hidden" data-i18n="options.noMoreHint">—— 已加载全部匹配的历史记录 ——</div>
           </div>
 
           <!-- 底部操作栏 -->
@@ -179,11 +180,11 @@
             </button>
             <button id="btn-delete-and-add-rule" class="btn btn-primary" disabled>
               <span class="btn-icon">🛡️</span>
-              <span>删除记录并将搜索词加入永久隐藏</span>
+              <span data-i18n="options.btnDeleteAndAddRule">删除记录并将搜索词加入永久隐藏</span>
             </button>
-            <button id="btn-deep-clean" class="btn btn-secondary-danger hidden" title="直接流式遍历清理当前搜索词匹配的所有历史 (即使超过10万条也可分批无阻塞秒级清理)">
+            <button id="btn-deep-clean" class="btn btn-secondary-danger hidden" data-i18n-title="options.btnDeepCleanTitle" title="直接流式遍历清理当前搜索词匹配的所有历史 (即使超过10万条也可分批无阻塞秒级清理)">
               <span class="btn-icon">⚡</span>
-              <span>流式全量清空</span>
+              <span data-i18n="options.btnDeepClean">流式全量清空</span>
             </button>
           </div>
         </section>
@@ -192,11 +193,11 @@
         <section id="panel-rules" class="tab-panel hidden">
           <div class="card-header">
             <div class="card-title-group">
-              <h2 class="card-title">自动防护规则管理</h2>
+              <h2 class="card-title" data-i18n="options.rulesTitle">自动防护规则管理</h2>
             </div>
             <div class="header-tools">
-              <button id="btn-goto-settings" class="tool-btn" title="前往偏好设置进行数据备份与参数调整">
-                <span>⚙️ 备份与高级设置</span>
+              <button id="btn-goto-settings" class="tool-btn" data-i18n-title="options.btnGotoSettings" title="前往偏好设置进行数据备份与参数调整">
+                <span data-i18n="options.btnGotoSettings">⚙️ 备份与高级设置</span>
               </button>
             </div>
           </div>
@@ -208,17 +209,18 @@
                 type="text" 
                 id="new-rule-input" 
                 class="text-input" 
+                data-i18n-placeholder="options.newRulePlaceholder"
                 placeholder="输入如 *.example.com 或 www.domain.com/path/*"
                 spellcheck="false"
               >
               <select id="new-rule-type" class="type-select">
-                <option value="auto">自动类型</option>
-                <option value="domain">域名匹配</option>
-                <option value="path">路径匹配</option>
+                <option value="auto" data-i18n="options.typeAuto">自动类型</option>
+                <option value="domain" data-i18n="options.typeDomain">域名匹配</option>
+                <option value="path" data-i18n="options.typePath">路径匹配</option>
               </select>
             </div>
             <button id="btn-add-rule" class="btn btn-primary-add">
-              <span>+ 添加规则</span>
+              <span data-i18n="options.btnAddRule">+ 添加规则</span>
             </button>
           </div>
 
@@ -228,7 +230,7 @@
               <span id="rules-count-summary" class="results-summary">当前共有 0 条防护规则</span>
             </div>
             <div class="toolbar-right">
-              <button id="btn-toggle-all" class="text-btn" title="一键反转所有规则启用状态">反转启用状态</button>
+              <button id="btn-toggle-all" class="text-btn" data-i18n-title="options.btnToggleAll" data-i18n="options.btnToggleAll" title="一键反转所有规则启用状态">反转启用状态</button>
             </div>
           </div>
 
@@ -237,7 +239,7 @@
             <div id="rules-container" class="rules-container">
               <div class="empty-state">
                 <span class="empty-icon">📋</span>
-                <p>暂无配置规则，您可在左侧历史大扫除中加入，或在上方手动添加</p>
+                <p data-i18n="options.emptyRules">暂无配置规则，您可在左侧历史大扫除中加入，或在上方手动添加</p>
               </div>
             </div>
           </div>
@@ -246,11 +248,11 @@
           <div class="card-footer">
             <button id="btn-enable-all" class="btn btn-secondary">
               <span class="btn-icon">⚡</span>
-              <span>全部启用</span>
+              <span data-i18n="options.btnEnableAll">全部启用</span>
             </button>
             <button id="btn-clear-disabled" class="btn btn-secondary-danger">
               <span class="btn-icon">🧹</span>
-              <span>清理已停用规则</span>
+              <span data-i18n="options.btnClearDisabled">清理已停用规则</span>
             </button>
           </div>
         </section>
@@ -259,28 +261,51 @@
         <section id="panel-settings" class="tab-panel hidden">
           <div class="card-header">
             <div class="card-title-group">
-              <h2 class="card-title">高级偏好设置</h2>
+              <h2 class="card-title" data-i18n="options.settingsTitle">高级偏好设置</h2>
             </div>
             <div class="header-tools">
-              <span class="settings-auto-tip">💾 更改即时生效并自动持久化</span>
+              <span class="settings-auto-tip" data-i18n="options.settingsAutoSaveTip">💾 更改即时生效并自动持久化</span>
             </div>
           </div>
 
           <div class="settings-scroll-container">
-            <!-- 分组 1：拦截统计与隐私 -->
+            <!-- 分组 1：语言与区域设置 -->
             <div class="settings-group">
               <div class="settings-group-header">
-                <span class="settings-group-icon">🛡️</span>
-                <span class="settings-group-title">拦截统计与隐私策略</span>
+                <span class="settings-group-icon">🌐</span>
+                <span class="settings-group-title" data-i18n="options.groupLanguage">语言与区域设置</span>
               </div>
               <div class="settings-card">
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">统计规则拦截命中次数</div>
-                    <div class="setting-desc">当访问命中已配置的防护规则并自动删除历史时，是否累加记录拦截次数。关闭后进入极致无痕状态，不保存任何命中计数。</div>
+                    <div class="setting-title" data-i18n="options.settingLanguageTitle">界面显示语言</div>
+                    <div class="setting-desc" data-i18n="options.settingLanguageDesc">选择控制台与弹窗的显示语言，支持根据浏览器语言自动适配。</div>
                   </div>
                   <div class="setting-control">
-                    <label class="toggle-switch" title="切换是否统计规则拦截次数">
+                    <select id="setting-language" class="settings-select" data-i18n-title="options.settingLanguageTitle" title="选择界面显示语言">
+                      <option value="auto" data-i18n="options.langAuto">自动跟随浏览器 (Auto)</option>
+                      <option value="zh-CN" data-i18n="options.langZhCN">简体中文 (Simplified Chinese)</option>
+                      <option value="en" data-i18n="options.langEn">English</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 分组 2：拦截统计与隐私 -->
+            <div class="settings-group">
+              <div class="settings-group-header">
+                <span class="settings-group-icon">🛡️</span>
+                <span class="settings-group-title" data-i18n="options.groupTracking">拦截统计与隐私策略</span>
+              </div>
+              <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-title" data-i18n="options.settingHitTrackingTitle">统计规则拦截命中次数</div>
+                    <div class="setting-desc" data-i18n="options.settingHitTrackingDesc">当访问命中已配置的防护规则并自动删除历史时，是否累加记录拦截次数。关闭后进入极致无痕状态，不保存任何命中计数。</div>
+                  </div>
+                  <div class="setting-control">
+                    <label class="toggle-switch" data-i18n-title="options.settingHitTrackingTitle" title="切换是否统计规则拦截次数">
                       <input type="checkbox" id="setting-enable-hit-tracking" checked>
                       <span class="toggle-slider"></span>
                     </label>
@@ -289,49 +314,49 @@
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">重置所有规则拦截计数</div>
-                    <div class="setting-desc">一键将当前所有防护规则的累计拦截次数清零，不影响规则本身的启用状态与拦截逻辑。</div>
+                    <div class="setting-title" data-i18n="options.settingResetHitsTitle">重置所有规则拦截计数</div>
+                    <div class="setting-desc" data-i18n="options.settingResetHitsDesc">一键将当前所有防护规则的累计拦截次数清零，不影响规则本身的启用状态与拦截逻辑。</div>
                   </div>
                   <div class="setting-control">
                     <button id="btn-reset-hits" class="btn btn-secondary">
-                      <span>🔄 重置计数为 0</span>
+                      <span data-i18n="options.btnResetHits">🔄 重置计数为 0</span>
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 分组 2：规则备份与数据迁移 -->
+            <!-- 分组 3：规则备份与数据迁移 -->
             <div class="settings-group">
               <div class="settings-group-header">
                 <span class="settings-group-icon">📦</span>
-                <span class="settings-group-title">规则备份与数据迁移</span>
+                <span class="settings-group-title" data-i18n="options.groupBackup">规则备份与数据迁移</span>
               </div>
               <div class="settings-card">
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">导出规则备份 (JSON)</div>
-                    <div class="setting-desc">将当前配置的所有域名与路径防护规则导出为 JSON 文件，用于多设备同步、版本备份或朋友共享。</div>
+                    <div class="setting-title" data-i18n="options.settingExportTitle">导出规则备份 (JSON)</div>
+                    <div class="setting-desc" data-i18n="options.settingExportDesc">将当前配置的所有域名与路径防护规则导出为 JSON 文件，用于多设备同步、版本备份或朋友共享。</div>
                   </div>
                   <div class="setting-control">
                     <button id="btn-settings-export-json" class="btn btn-primary">
-                      <span>📤 导出 JSON 备份</span>
+                      <span data-i18n="options.btnExportJson">📤 导出 JSON 备份</span>
                     </button>
                   </div>
                 </div>
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">导入规则备份 (JSON)</div>
-                    <div class="setting-desc">选择先前导出的 JSON 备份文件恢复规则。支持选择“合并导入”或“覆盖替换原有规则”。</div>
+                    <div class="setting-title" data-i18n="options.settingImportTitle">导入规则备份 (JSON)</div>
+                    <div class="setting-desc" data-i18n="options.settingImportDesc">选择先前导出的 JSON 备份文件恢复规则。支持选择“合并导入”或“覆盖替换原有规则”。</div>
                   </div>
                   <div class="setting-control setting-import-controls">
-                    <select id="setting-import-mode" class="settings-select" title="选择导入合并模式">
-                      <option value="merge">合并导入 (保留现有规则)</option>
-                      <option value="replace">覆盖导入 (完全替换现有)</option>
+                    <select id="setting-import-mode" class="settings-select" data-i18n-title="options.settingImportTitle" title="选择导入合并模式">
+                      <option value="merge" data-i18n="options.importModeMerge">合并导入 (保留现有规则)</option>
+                      <option value="replace" data-i18n="options.importModeReplace">覆盖导入 (完全替换现有)</option>
                     </select>
                     <button id="btn-settings-import-json" class="btn btn-secondary">
-                      <span>📥 导入 JSON 文件</span>
+                      <span data-i18n="options.btnImportJson">📥 导入 JSON 文件</span>
                     </button>
                     <input type="file" id="file-settings-import" accept=".json,application/json" class="hidden">
                   </div>
@@ -339,98 +364,98 @@
 
                 <div class="setting-row setting-row-danger">
                   <div class="setting-info">
-                    <div class="setting-title text-danger">清空所有防护规则</div>
-                    <div class="setting-desc">彻底清空本地存储中所有的防护规则。此操作无法撤销，建议在清空前先导出 JSON 备份。</div>
+                    <div class="setting-title text-danger" data-i18n="options.settingClearRulesTitle">清空所有防护规则</div>
+                    <div class="setting-desc" data-i18n="options.settingClearRulesDesc">彻底清空本地存储中所有的防护规则。此操作无法撤销，建议在清空前先导出 JSON 备份。</div>
                   </div>
                   <div class="setting-control">
                     <button id="btn-clear-all-rules" class="btn btn-secondary-danger">
-                      <span>🗑️ 清空所有规则</span>
+                      <span data-i18n="options.btnClearAllRules">🗑️ 清空所有规则</span>
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 分组 3：免记录模式与防护策略 -->
+            <!-- 分组 4：免记录模式与防护策略 -->
             <div class="settings-group">
               <div class="settings-group-header">
                 <span class="settings-group-icon">🕶️</span>
-                <span class="settings-group-title">免记录模式与默认策略</span>
+                <span class="settings-group-title" data-i18n="options.groupSilent">免记录模式与默认策略</span>
               </div>
               <div class="settings-card">
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">默认静默免记录时长</div>
-                    <div class="setting-desc">在弹窗快捷开启“静默免记录模式”时，预设的倒计时生效时长。到期后将由后台闹钟自动恢复常规防护。</div>
+                    <div class="setting-title" data-i18n="options.settingSilentDurationTitle">默认静默免记录时长</div>
+                    <div class="setting-desc" data-i18n="options.settingSilentDurationDesc">在弹窗快捷开启“静默免记录模式”时，预设的倒计时生效时长。到期后将由后台闹钟自动恢复常规防护。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-silent-duration" class="settings-select">
-                      <option value="15">15 分钟</option>
-                      <option value="30" selected>30 分钟 (推荐)</option>
-                      <option value="60">1 小时</option>
-                      <option value="120">2 小时</option>
+                      <option value="15" data-i18n="options.duration15m">15 分钟</option>
+                      <option value="30" data-i18n="options.duration30m" selected>30 分钟 (推荐)</option>
+                      <option value="60" data-i18n="options.duration60m">1 小时</option>
+                      <option value="120" data-i18n="options.duration120m">2 小时</option>
                     </select>
                   </div>
                 </div>
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">快捷搜索词转规则策略</div>
-                    <div class="setting-desc">在历史大扫除中点击“删除并将搜索词加入永久隐藏”时，缺省的规则类型识别模式。</div>
+                    <div class="setting-title" data-i18n="options.settingDefaultRuleTypeTitle">快捷搜索词转规则策略</div>
+                    <div class="setting-desc" data-i18n="options.settingDefaultRuleTypeDesc">在历史大扫除中点击“删除并将搜索词加入永久隐藏”时，缺省的规则类型识别模式。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-default-rule-type" class="settings-select">
-                      <option value="auto" selected>智能识别 (包含斜杠为路径，否则为域名)</option>
-                      <option value="domain">强制域名匹配 (*.domain.com)</option>
-                      <option value="path">强制路径匹配 (domain.com/path/*)</option>
+                      <option value="auto" data-i18n="options.ruleTypeAuto" selected>智能识别 (包含斜杠为路径，否则为域名)</option>
+                      <option value="domain" data-i18n="options.ruleTypeDomain">强制域名匹配 (*.domain.com)</option>
+                      <option value="path" data-i18n="options.ruleTypePath">强制路径匹配 (domain.com/path/*)</option>
                     </select>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 分组 4：海量历史检索性能与安全防护 -->
+            <!-- 分组 5：海量历史检索性能与安全防护 -->
             <div class="settings-group">
               <div class="settings-group-header">
                 <span class="settings-group-icon">⚡</span>
-                <span class="settings-group-title">海量历史检索性能与安全</span>
+                <span class="settings-group-title" data-i18n="options.groupPerf">海量历史检索性能与安全</span>
               </div>
               <div class="settings-card">
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">单批次游标拉取条数 (Batch Size)</div>
-                    <div class="setting-desc">历史大扫除单次向底层 SQLite 请求的数据量。低配设备推荐 50 条以获得极致轻量内存，常规推荐 100 条。</div>
+                    <div class="setting-title" data-i18n="options.settingBatchSizeTitle">单批次游标拉取条数 (Batch Size)</div>
+                    <div class="setting-desc" data-i18n="options.settingBatchSizeDesc">历史大扫除单次向底层 SQLite 请求的数据量。低配设备推荐 50 条以获得极致轻量内存，常规推荐 100 条。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-history-batch-size" class="settings-select">
-                      <option value="50">50 条/批 (极低内存占用)</option>
-                      <option value="100" selected>100 条/批 (推荐平衡)</option>
-                      <option value="200">200 条/批 (极速流畅浏览)</option>
+                      <option value="50" data-i18n="options.batch50">50 条/批 (极低内存占用)</option>
+                      <option value="100" data-i18n="options.batch100" selected>100 条/批 (推荐平衡)</option>
+                      <option value="200" data-i18n="options.batch200">200 条/批 (极速流畅浏览)</option>
                     </select>
                   </div>
                 </div>
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">批量删除并发分片大小 (Chunk Size)</div>
-                    <div class="setting-desc">并发调用底层删除 API 的分片步长。每完成一分片将自动让出主线程宏任务，彻底杜绝界面卡死。</div>
+                    <div class="setting-title" data-i18n="options.settingChunkSizeTitle">批量删除并发分片大小 (Chunk Size)</div>
+                    <div class="setting-desc" data-i18n="options.settingChunkSizeDesc">并发调用底层删除 API 的分片步长。每完成一分片将自动让出主线程宏任务，彻底杜绝界面卡死。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-delete-chunk-size" class="settings-select">
-                      <option value="15">15 条/切片</option>
-                      <option value="30" selected>30 条/切片 (推荐默认)</option>
-                      <option value="50">50 条/切片</option>
+                      <option value="15" data-i18n="options.chunk15">15 条/切片</option>
+                      <option value="30" data-i18n="options.chunk30" selected>30 条/切片 (推荐默认)</option>
+                      <option value="50" data-i18n="options.chunk50">50 条/切片</option>
                     </select>
                   </div>
                 </div>
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">流式全量清空前二次确认</div>
-                    <div class="setting-desc">针对十万级匹配结果点击“⚡ 流式全量清空”前，是否弹出系统警告对话框二次确认，防止误触误删。</div>
+                    <div class="setting-title" data-i18n="options.settingConfirmDeepCleanTitle">流式全量清空前二次确认</div>
+                    <div class="setting-desc" data-i18n="options.settingConfirmDeepCleanDesc">针对十万级匹配结果点击“⚡ 流式全量清空”前，是否弹出系统警告对话框二次确认，防止误触误删。</div>
                   </div>
                   <div class="setting-control">
-                    <label class="toggle-switch" title="切换是否开启流式全量清空二次确认">
+                    <label class="toggle-switch" data-i18n-title="options.settingConfirmDeepCleanTitle" title="切换是否开启流式全量清空二次确认">
                       <input type="checkbox" id="setting-confirm-deep-clean" checked>
                       <span class="toggle-slider"></span>
                     </label>
@@ -439,23 +464,23 @@
               </div>
             </div>
 
-            <!-- 分组 5：界面交互与提示 -->
+            <!-- 分组 6：界面交互与提示 -->
             <div class="settings-group">
               <div class="settings-group-header">
                 <span class="settings-group-icon">🔔</span>
-                <span class="settings-group-title">界面交互与反馈提示</span>
+                <span class="settings-group-title" data-i18n="options.groupFeedback">界面交互与反馈提示</span>
               </div>
               <div class="settings-card">
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title">操作提示 Toast 停留时长</div>
-                    <div class="setting-desc">控制界面右下角操作反馈与提示浮层的展示时长。</div>
+                    <div class="setting-title" data-i18n="options.settingToastDurationTitle">操作提示 Toast 停留时长</div>
+                    <div class="setting-desc" data-i18n="options.settingToastDurationDesc">控制界面右下角操作反馈与提示浮层的展示时长。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-toast-duration" class="settings-select">
-                      <option value="1500">1.5 秒 (快速)</option>
-                      <option value="2500" selected>2.5 秒 (推荐默认)</option>
-                      <option value="4000">4.0 秒 (从容阅读)</option>
+                      <option value="1500" data-i18n="options.toast1500">1.5 秒 (快速)</option>
+                      <option value="2500" data-i18n="options.toast2500" selected>2.5 秒 (推荐默认)</option>
+                      <option value="4000" data-i18n="options.toast4000">4.0 秒 (从容阅读)</option>
                     </select>
                   </div>
                 </div>

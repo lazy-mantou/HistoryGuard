@@ -137,6 +137,24 @@ export class FirefoxAdapter extends IBrowserAdapter {
       }
     };
 
+    // I18n API
+    this.i18n = {
+      getUILanguage: () => {
+        try {
+          const api = getApi();
+          if (api.i18n?.getUILanguage) {
+            return api.i18n.getUILanguage();
+          }
+        } catch (e) {
+          // ignore
+        }
+        if (typeof navigator !== 'undefined' && navigator.language) {
+          return navigator.language;
+        }
+        return 'zh-CN';
+      }
+    };
+
     // Alarms API
     this.alarms = {
       create: async (name, alarmInfo) => {

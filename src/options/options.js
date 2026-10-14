@@ -6,6 +6,7 @@
 
 import { browserApi } from '../adapters/index.js';
 import { convertSearchTermToRule } from '../core/ruleMatcher.js';
+import { t, initI18n, setLanguage, formatRelativeTime } from '../core/i18n.js';
 import {
   getRules,
   saveRules,
@@ -75,6 +76,7 @@ const elements = {
   btnGotoSettings: document.getElementById('btn-goto-settings'),
 
   // 高级偏好设置
+  settingLanguage: document.getElementById('setting-language'),
   settingEnableHitTracking: document.getElementById('setting-enable-hit-tracking'),
   btnResetHits: document.getElementById('btn-reset-hits'),
   btnSettingsExportJson: document.getElementById('btn-settings-export-json'),
@@ -205,22 +207,7 @@ function getStartTimeByFilter(filterKey) {
  * @returns {string}
  */
 function formatTime(timestamp) {
-  if (!timestamp) return '';
-  const d = new Date(timestamp);
-  const now = Date.now();
-  const diffSec = Math.floor((now - timestamp) / 1000);
-
-  if (diffSec < 60) return '刚刚';
-  if (diffSec < 3600) return `${Math.floor(diffSec / 60)} 分钟前`;
-  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} 小时前`;
-
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hour = String(d.getHours()).padStart(2, '0');
-  const minute = String(d.getMinutes()).padStart(2, '0');
-
-  return `${year}-${month}-${day} ${hour}:${minute}`;
+  return formatRelativeTime(timestamp);
 }
 
 /**
@@ -250,11 +237,11 @@ async function refreshGlobalStats() {
   elements.statActiveRules.textContent = activeCount;
 
   if (currentSettings.enableHitTracking === false) {
-    elements.statTotalHits.textContent = `${totalHits} (已停用)`;
-    elements.statTotalHits.title = '统计已在设置中停用，命中规则时不记录新拦截次数';
+    elements.statTotalHits.textContent = t('options.statTotalHitsDisabled', { count: totalHits });
+    elements.statTotalHits.title = t('options.statTotalHitsDisabledTitle');
   } else {
     elements.statTotalHits.textContent = totalHits;
-    elements.statTotalHits.title = '所有规则累计物理拦截并抹除的访问次数';
+    elements.statTotalHits.title = t('options.statTotalHitsTitle');
   }
 
   if (elements.tabRulesBadge) {
@@ -264,14 +251,14 @@ async function refreshGlobalStats() {
   const silent = await getSilentMode();
   if (silent.active && silent.remainingMs > 0) {
     const min = Math.ceil(silent.remainingMs / 60000);
-    elements.statSilentStatus.textContent = `开启中 (余 ${min}m)`;
+    elements.statSilentStatus.textContent = t('options.statSilentOn', { min });
     elements.statSilentStatus.className = 'stat-value silent-on';
   } else {
-    elements.statSilentStatus.textContent = '未开启';
+    elements.statSilentStatus.textContent = t('options.statSilentOff');
     elements.statSilentStatus.className = 'stat-value silent-off';
   }
 
-  elements.rulesCountSummary.textContent = `当前共有 ${cachedRules.length} 条防护规则`;
+  elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: cachedRules.length });
 }
 
 /* ==========================================================================
@@ -283,8 +270,8 @@ async function refreshGlobalStats() {
  */
 function updateSelectedSummary() {
   const selectedCount = checkedUrls.size;
-  elements.selectedSummary.textContent = `已勾选 ${selectedCount} 条`;
-  elements.btnDeleteText.textContent = `删除选中的 ${selectedCount} 条记录`;
+  elements.selectedSummary.textContent = t('options.selectedSummary', { count: selectedCount });
+  elements.btnDeleteText.textContent = t('options.btnDeleteSelected', { count: selectedCount });
 
   const hasSelected = selectedCount > 0;
   elements.btnDeleteSelected.disabled = !hasSelected || isOperatingCleaning;
@@ -357,7 +344,7 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
 
   isLoadingBatch = true;
   elements.btnLoadMore.disabled = true;
-  elements.loadMoreText.textContent = '正在检索历史数据...';
+  elements.loadMoreText.textContent = t('options.loadMoreLoading');
 
   const batchSize = getBatchSize();
 
@@ -401,7 +388,7 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
       elements.historyPreviewList.innerHTML = `
         <div class="empty-state">
           <span class="empty-icon">🔎</span>
-          <p>未找到符合条件的历史记录</p>
+          <p data-i18n="options.emptyHistoryNoMatch">${t('options.emptyHistoryNoMatch')}</p>
         </div>
       `;
       elements.loadMoreSection.classList.add('hidden');
@@ -411,20 +398,20 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
         elements.loadMoreSection.classList.remove('hidden');
         elements.noMoreHint.classList.add('hidden');
         elements.btnLoadMore.disabled = false;
-        elements.loadMoreText.textContent = `加载下一批历史记录 (${batchSize} 条)...`;
+        elements.loadMoreText.textContent = t('options.loadMoreBtn', { count: batchSize });
       } else {
         elements.loadMoreSection.classList.add('hidden');
         elements.noMoreHint.classList.remove('hidden');
       }
     }
 
-    elements.searchResultsSummary.textContent = `已加载 ${currentHistoryResults.length} 条历史记录`;
+    elements.searchResultsSummary.textContent = t('options.loadedSummary', { count: currentHistoryResults.length });
     if (elements.tabHistoryBadge) {
       elements.tabHistoryBadge.textContent = currentHistoryResults.length;
     }
   } catch (err) {
     console.error('Fetch history batch failed:', err);
-    showToast(`检索历史失败: ${err.message}`);
+    showToast(`${t('options.toastImportFailed', { error: err.message })}`);
   } finally {
     isLoadingBatch = false;
   }
@@ -502,24 +489,24 @@ async function deleteUrlsWithProgress(urls, title = '正在批量清理历史...
 async function streamCleanAllMatches() {
   const query = (elements.searchInput.value || '').trim();
   if (!query) {
-    showToast('请先输入搜索关键词');
+    showToast(t('options.emptyHistoryStart'));
     return;
   }
 
   if (currentSettings.confirmDeepClean !== false) {
-    const confirmed = window.confirm(`确认要全量清理所有与 "${query}" 匹配的历史记录吗？\n即使包含数万甚至数十万条，系统也将以流式低内存分块方式彻底清空。`);
+    const confirmed = window.confirm(t('options.confirmDeepClean', { query }));
     if (!confirmed) return;
   }
 
   if (isOperatingCleaning) {
-    showToast('已有清理任务正在执行中，请稍候...');
+    showToast(t('options.progressCleaning'));
     return;
   }
 
   isOperatingCleaning = true;
   elements.progressContainer.classList.remove('hidden');
-  elements.progressStatusText.textContent = `正在准备全量流式清理 [${query}]...`;
-  elements.progressPercentText.textContent = '扫描中';
+  elements.progressStatusText.textContent = t('options.progressStreamPreparing', { query });
+  elements.progressPercentText.textContent = '...';
   elements.progressFillBar.style.width = '100%';
 
   const startTime = getStartTimeByFilter(currentSearchTimeFilter);
@@ -548,8 +535,8 @@ async function streamCleanAllMatches() {
         const chunk = validUrls.slice(i, i + chunkSize);
         await Promise.allSettled(chunk.map(url => browserApi.history.deleteUrl(url)));
         totalDeleted += chunk.length;
-        elements.progressStatusText.textContent = `流式全量清理中... 已清理 ${totalDeleted} 条历史`;
-        elements.progressPercentText.textContent = `已清除 ${totalDeleted} 条`;
+        elements.progressStatusText.textContent = t('options.progressStreamCleaning', { count: totalDeleted });
+        elements.progressPercentText.textContent = `${totalDeleted}`;
         await new Promise(resolve => setTimeout(resolve, 0));
       }
 
@@ -557,11 +544,11 @@ async function streamCleanAllMatches() {
       await new Promise(resolve => setTimeout(resolve, 10));
     }
 
-    showToast(`流式清理完成！共彻底删除 ${totalDeleted} 条历史记录`);
+    showToast(t('options.toastStreamCleanSuccess', { count: totalDeleted }));
     await fetchHistoryBatch({ isReset: true });
   } catch (err) {
     console.error('Stream clean failed:', err);
-    showToast(`流式清理异常: ${err.message}`);
+    showToast(t('options.toastImportFailed', { error: err.message }));
   } finally {
     setTimeout(() => {
       elements.progressContainer.classList.add('hidden');
@@ -664,11 +651,11 @@ elements.btnDeleteSelected.addEventListener('click', async () => {
 
   const count = targets.length;
   try {
-    const deletedCount = await deleteUrlsWithProgress(targets, `正在删除选中的 ${count} 条记录...`);
-    showToast(`成功物理删除 ${deletedCount} 条历史记录`);
+    const deletedCount = await deleteUrlsWithProgress(targets, t('options.progressDeletingSelected', { count }));
+    showToast(t('options.toastDeleteSelectedSuccess', { count: deletedCount }));
     await fetchHistoryBatch({ isReset: true });
   } catch (err) {
-    showToast(`删除失败: ${err.message}`);
+    showToast(t('options.toastImportFailed', { error: err.message }));
   }
 });
 
@@ -678,7 +665,7 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
   const searchTerm = (elements.searchInput.value || '').trim();
 
   if (!searchTerm) {
-    showToast('当前搜索词为空，请先在搜索框输入关键词或域名');
+    showToast(t('options.emptyHistoryStart'));
     return;
   }
 
@@ -686,7 +673,7 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
   const { pattern, type: detectedType } = convertSearchTermToRule(searchTerm);
   const actualType = preferredType || detectedType;
   if (!pattern) {
-    showToast('无法将该搜索词转换为有效规则表达式');
+    showToast(t('options.toastImportFailed', { error: 'Invalid pattern' }));
     return;
   }
 
@@ -697,14 +684,15 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
     // 2. 分块删除记录
     let deletedCount = 0;
     if (targets.length > 0) {
-      deletedCount = await deleteUrlsWithProgress(targets, `正在删除并永久拦截匹配历史...`);
+      deletedCount = await deleteUrlsWithProgress(targets, t('options.progressDeletingAndAdding'));
     }
 
-    showToast(`已${isNew ? '添加' : '更新'}规则 [${pattern}] 并清理 ${deletedCount} 条历史`);
+    const actionText = isNew ? t('popup.actionAdd') : t('popup.actionUpdate');
+    showToast(t('options.toastDeleteAndAddSuccess', { action: actionText, pattern, count: deletedCount }));
     await refreshRulesList();
     await fetchHistoryBatch({ isReset: true });
   } catch (err) {
-    showToast(`操作失败: ${err.message}`);
+    showToast(t('options.toastImportFailed', { error: err.message }));
   }
 });
 
@@ -728,7 +716,7 @@ async function refreshRulesList() {
     elements.rulesContainer.innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">📋</span>
-        <p>暂无配置规则，您可在左侧历史大扫除中加入，或在上方手动添加</p>
+        <p data-i18n="options.emptyRules">${t('options.emptyRules')}</p>
       </div>
     `;
     return;
@@ -742,8 +730,10 @@ async function refreshRulesList() {
     row.dataset.id = rule.id;
 
     const isDomain = rule.type === 'domain';
-    const typeLabel = isDomain ? '域名' : '路径';
+    const typeLabel = isDomain ? t('options.tagDomain') : t('options.tagPath');
     const typeClass = isDomain ? 'type-domain' : 'type-path';
+    const hitsText = t('options.ruleHitsCount', { count: rule.hits || 0 });
+    const toggleTitle = rule.enabled !== false ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
 
     row.innerHTML = `
       <div class="rule-left">
@@ -751,12 +741,12 @@ async function refreshRulesList() {
         <span class="rule-pattern" title="${escapeHtml(rule.pattern)}">${escapeHtml(rule.pattern)}</span>
       </div>
       <div class="rule-right">
-        <span class="hits-badge" title="累计拦截次数">拦截 ${rule.hits || 0} 次</span>
-        <label class="toggle-switch" title="${rule.enabled !== false ? '已启用，点击暂停' : '已暂停，点击启用'}">
+        <span class="hits-badge" title="${t('options.statTotalHitsTitle')}">${hitsText}</span>
+        <label class="toggle-switch" title="${toggleTitle}">
           <input type="checkbox" class="rule-toggle" ${rule.enabled !== false ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
-        <button class="rule-delete-btn" title="删除该规则">🗑️</button>
+        <button class="rule-delete-btn" title="${t('options.ruleDeleteTitle')}">🗑️</button>
       </div>
     `;
 
@@ -765,7 +755,7 @@ async function refreshRulesList() {
     toggle.addEventListener('change', async () => {
       await toggleRule(rule.id, toggle.checked);
       row.classList.toggle('disabled', !toggle.checked);
-      toggle.parentElement.title = toggle.checked ? '已启用，点击暂停' : '已暂停，点击启用';
+      toggle.parentElement.title = toggle.checked ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
       await refreshGlobalStats();
     });
 
@@ -773,7 +763,7 @@ async function refreshRulesList() {
     const delBtn = row.querySelector('.rule-delete-btn');
     delBtn.addEventListener('click', async () => {
       await deleteRule(rule.id);
-      showToast(`已删除规则: ${rule.pattern}`);
+      showToast(t('options.toastDeleteRuleSuccess', { pattern: rule.pattern }));
       await refreshRulesList();
     });
 
@@ -790,18 +780,18 @@ elements.btnAddRule.addEventListener('click', async () => {
   const type = selectedType === 'auto' ? undefined : selectedType;
 
   if (!pattern) {
-    showToast('请输入有效的规则表达式');
+    showToast(t('options.toastImportFailed', { error: 'Pattern required' }));
     elements.newRuleInput.focus();
     return;
   }
 
   try {
     const { rule, isNew } = await addRule({ pattern, type });
-    showToast(isNew ? `成功添加规则: ${rule.pattern}` : `规则已存在，已恢复为启用状态`);
+    showToast(isNew ? t('options.toastAddRuleSuccess', { pattern: rule.pattern }) : t('options.toastRuleAlreadyExists'));
     elements.newRuleInput.value = '';
     await refreshRulesList();
   } catch (err) {
-    showToast(`添加失败: ${err.message}`);
+    showToast(t('options.toastImportFailed', { error: err.message }));
   }
 });
 
@@ -818,7 +808,7 @@ if (elements.btnEnableAll) {
     const rules = await getRules();
     rules.forEach(r => r.enabled = true);
     await saveRules(rules);
-    showToast('已全部启用所有防护规则');
+    showToast(t('options.toastEnableAllSuccess'));
     await refreshRulesList();
   });
 }
@@ -829,7 +819,7 @@ if (elements.btnToggleAll) {
     const rules = await getRules();
     rules.forEach(r => r.enabled = !r.enabled);
     await saveRules(rules);
-    showToast('已反转所有规则启用状态');
+    showToast(t('options.toastToggleAllSuccess'));
     await refreshRulesList();
   });
 }
@@ -841,11 +831,11 @@ if (elements.btnClearDisabled) {
     const activeRules = rules.filter(r => r.enabled !== false);
     const removedCount = rules.length - activeRules.length;
     if (removedCount === 0) {
-      showToast('当前没有已停用的规则可清理');
+      showToast(t('options.toastNoDisabledRules'));
       return;
     }
     await saveRules(activeRules);
-    showToast(`已清理 ${removedCount} 条已停用的防护规则`);
+    showToast(t('options.toastClearDisabledSuccess', { count: removedCount }));
     await refreshRulesList();
   });
 }
@@ -860,6 +850,9 @@ if (elements.btnClearDisabled) {
 async function loadSettingsToUI() {
   currentSettings = await getSettings();
 
+  if (elements.settingLanguage) {
+    elements.settingLanguage.value = currentSettings.language || 'auto';
+  }
   if (elements.settingEnableHitTracking) {
     elements.settingEnableHitTracking.checked = currentSettings.enableHitTracking !== false;
   }
@@ -884,27 +877,41 @@ async function loadSettingsToUI() {
 }
 
 // 绑定设置变更事件并即时持久化
+// 语言选项选择与即时生效
+if (elements.settingLanguage) {
+  elements.settingLanguage.addEventListener('change', async () => {
+    const val = elements.settingLanguage.value;
+    await saveSettings({ language: val });
+    currentSettings.language = val;
+    setLanguage(val);
+    await refreshGlobalStats();
+    updateSelectedSummary();
+    await refreshRulesList();
+    showToast(t('options.toastLanguageChanged'));
+  });
+}
+
 if (elements.settingEnableHitTracking) {
   elements.settingEnableHitTracking.addEventListener('change', async () => {
     const val = elements.settingEnableHitTracking.checked;
     await saveSettings({ enableHitTracking: val });
     currentSettings.enableHitTracking = val;
-    showToast(val ? '已开启拦截命中统计' : '已停用拦截命中统计（极致无痕）');
+    showToast(val ? t('options.toastHitTrackingOn') : t('options.toastHitTrackingOff'));
     await refreshGlobalStats();
   });
 }
 
 if (elements.btnResetHits) {
   elements.btnResetHits.addEventListener('click', async () => {
-    const ok = window.confirm('确认要将当前所有规则的拦截命中次数清零吗？此操作不影响规则的启用状态。');
+    const ok = window.confirm(t('options.confirmResetHits'));
     if (!ok) return;
 
     try {
       const resetCount = await resetRuleHits();
-      showToast(`已成功重置 ${resetCount} 条规则的拦截计数为 0`);
+      showToast(t('options.toastResetHitsSuccess', { count: resetCount }));
       await refreshRulesList();
     } catch (err) {
-      showToast(`重置失败: ${err.message}`);
+      showToast(t('options.toastImportFailed', { error: err.message }));
     }
   });
 }
@@ -926,9 +933,9 @@ if (elements.btnSettingsExportJson) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast('防护规则已成功导出为 JSON 备份文件');
+      showToast(t('options.toastExportSuccess'));
     } catch (err) {
-      showToast(`导出失败: ${err.message}`);
+      showToast(t('options.toastImportFailed', { error: err.message }));
     }
   });
 }
@@ -956,12 +963,12 @@ if (elements.fileSettingsImport) {
         const { importedCount, totalCount } = await importRules(content, mode);
         showToast(
           mode === 'replace'
-            ? `覆盖导入成功：已载入 ${importedCount} 条规则`
-            : `合并导入成功：新增 ${importedCount} 条规则，当前共 ${totalCount} 条`
+            ? t('options.toastImportReplaceSuccess', { count: importedCount })
+            : t('options.toastImportMergeSuccess', { imported: importedCount, total: totalCount })
         );
         await refreshRulesList();
       } catch (err) {
-        showToast(`导入失败: ${err.message}`);
+        showToast(t('options.toastImportFailed', { error: err.message }));
       }
     };
     reader.readAsText(file);
@@ -971,15 +978,15 @@ if (elements.fileSettingsImport) {
 // 设置页：清空所有规则
 if (elements.btnClearAllRules) {
   elements.btnClearAllRules.addEventListener('click', async () => {
-    const ok = window.confirm('⚠️ 高危警告：确定要清空本地所有防护规则吗？\n清空后将无法找回，建议先导出 JSON 备份。');
+    const ok = window.confirm(t('options.confirmClearAllRules'));
     if (!ok) return;
 
     try {
       await clearAllRules();
-      showToast('已清空全部防护规则');
+      showToast(t('options.toastClearRulesSuccess'));
       await refreshRulesList();
     } catch (err) {
-      showToast(`清空失败: ${err.message}`);
+      showToast(t('options.toastImportFailed', { error: err.message }));
     }
   });
 }
@@ -990,7 +997,7 @@ if (elements.settingSilentDuration) {
     const val = Number(elements.settingSilentDuration.value) || 30;
     await saveSettings({ silentModeDuration: val });
     currentSettings.silentModeDuration = val;
-    showToast(`默认静默模式时长已更新为 ${val} 分钟`);
+    showToast(t('options.toastSilentDurationChanged', { val }));
   });
 }
 
@@ -999,7 +1006,7 @@ if (elements.settingDefaultRuleType) {
     const val = elements.settingDefaultRuleType.value;
     await saveSettings({ defaultRuleType: val });
     currentSettings.defaultRuleType = val;
-    showToast('快捷转规则策略已更新');
+    showToast(t('options.toastDefaultRuleTypeChanged'));
   });
 }
 
@@ -1008,7 +1015,7 @@ if (elements.settingHistoryBatchSize) {
     const val = Number(elements.settingHistoryBatchSize.value) || 100;
     await saveSettings({ historyBatchSize: val });
     currentSettings.historyBatchSize = val;
-    showToast(`单批次加载条数已设为 ${val} 条`);
+    showToast(t('options.toastBatchSizeChanged', { val }));
   });
 }
 
@@ -1017,7 +1024,7 @@ if (elements.settingDeleteChunkSize) {
     const val = Number(elements.settingDeleteChunkSize.value) || 30;
     await saveSettings({ deleteChunkSize: val });
     currentSettings.deleteChunkSize = val;
-    showToast(`并发删除切片已设为 ${val} 条/批`);
+    showToast(t('options.toastChunkSizeChanged', { val }));
   });
 }
 
@@ -1026,7 +1033,7 @@ if (elements.settingConfirmDeepClean) {
     const val = elements.settingConfirmDeepClean.checked;
     await saveSettings({ confirmDeepClean: val });
     currentSettings.confirmDeepClean = val;
-    showToast(val ? '已开启流式全量清空二次确认' : '已关闭流式全量清空二次确认');
+    showToast(t('options.toastConfirmDeepCleanChanged', { state: val ? t('options.stateEnabled') : t('options.stateDisabled') }));
   });
 }
 
@@ -1035,7 +1042,7 @@ if (elements.settingToastDuration) {
     const val = Number(elements.settingToastDuration.value) || 2500;
     await saveSettings({ toastDuration: val });
     currentSettings.toastDuration = val;
-    showToast(`提示浮层时长已更新为 ${(val / 1000).toFixed(1)} 秒`);
+    showToast(t('options.toastToastDurationChanged', { val: (val / 1000).toFixed(1) }));
   });
 }
 
@@ -1045,6 +1052,10 @@ browserApi.storage.onChanged(async (changes) => {
     await refreshRulesList();
   }
   if (changes[STORAGE_KEYS.SETTINGS]) {
+    const newSettings = changes[STORAGE_KEYS.SETTINGS].newValue;
+    if (newSettings && typeof newSettings === 'object' && newSettings.language && newSettings.language !== currentSettings.language) {
+      setLanguage(newSettings.language);
+    }
     await loadSettingsToUI();
     await refreshGlobalStats();
   }
@@ -1063,6 +1074,14 @@ async function initOptions() {
     }
   } catch (err) {
     console.warn('Init tab state notice:', err);
+  }
+
+  try {
+    const settings = await getSettings();
+    initI18n(settings.language || 'auto');
+  } catch (err) {
+    console.warn('Init i18n notice:', err);
+    initI18n('auto');
   }
 
   await loadSettingsToUI();

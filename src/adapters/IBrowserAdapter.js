@@ -82,6 +82,16 @@ export class IBrowserAdapter {
       }
     };
 
+    this.i18n = {
+      /**
+       * 获取浏览器当前 UI 界面语言代码 (如 'zh-CN', 'en-US')
+       * @returns {string}
+       */
+      getUILanguage: () => {
+        throw new Error('i18n.getUILanguage must be implemented by adapter');
+      }
+    };
+
     this.alarms = {
       /**
        * 创建定时器闹钟
