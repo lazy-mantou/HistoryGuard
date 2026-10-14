@@ -1,7 +1,7 @@
 /**
  * @file options.js
  * @description Options 独立管理控制台业务逻辑
- * 涵盖按搜索结果防误删批量大扫除、规则增删改查、JSON 备份导入导出及全局状态联动
+ * 支持左侧 Tab 导航切换、按搜索结果批量大扫除、规则增删改查、JSON 备份导入导出及全局状态联动
  */
 
 import { browserApi } from '../adapters/index.js';
@@ -24,6 +24,12 @@ const elements = {
   statActiveRules: document.getElementById('stat-active-rules'),
   statTotalHits: document.getElementById('stat-total-hits'),
   statSilentStatus: document.getElementById('stat-silent-status'),
+
+  // 左侧 Tab 导航
+  navTabs: document.querySelectorAll('.nav-tab'),
+  panelHistory: document.getElementById('panel-history'),
+  panelRules: document.getElementById('panel-rules'),
+  tabRulesBadge: document.getElementById('tab-rules-badge'),
 
   // 模块 A：批量清理
   searchInput: document.getElementById('search-input'),
@@ -80,6 +86,41 @@ function showToast(msg, duration = 2500) {
     toastDismissTimer = null;
   }, duration);
 }
+
+/**
+ * 左侧 Tab 切换控制
+ * @param {'history'|'rules'} tabKey
+ */
+function switchTab(tabKey) {
+  elements.navTabs.forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabKey);
+  });
+
+  if (tabKey === 'history') {
+    elements.panelHistory.classList.remove('hidden');
+    elements.panelHistory.classList.add('active');
+    elements.panelRules.classList.add('hidden');
+    elements.panelRules.classList.remove('active');
+  } else {
+    elements.panelRules.classList.remove('hidden');
+    elements.panelRules.classList.add('active');
+    elements.panelHistory.classList.add('hidden');
+    elements.panelHistory.classList.remove('active');
+  }
+
+  try {
+    localStorage.setItem('histguard_active_options_tab', tabKey);
+  } catch (err) {
+    console.warn('Cannot persist active tab:', err);
+  }
+}
+
+// 绑定 Tab 点击事件
+elements.navTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    switchTab(tab.dataset.tab);
+  });
+});
 
 /**
  * 计算时间过滤起始时间戳
@@ -154,6 +195,10 @@ async function refreshGlobalStats() {
 
   elements.statActiveRules.textContent = activeCount;
   elements.statTotalHits.textContent = totalHits;
+
+  if (elements.tabRulesBadge) {
+    elements.tabRulesBadge.textContent = cachedRules.length;
+  }
 
   const silent = await getSilentMode();
   if (silent.active && silent.remainingMs > 0) {
@@ -410,7 +455,7 @@ async function refreshRulesList() {
     elements.rulesContainer.innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">📋</span>
-        <p>暂无配置规则，您可在左侧搜索加入，或在上方手动添加</p>
+        <p>暂无配置规则，您可在左侧历史大扫除中加入，或在上方手动添加</p>
       </div>
     `;
     return;
@@ -590,6 +635,16 @@ browserApi.storage.onChanged((changes) => {
    ========================================================================== */
 
 async function initOptions() {
+  // 恢复先前激活的 Tab 状态
+  try {
+    const savedTab = localStorage.getItem('histguard_active_options_tab');
+    if (savedTab && (savedTab === 'history' || savedTab === 'rules')) {
+      switchTab(savedTab);
+    }
+  } catch (err) {
+    console.warn('Init tab state notice:', err);
+  }
+
   await refreshRulesList();
   await performHistorySearch();
 }
