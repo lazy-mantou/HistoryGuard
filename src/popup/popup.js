@@ -118,8 +118,8 @@ function updateActionButtons() {
   if (!selectedRule) return;
 
   const count = selectedRule.count || 0;
-  elements.retroactiveLabelText.textContent = t('popup.retroactiveLabel', { count });
-  elements.btnHideText.textContent = t('popup.hideAndCleanWithRule', { rule: selectedRule.rule });
+  elements.btnHideText.textContent = t('popup.hideAndClean');
+  elements.btnHideAndClean.title = t('popup.hideAndCleanWithRule', { rule: selectedRule.rule });
   elements.btnCleanText.textContent = t('popup.cleanOnly', { count });
 
   // 若匹配数量为 0，允许点击以清理当前已在历史中的本页或提示

@@ -4,6 +4,25 @@
 
 ---
 
+## [1.0.13] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **Popup 弹窗视口宽度与排版错位全量重构**：
+   - **痛点排查**：
+     - **视口过窄**：原桌面端固定宽度仅为 `356px`（远低于现代主流扩展如 Bitwarden / 1Password / uBlock 的 400px–420px 标准），导致内容元素极其局促；
+     - **按钮文字暴涨撑爆布局**：选中候选规则时，原逻辑会将长规则路径直接拼接进主按钮文字（如 `隐藏并清理 (domain.com/path/*)`），动辄产生 40–60 字符的超长文本，彻底撑爆网格排版并把右侧“仅删 X 条”挤出屏幕；
+     - **微标与文本被挤压截断**：规则胶囊内 `.capsule-count` 缺少 `flex-shrink: 0` 防收缩保护，长规则下数量徽标被挤压变形；复选框文字过长时复选框垂直居中悬空；底部跳转文本无截断保护引发多行换行。
+   - **重构与优化细节**：
+     - **视口黄金拓宽**：桌面端视口由 356px 升级拓宽为现代黄金阅读比例 `410px`，充分释放横向间距，呼吸感与比例大幅提升；
+     - **按钮文本精简与悬浮解耦**：主按钮固定显示清爽的“🛡️ 隐藏并清理”，将具体规则详情转移至原生 `title` 悬浮 Tooltip，彻底根治按钮膨胀挤压；
+     - **弹性抗挤压保护**：按钮组改用 `display: flex`（主按钮 `flex: 1`，辅助按钮 `flex-shrink: 0`）；规则胶囊数量徽标增加 `flex-shrink: 0`；复选框调整为顶对齐（`align-items: flex-start`）；底部链接文本加入弹性省略截断保护（`text-overflow: ellipsis`）。
+
+### 变更明细 (Detailed Changes)
+- `style(popup)`: 将桌面端视口拓宽至 410px；重构 `.popup-container`、`.btn-group`、`.checkbox-label`、`.rule-capsule` 与 `.footer-link` 弹性布局防挤压保护。
+- `feat(popup)`: 在 `popup.js` 的 `updateActionButtons` 中将主按钮文本精炼化，完整规则转移至 `title` Tooltip。
+
+---
+
 ## [1.0.12] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
