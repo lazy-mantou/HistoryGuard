@@ -128,7 +128,7 @@ export class ChromiumAdapter extends IBrowserAdapter {
               });
             } else {
               chrome.tabs.query({ active: true, lastFocusedWindow: true }, (fallbackTabs) => {
-                if (fallbackTabs && fallbackTabs.length > 0) {
+                if (fallbackTabs && fallbackTabs.length > 0 && (fallbackTabs[0].url || fallbackTabs[0].pendingUrl)) {
                   const fallbackTab = fallbackTabs[0];
                   resolve({
                     id: fallbackTab.id,
@@ -136,7 +136,19 @@ export class ChromiumAdapter extends IBrowserAdapter {
                     title: fallbackTab.title || ''
                   });
                 } else {
-                  resolve(null);
+                  // 移动端专用兜底：部分移动浏览器无独立窗口概念，直接查询当前活动标签
+                  chrome.tabs.query({ active: true }, (mobileTabs) => {
+                    if (mobileTabs && mobileTabs.length > 0 && (mobileTabs[0].url || mobileTabs[0].pendingUrl)) {
+                      const mTab = mobileTabs[0];
+                      resolve({
+                        id: mTab.id,
+                        url: mTab.url || mTab.pendingUrl || '',
+                        title: mTab.title || ''
+                      });
+                    } else {
+                      resolve(null);
+                    }
+                  });
                 }
               });
             }
@@ -149,16 +161,31 @@ export class ChromiumAdapter extends IBrowserAdapter {
     this.runtime = {
       openOptionsPage: () => {
         return new Promise((resolve, reject) => {
-          if (typeof chrome === 'undefined' || !chrome.runtime?.openOptionsPage) {
-            return reject(new Error('chrome.runtime.openOptionsPage is not available'));
+          if (typeof chrome === 'undefined' || !chrome.runtime) {
+            return reject(new Error('chrome.runtime API is not available'));
           }
 
-          chrome.runtime.openOptionsPage(() => {
-            if (chrome.runtime?.lastError) {
-              return reject(new Error(chrome.runtime.lastError.message));
-            }
-            resolve();
-          });
+          if (chrome.runtime.openOptionsPage) {
+            chrome.runtime.openOptionsPage(() => {
+              if (chrome.runtime?.lastError) {
+                // 移动端兜底：若 openOptionsPage 失败，尝试以独立 Tab 打开 options.html
+                if (chrome.tabs?.create) {
+                  const optUrl = chrome.runtime.getURL ? chrome.runtime.getURL('options/options.html') : 'options/options.html';
+                  chrome.tabs.create({ url: optUrl }, () => resolve());
+                } else {
+                  reject(new Error(chrome.runtime.lastError.message));
+                }
+                return;
+              }
+              resolve();
+            });
+          } else if (chrome.tabs?.create) {
+            // 移动端无 openOptionsPage 时以新标签页打开
+            const optUrl = chrome.runtime.getURL ? chrome.runtime.getURL('options/options.html') : 'options/options.html';
+            chrome.tabs.create({ url: optUrl }, () => resolve());
+          } else {
+            reject(new Error('Neither openOptionsPage nor tabs.create is available'));
+          }
         });
       }
     };

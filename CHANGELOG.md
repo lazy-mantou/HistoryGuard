@@ -4,6 +4,40 @@
 
 ---
 
+## [1.0.10] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **移动端浏览器扩展全环境兼容支持 (Firefox for Android & Mobile Chromium)**：
+   - **痛点与需求**：原本插件针对桌面端视窗设计，缺少移动端适配；在手机端浏览器（如 Firefox for Android、Kiwi Browser、Lemur、Yandex、Orion）上使用时，面临清单不被安卓识别、弹窗尺寸溢出、侧边栏排版被挤压及移动端独立窗口 API 缺失等问题。
+   - **Manifest 移动端认证支持**：
+     - 在 `manifest.firefox.json` 的 `browser_specific_settings` 中加入 `"gecko_android": { "strict_min_version": "120.0" }`，正式声明支持 Firefox for Android（Fenix / GeckoView）移动生态；
+     - Chromium 清单原生兼容支持扩展的 Android Chromium 衍生内核（Kiwi / Lemur / Yandex / Orion）。
+2. **底层 Adapter 适配层移动端环境容灾与回退**：
+   - **标签页查询容灾 (`getCurrentActiveTab`)**：
+     - 移动端浏览器单视窗运行，无桌面多窗口（`currentWindow` / `lastFocusedWindow` 可能返回空数组）；
+     - 在 `ChromiumAdapter` 与 `FirefoxAdapter` 中增加移动端专用兜底，当窗口查询无结果时直接回退查询全局活动标签 `{ active: true }`，确保手机端弹窗能 100% 捕获当前页面 URL 与标题。
+   - **设置页打开容灾 (`openOptionsPage`)**：
+     - 部分移动端浏览器不支持弹层式 `openOptionsPage()`，自动安全降级为通过 `tabs.create({ url: 'options/options.html' })` 以独立标签页平滑打开控制台。
+3. **Popup 弹窗视口与触控交互全自适应 (`src/popup/popup.css`)**：
+   - **视口动态适配**：桌面端维持 356px 紧凑无滚动条尺寸；移动端（`max-width: 480px`）自动切换为 `100vw` 宽度、安全区 `env(safe-area-inset-bottom)` 边距与 `-webkit-overflow-scrolling: touch` 丝滑滚动；
+   - **移动端触控人机规范**：按钮与胶囊项增大至 44px–48px 拇指友好触控尺寸，增大复选框与图标点击热区，支持 `:active` 缩放按压反馈与 `-webkit-tap-highlight-color: transparent`。
+4. **Options 控制台移动端分段 Tab 与弹性堆叠重构 (`src/options/options.css`)**：
+   - **头部与概览栏自适应**：统计条自适应重构为 3 列网格，紧凑排版，杜绝横向滚动溢出；
+   - **侧边栏转移动端轻盈分段标签栏 (Segmented Tab Bar)**：小屏下隐藏繁冗文字描述，以图标 + 短标题 + 徽标横向自适应排布；隐藏大段说明释放纵向空间；
+   - **主内容面板弹性高度解绑**：小屏下解绑 `calc(100vh - 175px)` 刚性约束，采用内容自适应弹性纵向展开与丝滑内部滚动；
+   - **操作栏与设置项触控流式重构**：底部操作按钮小屏下全宽垂直堆叠（44px 拇指操作），表单与设置卡片自动转换为垂直两段式布局，Toast 提示居中吸底贴合移动手势习惯。
+5. **单元测试补齐与验证**：
+   - 在 `tests/adapters.test.js` 中新增 4 个针对移动端标签查询兜底与选项页打开兜底的专用单元测试，全套测试增至 77 个，通过率 100%。
+
+### 变更明细 (Detailed Changes)
+- `feat(manifest)`: 在 `manifest.firefox.json` 中配置 `gecko_android` 认证 Firefox for Android 运行支持。
+- `feat(adapters)`: 在 `ChromiumAdapter.js` 与 `FirefoxAdapter.js` 中增加移动端全局活动标签查询与设置页新标签兜底。
+- `style(popup)`: 在 `popup.html` 中注入防误触缩放与刘海屏 meta；在 `popup.css` 中重构移动端全屏流式与触控按压反馈规范。
+- `style(options)`: 在 `options.html` 中注入安全区 meta；在 `options.css` 中重构移动端分段 Tab 栏、3列统计网格、垂直全宽操作栏与设置卡片自适应系统。
+- `test(adapters)`: 在 `tests/adapters.test.js` 中补充移动端容灾机制单元测试用例。
+
+---
+
 ## [1.0.9] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

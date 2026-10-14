@@ -67,6 +67,58 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
     assert.ok(typeof lang === 'string');
     assert.ok(lang.length > 0);
   });
+
+  it('移动端无独立窗口环境时，tabs.getCurrentActiveTab 应当成功触发全局 active 标签兜底', async () => {
+    globalThis.chrome = {
+      tabs: {
+        query: (queryInfo, callback) => {
+          // 模拟移动浏览器 (如 Kiwi / Lemur) 中 currentWindow 与 lastFocusedWindow 返回空
+          if (queryInfo.currentWindow || queryInfo.lastFocusedWindow) {
+            callback([]);
+          } else if (queryInfo.active === true) {
+            callback([{ id: 101, url: 'https://m.bilibili.com', title: 'Bilibili Mobile' }]);
+          } else {
+            callback([]);
+          }
+        }
+      },
+      runtime: { lastError: null }
+    };
+
+    const adapter = new ChromiumAdapter();
+    const tab = await adapter.tabs.getCurrentActiveTab();
+    assert.ok(tab);
+    assert.strictEqual(tab.id, 101);
+    assert.strictEqual(tab.url, 'https://m.bilibili.com');
+
+    delete globalThis.chrome;
+  });
+
+  it('移动端 openOptionsPage 失败时应当自动回退到 tabs.create 打开 options.html', async () => {
+    let createdUrl = '';
+    globalThis.chrome = {
+      runtime: {
+        openOptionsPage: (callback) => {
+          globalThis.chrome.runtime.lastError = new Error('Not supported on mobile');
+          callback();
+        },
+        getURL: (path) => `chrome-extension://histguard/${path}`,
+        lastError: null
+      },
+      tabs: {
+        create: ({ url }, callback) => {
+          createdUrl = url;
+          if (callback) callback();
+        }
+      }
+    };
+
+    const adapter = new ChromiumAdapter();
+    await adapter.runtime.openOptionsPage();
+    assert.strictEqual(createdUrl, 'chrome-extension://histguard/options/options.html');
+
+    delete globalThis.chrome;
+  });
 });
 
 describe('adapters - FirefoxAdapter 实现验证', () => {
@@ -95,6 +147,53 @@ describe('adapters - FirefoxAdapter 实现验证', () => {
     await assert.rejects(async () => {
       await adapter.storage.get(['test']);
     }, /Neither browser nor chrome API is available/);
+  });
+
+  it('Firefox for Android 移动端 tabs.getCurrentActiveTab 应当正确回退全局 active 标签', async () => {
+    globalThis.browser = {
+      tabs: {
+        query: async (queryInfo) => {
+          if (queryInfo.currentWindow || queryInfo.lastFocusedWindow) {
+            return [];
+          }
+          if (queryInfo.active === true) {
+            return [{ id: 202, url: 'https://m.zhihu.com', title: 'Zhihu Mobile' }];
+          }
+          return [];
+        }
+      }
+    };
+
+    const adapter = new FirefoxAdapter();
+    const tab = await adapter.tabs.getCurrentActiveTab();
+    assert.ok(tab);
+    assert.strictEqual(tab.id, 202);
+    assert.strictEqual(tab.url, 'https://m.zhihu.com');
+
+    delete globalThis.browser;
+  });
+
+  it('Firefox for Android 移动端 openOptionsPage 抛出异常时自动回退到 tabs.create', async () => {
+    let createdUrl = '';
+    globalThis.browser = {
+      runtime: {
+        openOptionsPage: async () => {
+          throw new Error('openOptionsPage is not implemented on Android');
+        },
+        getURL: (path) => `moz-extension://histguard/${path}`
+      },
+      tabs: {
+        create: async ({ url }) => {
+          createdUrl = url;
+        }
+      }
+    };
+
+    const adapter = new FirefoxAdapter();
+    await adapter.runtime.openOptionsPage();
+    assert.strictEqual(createdUrl, 'moz-extension://histguard/options/options.html');
+
+    delete globalThis.browser;
   });
 });
 

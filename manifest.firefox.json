@@ -21,6 +21,9 @@
     "gecko": {
       "id": "histguard@extension.local",
       "strict_min_version": "109.0"
+    },
+    "gecko_android": {
+      "strict_min_version": "120.0"
     }
   },
   "action": {

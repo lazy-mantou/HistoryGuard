@@ -113,7 +113,12 @@ export class FirefoxAdapter extends IBrowserAdapter {
           tabs = await api.tabs.query({ active: true, lastFocusedWindow: true });
         }
 
-        if (tabs && tabs.length > 0) {
+        // 3. 移动端 (Firefox for Android) 专用兜底：移动端无独立桌面窗口，直接查询全局活动标签
+        if (!tabs || tabs.length === 0 || (!tabs[0].url && !tabs[0].pendingUrl)) {
+          tabs = await api.tabs.query({ active: true });
+        }
+
+        if (tabs && tabs.length > 0 && (tabs[0].url || tabs[0].pendingUrl)) {
           const activeTab = tabs[0];
           return {
             id: activeTab.id,
@@ -129,11 +134,26 @@ export class FirefoxAdapter extends IBrowserAdapter {
     this.runtime = {
       openOptionsPage: async () => {
         const api = getApi();
-        if (!api.runtime?.openOptionsPage) {
-          throw new Error('browser.runtime.openOptionsPage is not available');
-        }
 
-        await api.runtime.openOptionsPage();
+        if (api.runtime?.openOptionsPage) {
+          try {
+            await api.runtime.openOptionsPage();
+            return;
+          } catch (err) {
+            // Firefox Android 部分版本 openOptionsPage 会报错，回退到 tabs.create
+            if (api.tabs?.create) {
+              const url = api.runtime?.getURL ? api.runtime.getURL('options/options.html') : 'options/options.html';
+              await api.tabs.create({ url });
+              return;
+            }
+            throw err;
+          }
+        } else if (api.tabs?.create) {
+          const url = api.runtime?.getURL ? api.runtime.getURL('options/options.html') : 'options/options.html';
+          await api.tabs.create({ url });
+        } else {
+          throw new Error('Neither browser.runtime.openOptionsPage nor browser.tabs.create is available');
+        }
       }
     };
 
