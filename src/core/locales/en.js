@@ -31,7 +31,7 @@ export default {
     retroactiveLabel: 'Add hide rule and clean up existing {count} history records',
     hideAndClean: 'Hide & Clean',
     hideAndCleanWithRule: 'Hide & Clean ({rule})',
-    cleanOnly: 'Delete {count} items only',
+    cleanOnly: 'Delete ({count})',
     cleanOnlyTitle: 'Clean matched history only without adding rules',
     footerLink: '🔍 Batch Delete by Search / Manage Rules ({count})',
     toastSilentExit: 'Exited Silent Mode; normal recording resumed',
