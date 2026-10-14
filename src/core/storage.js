@@ -260,3 +260,72 @@ export async function exportRules() {
   };
   return JSON.stringify(exportPayload, null, 2);
 }
+
+/**
+ * 默认偏好配置项
+ */
+export const DEFAULT_SETTINGS = {
+  enableHitTracking: true,       // 是否统计规则拦截次数
+  silentModeDuration: 30,        // 默认静默模式时长 (分钟)
+  historyBatchSize: 100,         // 历史大扫除单批次加载条数 (50 | 100 | 200)
+  deleteChunkSize: 30,           // 批量删除并发分片大小 (15 | 30 | 50)
+  defaultRuleType: 'auto',       // 快捷添加规则识别模式 ('auto' | 'domain' | 'path')
+  confirmDeepClean: true,        // 流式全量清空前二次确认
+  toastDuration: 2500            // Toast 消息停留时长 (ms)
+};
+
+/**
+ * 获取全局设置（与默认配置合并）
+ * @returns {Promise<typeof DEFAULT_SETTINGS>}
+ */
+export async function getSettings() {
+  const data = await browserApi.storage.get([STORAGE_KEYS.SETTINGS]);
+  const stored = data[STORAGE_KEYS.SETTINGS];
+  return {
+    ...DEFAULT_SETTINGS,
+    ...(typeof stored === 'object' && stored !== null ? stored : {})
+  };
+}
+
+/**
+ * 保存全局偏好设置
+ * @param {Partial<typeof DEFAULT_SETTINGS>} partialSettings
+ * @returns {Promise<typeof DEFAULT_SETTINGS>}
+ */
+export async function saveSettings(partialSettings) {
+  const current = await getSettings();
+  const updated = {
+    ...current,
+    ...partialSettings
+  };
+  await browserApi.storage.set({
+    [STORAGE_KEYS.SETTINGS]: updated
+  });
+  return updated;
+}
+
+/**
+ * 一键清空所有规则的拦截计数
+ * @returns {Promise<number>} 受影响的规则数
+ */
+export async function resetRuleHits() {
+  const currentRules = await getRules();
+  let updatedCount = 0;
+  currentRules.forEach(rule => {
+    if (rule.hits && rule.hits > 0) {
+      rule.hits = 0;
+      updatedCount++;
+    }
+  });
+  await saveRules(currentRules);
+  return updatedCount;
+}
+
+/**
+ * 一键清空所有已配置的防护规则
+ * @returns {Promise<void>}
+ */
+export async function clearAllRules() {
+  await saveRules([]);
+}
+

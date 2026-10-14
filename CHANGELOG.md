@@ -4,6 +4,35 @@
 
 ---
 
+## [1.0.5] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **Options 控制台新增第三 Tab「高级偏好设置」**：
+   - 在左侧侧边栏引入第三个核心导航 Tab「高级偏好设置」（配备精致矢量齿轮 SVG 图标与独立面板），实现主从 Tab 架构完整闭环与持久化记忆。
+2. **拦截命中统计与极致无痕隐私控制**：
+   - 增加「统计规则拦截命中次数」开关（`enableHitTracking`）：支持用户按需开启或彻底关闭命中统计。开启时在规则列表中显示拦截次数；关闭后处于极致无痕状态，底层自动物理抹除历史但不落盘任何拦截痕迹，满足极致隐私偏好。
+   - 增加「重置所有规则拦截计数」功能，支持一键清空所有规则的累计计数器。
+3. **规则备份与数据迁移整合**：
+   - 将原规则列表头部的 JSON 导出与导入功能完整迁移整合至设置页面，并重构增强：
+     - 支持导出标准格式的 JSON 规则备份；
+     - 导入时支持「合并导入（保留现有规则）」与「覆盖导入（完全替换已有规则）」双重模式；
+     - 危险区域增设「清空所有防护规则」，提供严谨的二次确认防护机制。
+4. **全面扩展前后台运行与交互偏好项**：
+   - **默认静默免记录时长**：支持设置快捷开启静默模式的生效时长（15/30/60/120 分钟），Popup 与 Options 全局自适应。
+   - **快捷搜索词转规则策略**：支持指定“删除并加入永久隐藏”时的缺省策略（智能识别 / 强制域名 / 强制路径）。
+   - **海量历史检索性能与安全防护**：开放单批次游标拉取条数（50/100/200 条）、并发切片大小（15/30/50 条）及流式全量清空二次确认开关。
+   - **界面交互与反馈**：支持自定义右下角 Toast 提示停留时长（1.5s/2.5s/4.0s）。
+
+### 变更明细 (Detailed Changes)
+- `feat(storage)`: 在 `src/core/storage.js` 中新增 `DEFAULT_SETTINGS`、`getSettings`、`saveSettings`、`resetRuleHits` 与 `clearAllRules` 存储管理函数。
+- `feat(background)`: 在 `src/background/index.js` 中加入设置缓存，动态读取 `enableHitTracking` 控制是否累计拦截计数。
+- `feat(popup)`: 在 `src/popup/popup.js` 中应用设置中的 `silentModeDuration` 预设时长。
+- `feat(options)`: 在 `src/options/options.html` 中增加「高级偏好设置」Tab 按钮与 5 大功能分组卡片。
+- `style(options)`: 在 `src/options/options.css` 中增加设置卡片体系、分组标题、下拉选择控件与响应式滚动布局。
+- `feat(options)`: 在 `src/options/options.js` 中接入 `switchTab('settings')`、设置表单双向绑定即时存储、JSON 备份与恢复全流程、清空与重置交互。
+
+---
+
 ## [1.0.4] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

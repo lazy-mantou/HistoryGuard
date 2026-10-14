@@ -12,7 +12,8 @@ import {
   addRule,
   getSilentMode,
   setSilentMode,
-  clearSilentMode
+  clearSilentMode,
+  getSettings
 } from '../core/storage.js';
 
 // DOM 元素引用
@@ -299,8 +300,10 @@ elements.btnSilentMode.addEventListener('click', async () => {
     await clearSilentMode();
     showToast('已退出静默模式，恢复正常记录');
   } else {
-    await setSilentMode(30);
-    showToast('已开启静默免记录模式 (30分钟)');
+    const settings = await getSettings();
+    const duration = settings.silentModeDuration || 30;
+    await setSilentMode(duration);
+    showToast(`已开启静默免记录模式 (${duration}分钟)`);
   }
   await updateSilentModeState();
 });

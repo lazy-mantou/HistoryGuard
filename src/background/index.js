@@ -11,12 +11,15 @@ import {
   getSilentMode,
   clearSilentMode,
   incrementRuleHits,
+  getSettings,
+  DEFAULT_SETTINGS,
   STORAGE_KEYS
 } from '../core/storage.js';
 
-// 内存中缓存已启用的规则与静默模式，保证在 onVisited 高频触发时毫秒级响应
+// 内存中缓存已启用的规则、静默模式与运行设置，保证在 onVisited 高频触发时毫秒级响应
 let cachedRules = [];
 let cachedSilentUntil = 0;
+let cachedSettings = { ...DEFAULT_SETTINGS };
 
 /**
  * 刷新后台内存缓存
@@ -28,6 +31,8 @@ async function refreshCache() {
 
     const silent = await getSilentMode();
     cachedSilentUntil = silent.active ? silent.until : 0;
+
+    cachedSettings = await getSettings();
   } catch (err) {
     console.error('[HistGuard BG] 刷新缓存失败:', err);
   }
@@ -36,9 +41,13 @@ async function refreshCache() {
 // 1. 初始化加载缓存
 refreshCache();
 
-// 2. 监听存储变化，实时同步最新规则与静默状态
+// 2. 监听存储变化，实时同步最新规则、静默状态与配置偏好
 browserApi.storage.onChanged((changes) => {
-  if (changes[STORAGE_KEYS.RULES] || changes[STORAGE_KEYS.SILENT_MODE]) {
+  if (
+    changes[STORAGE_KEYS.RULES] ||
+    changes[STORAGE_KEYS.SILENT_MODE] ||
+    changes[STORAGE_KEYS.SETTINGS]
+  ) {
     refreshCache();
   }
 });
@@ -92,8 +101,10 @@ browserApi.history.onVisited(async (historyItem) => {
     try {
       // 立即物理删除
       await browserApi.history.deleteUrl(visitUrl);
-      // 累加拦截命中计数
-      await incrementRuleHits(rule.id);
+      // 累加拦截命中计数（根据用户偏好设置控制是否记录，支持极致无痕）
+      if (cachedSettings.enableHitTracking !== false) {
+        await incrementRuleHits(rule.id);
+      }
       console.log(`[HistGuard BG] 命中规则 [${rule.pattern}]，已成功抹除历史:`, visitUrl);
     } catch (err) {
       console.error('[HistGuard BG] 执行删除或命中统计失败:', err);

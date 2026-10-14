@@ -15,6 +15,11 @@ import {
   getSilentMode,
   exportRules,
   importRules,
+  getSettings,
+  saveSettings,
+  resetRuleHits,
+  clearAllRules,
+  DEFAULT_SETTINGS,
   STORAGE_KEYS
 } from '../core/storage.js';
 
@@ -29,6 +34,7 @@ const elements = {
   navTabs: document.querySelectorAll('.nav-tab'),
   panelHistory: document.getElementById('panel-history'),
   panelRules: document.getElementById('panel-rules'),
+  panelSettings: document.getElementById('panel-settings'),
   tabRulesBadge: document.getElementById('tab-rules-badge'),
   tabHistoryBadge: document.getElementById('tab-history-badge'),
 
@@ -61,22 +67,42 @@ const elements = {
   newRuleInput: document.getElementById('new-rule-input'),
   newRuleType: document.getElementById('new-rule-type'),
   btnAddRule: document.getElementById('btn-add-rule'),
-  btnImportJson: document.getElementById('btn-import-json'),
-  btnExportJson: document.getElementById('btn-export-json'),
-  fileImportInput: document.getElementById('file-import-input'),
   rulesCountSummary: document.getElementById('rules-count-summary'),
   rulesContainer: document.getElementById('rules-container'),
   btnToggleAll: document.getElementById('btn-toggle-all'),
   btnEnableAll: document.getElementById('btn-enable-all'),
   btnClearDisabled: document.getElementById('btn-clear-disabled'),
+  btnGotoSettings: document.getElementById('btn-goto-settings'),
+
+  // 高级偏好设置
+  settingEnableHitTracking: document.getElementById('setting-enable-hit-tracking'),
+  btnResetHits: document.getElementById('btn-reset-hits'),
+  btnSettingsExportJson: document.getElementById('btn-settings-export-json'),
+  btnSettingsImportJson: document.getElementById('btn-settings-import-json'),
+  settingImportMode: document.getElementById('setting-import-mode'),
+  fileSettingsImport: document.getElementById('file-settings-import'),
+  btnClearAllRules: document.getElementById('btn-clear-all-rules'),
+  settingSilentDuration: document.getElementById('setting-silent-duration'),
+  settingDefaultRuleType: document.getElementById('setting-default-rule-type'),
+  settingHistoryBatchSize: document.getElementById('setting-history-batch-size'),
+  settingDeleteChunkSize: document.getElementById('setting-delete-chunk-size'),
+  settingConfirmDeepClean: document.getElementById('setting-confirm-deep-clean'),
+  settingToastDuration: document.getElementById('setting-toast-duration'),
 
   // 全局 Toast
   toast: document.getElementById('toast')
 };
 
-// 状态与配置常量
-const BATCH_SIZE = 100; // 每次游标拉取批次大小，防止巨量 IPC 传输挤爆内存
-const DELETE_CHUNK_SIZE = 30; // 批量并发删除切片大小，配合时间分片避免主线程与 SQLite 锁死
+// 状态与配置管理
+let currentSettings = { ...DEFAULT_SETTINGS };
+
+function getBatchSize() {
+  return Number(currentSettings.historyBatchSize) || 100;
+}
+
+function getDeleteChunkSize() {
+  return Number(currentSettings.deleteChunkSize) || 30;
+}
 
 let currentSearchTimeFilter = 'all'; // 'all' | '1h' | 'today' | '7d'
 let searchDebounceTimer = null;
@@ -94,9 +120,10 @@ let isOperatingCleaning = false;
 /**
  * 弹出提示 Toast
  * @param {string} msg
- * @param {number} [duration=2500]
+ * @param {number} [duration]
  */
-function showToast(msg, duration = 2500) {
+function showToast(msg, duration) {
+  const actualDuration = typeof duration === 'number' ? duration : (Number(currentSettings.toastDuration) || 2500);
   if (toastDismissTimer) {
     clearTimeout(toastDismissTimer);
     toastDismissTimer = null;
@@ -106,28 +133,27 @@ function showToast(msg, duration = 2500) {
   toastDismissTimer = setTimeout(() => {
     elements.toast.classList.add('hidden');
     toastDismissTimer = null;
-  }, duration);
+  }, actualDuration);
 }
 
 /**
- * 左侧 Tab 切换控制
- * @param {'history'|'rules'} tabKey
+ * 左侧 Tab 切换控制 (支持 history, rules, settings)
+ * @param {'history'|'rules'|'settings'} tabKey
  */
 function switchTab(tabKey) {
   elements.navTabs.forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabKey);
   });
 
-  if (tabKey === 'history') {
-    elements.panelHistory.classList.remove('hidden');
-    elements.panelHistory.classList.add('active');
-    elements.panelRules.classList.add('hidden');
-    elements.panelRules.classList.remove('active');
-  } else {
-    elements.panelRules.classList.remove('hidden');
-    elements.panelRules.classList.add('active');
-    elements.panelHistory.classList.add('hidden');
-    elements.panelHistory.classList.remove('active');
+  elements.panelHistory.classList.toggle('hidden', tabKey !== 'history');
+  elements.panelHistory.classList.toggle('active', tabKey === 'history');
+
+  elements.panelRules.classList.toggle('hidden', tabKey !== 'rules');
+  elements.panelRules.classList.toggle('active', tabKey === 'rules');
+
+  if (elements.panelSettings) {
+    elements.panelSettings.classList.toggle('hidden', tabKey !== 'settings');
+    elements.panelSettings.classList.toggle('active', tabKey === 'settings');
   }
 
   try {
@@ -143,6 +169,12 @@ elements.navTabs.forEach(tab => {
     switchTab(tab.dataset.tab);
   });
 });
+
+if (elements.btnGotoSettings) {
+  elements.btnGotoSettings.addEventListener('click', () => {
+    switchTab('settings');
+  });
+}
 
 /**
  * 计算时间过滤起始时间戳
@@ -216,7 +248,14 @@ async function refreshGlobalStats() {
   const totalHits = cachedRules.reduce((sum, r) => sum + (r.hits || 0), 0);
 
   elements.statActiveRules.textContent = activeCount;
-  elements.statTotalHits.textContent = totalHits;
+
+  if (currentSettings.enableHitTracking === false) {
+    elements.statTotalHits.textContent = `${totalHits} (已停用)`;
+    elements.statTotalHits.title = '统计已在设置中停用，命中规则时不记录新拦截次数';
+  } else {
+    elements.statTotalHits.textContent = totalHits;
+    elements.statTotalHits.title = '所有规则累计物理拦截并抹除的访问次数';
+  }
 
   if (elements.tabRulesBadge) {
     elements.tabRulesBadge.textContent = cachedRules.length;
@@ -320,11 +359,13 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
   elements.btnLoadMore.disabled = true;
   elements.loadMoreText.textContent = '正在检索历史数据...';
 
+  const batchSize = getBatchSize();
+
   try {
     const searchParams = {
       text: query,
       startTime,
-      maxResults: BATCH_SIZE
+      maxResults: batchSize
     };
 
     if (cursorEndTime > 0) {
@@ -338,7 +379,7 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     });
 
     // 如果接口返回条数小于请求批次大小，说明历史记录已全部检索完毕
-    if (!rawResults || rawResults.length < BATCH_SIZE) {
+    if (!rawResults || rawResults.length < batchSize) {
       hasMoreHistory = false;
     }
 
@@ -370,7 +411,7 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
         elements.loadMoreSection.classList.remove('hidden');
         elements.noMoreHint.classList.add('hidden');
         elements.btnLoadMore.disabled = false;
-        elements.loadMoreText.textContent = `加载下一批历史记录 (${BATCH_SIZE} 条)...`;
+        elements.loadMoreText.textContent = `加载下一批历史记录 (${batchSize} 条)...`;
       } else {
         elements.loadMoreSection.classList.add('hidden');
         elements.noMoreHint.classList.remove('hidden');
@@ -426,10 +467,11 @@ async function deleteUrlsWithProgress(urls, title = '正在批量清理历史...
 
   const total = urls.length;
   let processed = 0;
+  const chunkSize = getDeleteChunkSize();
 
   try {
-    for (let i = 0; i < total; i += DELETE_CHUNK_SIZE) {
-      const chunk = urls.slice(i, i + DELETE_CHUNK_SIZE);
+    for (let i = 0; i < total; i += chunkSize) {
+      const chunk = urls.slice(i, i + chunkSize);
       await Promise.allSettled(chunk.map(url => browserApi.history.deleteUrl(url)));
       processed += chunk.length;
 
@@ -464,8 +506,10 @@ async function streamCleanAllMatches() {
     return;
   }
 
-  const confirmed = window.confirm(`确认要全量清理所有与 "${query}" 匹配的历史记录吗？\n即使包含数万甚至数十万条，系统也将以流式低内存分块方式彻底清空。`);
-  if (!confirmed) return;
+  if (currentSettings.confirmDeepClean !== false) {
+    const confirmed = window.confirm(`确认要全量清理所有与 "${query}" 匹配的历史记录吗？\n即使包含数万甚至数十万条，系统也将以流式低内存分块方式彻底清空。`);
+    if (!confirmed) return;
+  }
 
   if (isOperatingCleaning) {
     showToast('已有清理任务正在执行中，请稍候...');
@@ -481,6 +525,7 @@ async function streamCleanAllMatches() {
   const startTime = getStartTimeByFilter(currentSearchTimeFilter);
   let totalDeleted = 0;
   const STREAM_BATCH_SIZE = 200;
+  const chunkSize = getDeleteChunkSize();
 
   try {
     while (true) {
@@ -499,8 +544,8 @@ async function streamCleanAllMatches() {
       }
 
       // 分块删除
-      for (let i = 0; i < validUrls.length; i += DELETE_CHUNK_SIZE) {
-        const chunk = validUrls.slice(i, i + DELETE_CHUNK_SIZE);
+      for (let i = 0; i < validUrls.length; i += chunkSize) {
+        const chunk = validUrls.slice(i, i + chunkSize);
         await Promise.allSettled(chunk.map(url => browserApi.history.deleteUrl(url)));
         totalDeleted += chunk.length;
         elements.progressStatusText.textContent = `流式全量清理中... 已清理 ${totalDeleted} 条历史`;
@@ -637,7 +682,9 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
     return;
   }
 
-  const { pattern, type } = convertSearchTermToRule(searchTerm);
+  const preferredType = currentSettings.defaultRuleType === 'auto' ? undefined : currentSettings.defaultRuleType;
+  const { pattern, type: detectedType } = convertSearchTermToRule(searchTerm);
+  const actualType = preferredType || detectedType;
   if (!pattern) {
     showToast('无法将该搜索词转换为有效规则表达式');
     return;
@@ -645,7 +692,7 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
 
   try {
     // 1. 添加为永久规则
-    const { rule, isNew } = await addRule({ pattern, type, enabled: true });
+    const { rule, isNew } = await addRule({ pattern, type: actualType, enabled: true });
 
     // 2. 分块删除记录
     let deletedCount = 0;
@@ -803,56 +850,203 @@ if (elements.btnClearDisabled) {
   });
 }
 
-// JSON 导出
-elements.btnExportJson.addEventListener('click', async () => {
-  try {
-    const jsonStr = await exportRules();
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const dateStr = new Date().toISOString().slice(0, 10);
+/* ==========================================================================
+   高级偏好设置管理 (拦截统计、数据迁移备份、运行参数)
+   ========================================================================== */
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `histguard-rules-${dateStr}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+/**
+ * 将配置项载入到设置页面控件中
+ */
+async function loadSettingsToUI() {
+  currentSettings = await getSettings();
 
-    showToast('规则已成功导出为 JSON 文件');
-  } catch (err) {
-    showToast(`导出失败: ${err.message}`);
+  if (elements.settingEnableHitTracking) {
+    elements.settingEnableHitTracking.checked = currentSettings.enableHitTracking !== false;
   }
-});
+  if (elements.settingSilentDuration) {
+    elements.settingSilentDuration.value = String(currentSettings.silentModeDuration || 30);
+  }
+  if (elements.settingDefaultRuleType) {
+    elements.settingDefaultRuleType.value = currentSettings.defaultRuleType || 'auto';
+  }
+  if (elements.settingHistoryBatchSize) {
+    elements.settingHistoryBatchSize.value = String(currentSettings.historyBatchSize || 100);
+  }
+  if (elements.settingDeleteChunkSize) {
+    elements.settingDeleteChunkSize.value = String(currentSettings.deleteChunkSize || 30);
+  }
+  if (elements.settingConfirmDeepClean) {
+    elements.settingConfirmDeepClean.checked = currentSettings.confirmDeepClean !== false;
+  }
+  if (elements.settingToastDuration) {
+    elements.settingToastDuration.value = String(currentSettings.toastDuration || 2500);
+  }
+}
 
-// JSON 导入
-elements.btnImportJson.addEventListener('click', () => {
-  elements.fileImportInput.value = '';
-  elements.fileImportInput.click();
-});
+// 绑定设置变更事件并即时持久化
+if (elements.settingEnableHitTracking) {
+  elements.settingEnableHitTracking.addEventListener('change', async () => {
+    const val = elements.settingEnableHitTracking.checked;
+    await saveSettings({ enableHitTracking: val });
+    currentSettings.enableHitTracking = val;
+    showToast(val ? '已开启拦截命中统计' : '已停用拦截命中统计（极致无痕）');
+    await refreshGlobalStats();
+  });
+}
 
-elements.fileImportInput.addEventListener('change', (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+if (elements.btnResetHits) {
+  elements.btnResetHits.addEventListener('click', async () => {
+    const ok = window.confirm('确认要将当前所有规则的拦截命中次数清零吗？此操作不影响规则的启用状态。');
+    if (!ok) return;
 
-  const reader = new FileReader();
-  reader.onload = async (event) => {
     try {
-      const content = event.target?.result;
-      const { importedCount, totalCount } = await importRules(content, 'merge');
-      showToast(`导入成功：新增 ${importedCount} 条规则，当前共 ${totalCount} 条`);
+      const resetCount = await resetRuleHits();
+      showToast(`已成功重置 ${resetCount} 条规则的拦截计数为 0`);
       await refreshRulesList();
     } catch (err) {
-      showToast(`导入失败: ${err.message}`);
+      showToast(`重置失败: ${err.message}`);
     }
-  };
-  reader.readAsText(file);
-});
+  });
+}
+
+// 设置页：规则 JSON 导出
+if (elements.btnSettingsExportJson) {
+  elements.btnSettingsExportJson.addEventListener('click', async () => {
+    try {
+      const jsonStr = await exportRules();
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const dateStr = new Date().toISOString().slice(0, 10);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `histguard-rules-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('防护规则已成功导出为 JSON 备份文件');
+    } catch (err) {
+      showToast(`导出失败: ${err.message}`);
+    }
+  });
+}
+
+// 设置页：规则 JSON 导入
+if (elements.btnSettingsImportJson) {
+  elements.btnSettingsImportJson.addEventListener('click', () => {
+    if (elements.fileSettingsImport) {
+      elements.fileSettingsImport.value = '';
+      elements.fileSettingsImport.click();
+    }
+  });
+}
+
+if (elements.fileSettingsImport) {
+  elements.fileSettingsImport.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const mode = elements.settingImportMode ? elements.settingImportMode.value : 'merge';
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result;
+        const { importedCount, totalCount } = await importRules(content, mode);
+        showToast(
+          mode === 'replace'
+            ? `覆盖导入成功：已载入 ${importedCount} 条规则`
+            : `合并导入成功：新增 ${importedCount} 条规则，当前共 ${totalCount} 条`
+        );
+        await refreshRulesList();
+      } catch (err) {
+        showToast(`导入失败: ${err.message}`);
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// 设置页：清空所有规则
+if (elements.btnClearAllRules) {
+  elements.btnClearAllRules.addEventListener('click', async () => {
+    const ok = window.confirm('⚠️ 高危警告：确定要清空本地所有防护规则吗？\n清空后将无法找回，建议先导出 JSON 备份。');
+    if (!ok) return;
+
+    try {
+      await clearAllRules();
+      showToast('已清空全部防护规则');
+      await refreshRulesList();
+    } catch (err) {
+      showToast(`清空失败: ${err.message}`);
+    }
+  });
+}
+
+// 偏好下拉框即时保存
+if (elements.settingSilentDuration) {
+  elements.settingSilentDuration.addEventListener('change', async () => {
+    const val = Number(elements.settingSilentDuration.value) || 30;
+    await saveSettings({ silentModeDuration: val });
+    currentSettings.silentModeDuration = val;
+    showToast(`默认静默模式时长已更新为 ${val} 分钟`);
+  });
+}
+
+if (elements.settingDefaultRuleType) {
+  elements.settingDefaultRuleType.addEventListener('change', async () => {
+    const val = elements.settingDefaultRuleType.value;
+    await saveSettings({ defaultRuleType: val });
+    currentSettings.defaultRuleType = val;
+    showToast('快捷转规则策略已更新');
+  });
+}
+
+if (elements.settingHistoryBatchSize) {
+  elements.settingHistoryBatchSize.addEventListener('change', async () => {
+    const val = Number(elements.settingHistoryBatchSize.value) || 100;
+    await saveSettings({ historyBatchSize: val });
+    currentSettings.historyBatchSize = val;
+    showToast(`单批次加载条数已设为 ${val} 条`);
+  });
+}
+
+if (elements.settingDeleteChunkSize) {
+  elements.settingDeleteChunkSize.addEventListener('change', async () => {
+    const val = Number(elements.settingDeleteChunkSize.value) || 30;
+    await saveSettings({ deleteChunkSize: val });
+    currentSettings.deleteChunkSize = val;
+    showToast(`并发删除切片已设为 ${val} 条/批`);
+  });
+}
+
+if (elements.settingConfirmDeepClean) {
+  elements.settingConfirmDeepClean.addEventListener('change', async () => {
+    const val = elements.settingConfirmDeepClean.checked;
+    await saveSettings({ confirmDeepClean: val });
+    currentSettings.confirmDeepClean = val;
+    showToast(val ? '已开启流式全量清空二次确认' : '已关闭流式全量清空二次确认');
+  });
+}
+
+if (elements.settingToastDuration) {
+  elements.settingToastDuration.addEventListener('change', async () => {
+    const val = Number(elements.settingToastDuration.value) || 2500;
+    await saveSettings({ toastDuration: val });
+    currentSettings.toastDuration = val;
+    showToast(`提示浮层时长已更新为 ${(val / 1000).toFixed(1)} 秒`);
+  });
+}
 
 // 监听跨页面存储变更，实现多窗口实时同步
-browserApi.storage.onChanged((changes) => {
+browserApi.storage.onChanged(async (changes) => {
   if (changes[STORAGE_KEYS.RULES] || changes[STORAGE_KEYS.SILENT_MODE]) {
-    refreshRulesList();
+    await refreshRulesList();
+  }
+  if (changes[STORAGE_KEYS.SETTINGS]) {
+    await loadSettingsToUI();
+    await refreshGlobalStats();
   }
 });
 
@@ -861,16 +1055,17 @@ browserApi.storage.onChanged((changes) => {
    ========================================================================== */
 
 async function initOptions() {
-  // 恢复先前激活的 Tab 状态
+  // 恢复先前激活的 Tab 状态 (支持 history, rules, settings)
   try {
     const savedTab = localStorage.getItem('histguard_active_options_tab');
-    if (savedTab && (savedTab === 'history' || savedTab === 'rules')) {
+    if (savedTab && (savedTab === 'history' || savedTab === 'rules' || savedTab === 'settings')) {
       switchTab(savedTab);
     }
   } catch (err) {
     console.warn('Init tab state notice:', err);
   }
 
+  await loadSettingsToUI();
   await refreshRulesList();
   await fetchHistoryBatch({ isReset: true });
 }
