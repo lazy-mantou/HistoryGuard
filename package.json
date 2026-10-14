@@ -4,6 +4,8 @@
   "description": "轻量级跨浏览器历史记录管理与自动隐藏插件 (Chrome / Firefox)",
   "type": "module",
   "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage tests/*.test.js",
     "build": "node build.js"
   },
   "keywords": [

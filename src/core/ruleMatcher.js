@@ -163,9 +163,12 @@ export function convertSearchTermToRule(searchTerm) {
     // 若以斜杠结尾但不是通配符，追加通配符
     if (cleanTerm.endsWith('/')) {
       cleanTerm += '*';
-    } else if (!cleanTerm.endsWith('*') && !cleanTerm.includes('.')) {
-      // 如 github.com/user 追加 /*
-      cleanTerm += '/*';
+    } else if (!cleanTerm.endsWith('*')) {
+      const pathPart = cleanTerm.slice(cleanTerm.indexOf('/'));
+      // 如 github.com/user (路径无文件扩展名) 追加 /*
+      if (!pathPart.includes('.')) {
+        cleanTerm += '/*';
+      }
     }
     return {
       pattern: cleanTerm,

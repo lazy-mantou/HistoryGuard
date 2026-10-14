@@ -4,6 +4,55 @@
 
 ---
 
+## [1.0.9] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **全套自动化单元测试用例体系构建 (Zero-Dependency Modern Test Suite)**：
+   - **痛点与需求**：项目中缺乏覆盖核心逻辑的单元测试用例，无法对规则匹配算法、URL 拆解机制、本地存储与配置管理、多语言翻译引擎及跨内核 Adapter 契约进行自动化回归验证。
+   - **架构设计与零依赖原则**：
+     - 基于现代 Node.js 原生测试运行器 (`node:test` 与 `node:assert/strict`)，不引入任何第三方 npm 依赖，保持纯净的零第三方构建体系；
+     - 在根目录下建立独立的 `tests/` 测试套件目录，划分 5 大专用测试模块与统一入口运行器。
+2. **多语言 i18n 完整性与动态驱动测试 (`tests/i18n.test.js` - 18 个测试)**：
+   - **字典全量叶子对等性检验 (Locale Parity)**：递归扫描并比对 `zh-CN.js` 与 `en.js` 的所有键路径，确保 100% 双向对等无任何遗漏翻译；
+   - **语言环境解析算法**：验证 `resolveLanguage('auto')` 对各类中文变体（zh-TW, zh-HK, zh）自动归一为 `zh-CN`，其他语言默认降级为 `en`；
+   - **模板插值与容错机制**：测试深层嵌套键解析、`{param}` 模板变量插值替换、缺失键自动降级返回 key 字符串；
+   - **胶囊标签与时间格式化**：验证 `localizeCapsule` 域名与路径通配规则的中英转换，以及 `formatRelativeTime` 在各时间段的格式化表达；
+   - **DOM 模板渲染模拟**：通过 Mock DOM 验证 `applyI18nToDOM` 正确解析并写入 `data-i18n`、`data-i18n-placeholder`、`data-i18n-title`、`data-i18n-aria-label` 及 HTML lang 属性。
+3. **URL 拆解与多级公用后缀算法测试 (`tests/urlParser.test.js` - 15 个测试)**：
+   - **协议有效性过滤**：验证对非 HTTP/HTTPS 协议（chrome://, file://, about:blank 等）的安全拒绝；
+   - **多级顶级域名识别**：验证 `.com.cn`, `.co.uk`, `.gov.hk`, `.co.jp` 等复合公用后缀及 IPv4/IPv6/localhost 的精确解析；
+   - **候选规则递进生成**：验证完整域名、二级子域通配、根域名全站通配、精确页面路径与逐层上级目录通配候选列表的完备性。
+4. **规则匹配引擎与边界防误杀测试 (`tests/ruleMatcher.test.js` - 16 个测试)**：
+   - **精确域名边界匹配与防误杀**：验证目标域名匹配其本身及任意子域，严格防止包含目标子串的第三方类似域名（如 mygoogle.com, google.com.cn）被误杀；
+   - **路径与通配符解析**：验证精确页面路径与带有 `*` 通配符的路由级匹配；
+   - **智能搜索词规则化**：验证将用户输入的搜索关键词智能转换为规范的路径与域名隐藏规则，并修复路径检测中域名 dot 干扰通配符追加的边界 Bug。
+5. **规则与配置存储管理器测试 (`tests/storage.test.js` - 16 个测试)**：
+   - 注入全真内存模拟的 Chrome 存储与 Alarms 定时器环境；
+   - 验证规则的增删改查、启用状态反转、命中次数累加与重置清零；
+   - 验证静默模式生命周期、倒计时计算及过期自动清理重置；
+   - 验证规则的 JSON 导入（merge 模式去重合并 / replace 模式全量替换）与规范导出；
+   - 验证全局偏好设置的增量合并保存与默认值回退。
+6. **浏览器 Adapter 接口规范测试 (`tests/adapters.test.js` - 8 个测试)**：
+   - 验证 `IBrowserAdapter` 抽象基类的接口规范约束与未实现异常保护；
+   - 验证 `ChromiumAdapter` 与 `FirefoxAdapter` 契约完整性及无环境时的安全拦截；
+   - 验证统一单例 `browserApi` 的工厂实例导出。
+7. **自动化测试执行指令集成**：
+   - 在 `package.json` 中配置 `"test": "node --test tests/*.test.js"` 与 `"test:coverage": "node --test --experimental-test-coverage tests/*.test.js"`；
+   - 提供独立彩色终端执行脚本 `tests/run-all.js`；
+   - 全套 73 个测试用例全部通过，测试覆盖率超 90%。
+
+### 变更明细 (Detailed Changes)
+- `test(urlParser)`: 新增 `tests/urlParser.test.js` 覆盖 URL 协议校验、多级顶级域名识别、域名与路径规则拆解（15 个测试）。
+- `test(ruleMatcher)`: 新增 `tests/ruleMatcher.test.js` 覆盖防误杀边界正则、通配符路径匹配与搜索词转换（16 个测试）。
+- `fix(ruleMatcher)`: 修复 `convertSearchTermToRule` 中路径是否含文件扩展名的判断逻辑，防止域名自身的点号阻断 `/*` 通配符自动补齐。
+- `test(storage)`: 新增 `tests/storage.test.js` 覆盖规则 CRUD、拦截计数、静默模式与 Alarms 管理、导入导出与偏好设置（16 个测试）。
+- `test(i18n)`: 新增 `tests/i18n.test.js` 覆盖双语字典对等性、语言自动嗅探、动态插值、相对时间与 DOM 模板替换（18 个测试）。
+- `test(adapters)`: 新增 `tests/adapters.test.js` 覆盖适配器抽象基类与 Chromium / Firefox 契约实现（8 个测试）。
+- `test(runner)`: 新增 `tests/run-all.js` 统一终端测试套件执行入口。
+- `chore(package)`: 在 `package.json` 中配置 `test` 与 `test:coverage` 自动化脚本命令。
+
+---
+
 ## [1.0.8] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
