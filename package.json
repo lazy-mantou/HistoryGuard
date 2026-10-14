@@ -1,0 +1,19 @@
+{
+  "name": "histguard",
+  "version": "1.0.0",
+  "description": "轻量级跨浏览器历史记录管理与自动隐藏插件 (Chrome / Firefox)",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": [
+    "browser-extension",
+    "webextension",
+    "history-cleaner",
+    "privacy",
+    "chrome",
+    "firefox"
+  ],
+  "author": "HistGuard Team",
+  "license": "MIT"
+}
