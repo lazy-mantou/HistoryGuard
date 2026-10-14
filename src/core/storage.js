@@ -215,7 +215,7 @@ export async function importRules(jsonString, mode = 'merge') {
       validRules.push({
         id: item.id || `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         pattern,
-        type: item.type === 'path' ? 'path' : 'domain',
+        type: item.type === 'keyword' ? 'keyword' : (item.type === 'path' ? 'path' : 'domain'),
         enabled: item.enabled !== false,
         hits: typeof item.hits === 'number' ? item.hits : 0,
         createdAt: item.createdAt || Date.now()
@@ -271,7 +271,7 @@ export const DEFAULT_SETTINGS = {
   silentModeDuration: 30,        // 默认静默模式时长 (分钟)
   historyBatchSize: 100,         // 历史批量删除单批次加载条数 (50 | 100 | 200)
   deleteChunkSize: 30,           // 批量删除并发分片大小 (15 | 30 | 50)
-  defaultRuleType: 'auto',       // 快捷添加规则识别模式 ('auto' | 'domain' | 'path')
+  defaultRuleType: 'auto',       // 快捷添加规则识别模式 ('auto' | 'domain' | 'path' | 'keyword')
   confirmDeepClean: true,        // 流式全量清空前二次确认
   toastDuration: 2500            // Toast 消息停留时长 (ms)
 };

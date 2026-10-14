@@ -93,6 +93,20 @@ describe('storage - 规则增删改查与计数', () => {
     assert.strictEqual(list[0].pattern, 'twitter.com');
   });
 
+  it('应当能正常添加关键词规则 (type: keyword) 并支持纯词自动识别', async () => {
+    const res = await addRule({ pattern: 'xxx', type: 'keyword' });
+    assert.strictEqual(res.isNew, true);
+    assert.strictEqual(res.rule.pattern, 'xxx');
+    assert.strictEqual(res.rule.type, 'keyword');
+
+    // 自动识别测试：未指定 type 时，纯词自动识别为 keyword
+    const autoRes = await addRule({ pattern: 'secret_token' });
+    assert.strictEqual(autoRes.rule.type, 'keyword');
+
+    const list = await getRules();
+    assert.strictEqual(list.length, 2);
+  });
+
   it('添加重复规则时应当更新并重新激活，不产生重复条目', async () => {
     const r1 = await addRule({ pattern: 'weibo.com', enabled: false });
     assert.strictEqual(r1.isNew, true);

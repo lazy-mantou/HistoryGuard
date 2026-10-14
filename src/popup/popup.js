@@ -270,7 +270,7 @@ async function refreshPageData() {
   });
 
   // 3. 检查当前 URL 是否已命中现有启用规则
-  const { matched, rule } = findMatchingRule(existingRules, currentTab.url);
+  const { matched, rule } = findMatchingRule(existingRules, currentTab);
 
   if (matched && rule) {
     elements.tabStatusBadge.className = 'badge badge-matched';

@@ -738,7 +738,15 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
   }
 
   const preferredType = currentSettings.defaultRuleType === 'auto' ? undefined : currentSettings.defaultRuleType;
-  const { pattern, type: detectedType } = convertSearchTermToRule(searchTerm);
+  let pattern, detectedType;
+  if (preferredType === 'keyword') {
+    pattern = searchTerm;
+    detectedType = 'keyword';
+  } else {
+    const converted = convertSearchTermToRule(searchTerm);
+    pattern = converted.pattern;
+    detectedType = converted.type;
+  }
   const actualType = preferredType || detectedType;
   if (!pattern) {
     showToast(t('options.toastImportFailed', { error: 'Invalid pattern' }));
@@ -797,9 +805,17 @@ async function refreshRulesList() {
     row.className = `rule-row ${rule.enabled === false ? 'disabled' : ''}`;
     row.dataset.id = rule.id;
 
-    const isDomain = rule.type === 'domain';
-    const typeLabel = isDomain ? t('options.tagDomain') : t('options.tagPath');
-    const typeClass = isDomain ? 'type-domain' : 'type-path';
+    let typeLabel, typeClass;
+    if (rule.type === 'keyword') {
+      typeLabel = t('options.tagKeyword');
+      typeClass = 'type-keyword';
+    } else if (rule.type === 'path') {
+      typeLabel = t('options.tagPath');
+      typeClass = 'type-path';
+    } else {
+      typeLabel = t('options.tagDomain');
+      typeClass = 'type-domain';
+    }
     const hitsText = t('options.ruleHitsCount', { count: rule.hits || 0 });
     const toggleTitle = rule.enabled !== false ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
 

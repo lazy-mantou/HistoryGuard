@@ -4,6 +4,37 @@
 
 ---
 
+## [1.0.18] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **新增跨域关键词防护规则类型 (Keyword Rule Type)**：
+   - **业务背景与设计目标**：
+     - 用户希望支持跨域通用的全局敏感关键词拦截机制：“比如关键词 `xxx`，不管在 `a.com` 还是 `b.com`，只要出现 `xxx` 都可以不记录”。
+     - 原有系统规则仅支持基于特定站点的 `domain`（域名规则）与 `path`（路径规则），无法应对跨域分散的敏感参数或查询词。
+   - **技术方案与实现细节**：
+     - **规则匹配引擎扩展**：在 `ruleMatcher.js` 中新增 `keyword` 规则类型与 `keywordRuleToRegex(pattern)` 正则转换器；
+     - **跨域全量深度匹配**：不论用户访问哪个站点，只要 URL 主机名、路径、查询参数（如 `?q=xxx`）、解码后的百分比编码 URL（如中文关键词 `?q=%E6%B5%8B%E8%AF%95`）或页面标题中出现该关键词，均判定为命中；
+     - **后台拦截实时联动**：在 `background/index.js` 的 `onVisited` 事件中即时拦截命中，立即物理删除历史记录并统计拦截次数，确保完全无痕；
+     - **智能类型自动推断 (Smart Auto-Detection)**：在 `detectRuleType` 中，若用户未指定类型输入既不含斜杠 `/` 也不含点号 `.` 的纯词（如 `xxx`、`secret`、`password`），系统将自动推断为 `keyword` 类型；
+     - **全局级联覆盖支持**：当存在已启用的关键词规则时，任何包含该关键词的候选域名或路径胶囊将自动判定为 `isCovered: true`（被关键词规则全局覆盖）；
+     - **控制台与设置完整闭环**：在 Options 规则新增表单添加“关键词匹配”选项，规则列表展示专属玫红标签（`关键词` / `Keyword`），设置面板支持快捷搜索词强制转为关键词匹配。
+
+### 变更明细 (Detailed Changes)
+- `feat(core)`:
+  - `src/core/ruleMatcher.js`: 引入 `keyword` 规则类型，新增 `keywordRuleToRegex` 支持纯词与通配符，在 `matchesRule` 中支持 URL 编码解码匹配与标题匹配，在 `computeCandidateStatus` 中加入关键词全局覆盖判定。
+  - `src/core/storage.js`: 在 `importRules` 与 `addRule` 中全面支持持久化与导出 `keyword` 类型规则。
+  - `src/core/locales/zh-CN.js` & `en.js`: 新增 `typeKeyword`、`tagKeyword`、`ruleTypeKeyword` 等中英双语国际化词条，保持 100% 键对等。
+- `feat(options)`:
+  - `options.html`: 在手动新增规则下拉框与快捷转换策略下拉框中新增“关键词匹配”选项；
+  - `options.css`: 新增 `.type-keyword` 玫红徽章色彩规范，适配夜间深色与白天浅色模式；
+  - `options.js`: 渲染 `rule-row` 时支持关键词类型徽标，支持快捷转为关键词匹配规则。
+- `feat(background & popup)`:
+  - `background/index.js`: 在 `onVisited` 拦截触发时将完整的 `historyItem` 传入 `findMatchingRule`，全面支持 URL 与标题的关键词实时抹除。
+  - `popup.js`: 页面加载时以完整标签页信息核对关键词命中状态并实时展示保护徽标。
+- `test`: 新增 9 项针对关键词跨域匹配、大小写不敏感、URL 解码、标题匹配与全局覆盖的单元测试，用例总数扩充至 106 项，全部通过。
+
+---
+
 ## [1.0.17] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

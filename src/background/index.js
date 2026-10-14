@@ -95,7 +95,7 @@ browserApi.history.onVisited(async (historyItem) => {
     cachedRules = allRules.filter(r => r.enabled !== false);
   }
 
-  const { matched, rule } = findMatchingRule(cachedRules, visitUrl);
+  const { matched, rule } = findMatchingRule(cachedRules, historyItem);
 
   if (matched && rule) {
     try {

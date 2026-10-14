@@ -16,11 +16,27 @@ function escapeRegexExceptWildcard(str) {
 /**
  * 自动检测规则表达式类型
  * @param {string} pattern
- * @returns {'domain'|'path'}
+ * @returns {'domain'|'path'|'keyword'}
  */
 export function detectRuleType(pattern) {
   const cleaned = (pattern || '').trim().replace(/^https?:\/\//i, '');
-  return cleaned.includes('/') ? 'path' : 'domain';
+  if (cleaned.includes('/')) return 'path';
+  if (cleaned.includes('.') || cleaned.startsWith('*') || cleaned === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(cleaned)) {
+    return 'domain';
+  }
+  return 'keyword';
+}
+
+/**
+ * 将关键词规则转换为规范的 RegExp 匹配对象
+ * 无论在任何域名或路径下，只要 URL 或标题中出现该关键词即命中
+ * @param {string} pattern
+ * @returns {RegExp}
+ */
+export function keywordRuleToRegex(pattern) {
+  let cleaned = (pattern || '').trim();
+  const regexStr = escapeRegexExceptWildcard(cleaned);
+  return new RegExp(regexStr, 'i');
 }
 
 /**
@@ -69,23 +85,28 @@ export function pathRuleToRegex(pattern) {
 /**
  * 将任意规则转换为匹配器 RegExp
  * @param {string} pattern
- * @param {'domain'|'path'} [type]
+ * @param {'domain'|'path'|'keyword'} [type]
  * @returns {RegExp}
  */
 export function ruleToRegex(pattern, type) {
   const actualType = type || detectRuleType(pattern);
+  if (actualType === 'keyword') {
+    return keywordRuleToRegex(pattern);
+  }
   return actualType === 'path' ? pathRuleToRegex(pattern) : domainRuleToRegex(pattern);
 }
 
 /**
- * 判断指定 URL 是否命中某条具体规则
+ * 判断指定 URL 或条目是否命中某条具体规则
  * @param {string|{pattern: string, type?: string}} rule
- * @param {string} urlString
+ * @param {string|{url: string, title?: string}} target
  * @returns {boolean}
  */
-export function matchesRule(rule, urlString) {
-  if (!urlString || typeof urlString !== 'string') return false;
+export function matchesRule(rule, target) {
+  if (!target) return false;
 
+  const urlString = typeof target === 'string' ? target : target.url;
+  const titleString = typeof target === 'object' ? (target.title || '') : '';
   const pattern = typeof rule === 'string' ? rule : rule?.pattern;
   const type = typeof rule === 'object' ? rule?.type : detectRuleType(pattern);
 
@@ -93,21 +114,32 @@ export function matchesRule(rule, urlString) {
 
   try {
     const regex = ruleToRegex(pattern, type);
-    return regex.test(urlString);
+    if (type === 'keyword') {
+      if (urlString) {
+        if (regex.test(urlString)) return true;
+        try {
+          const decoded = decodeURI(urlString);
+          if (decoded !== urlString && regex.test(decoded)) return true;
+        } catch {}
+      }
+      if (titleString && regex.test(titleString)) return true;
+      return false;
+    }
+    return urlString ? regex.test(urlString) : false;
   } catch (err) {
-    console.error('matchesRule regex test error:', err, { pattern, urlString });
+    console.error('matchesRule regex test error:', err, { pattern, target });
     return false;
   }
 }
 
 /**
- * 在已启用的规则列表中查找命中当前 URL 的规则
+ * 在已启用的规则列表中查找命中当前 URL 或条目的规则
  * @param {Array<Object>} rules
- * @param {string} urlString
+ * @param {string|{url: string, title?: string}} target
  * @returns {{ matched: boolean, rule: Object|null }}
  */
-export function findMatchingRule(rules, urlString) {
-  if (!Array.isArray(rules) || !urlString) {
+export function findMatchingRule(rules, target) {
+  if (!Array.isArray(rules) || !target) {
     return { matched: false, rule: null };
   }
 
@@ -115,7 +147,7 @@ export function findMatchingRule(rules, urlString) {
     // 忽略未启用的规则
     if (rule.enabled === false) continue;
 
-    if (matchesRule(rule, urlString)) {
+    if (matchesRule(rule, target)) {
       return { matched: true, rule };
     }
   }
@@ -132,12 +164,8 @@ export function findMatchingRule(rules, urlString) {
 export function filterHistoryByRule(rule, historyItems) {
   if (!Array.isArray(historyItems) || !rule) return [];
 
-  const pattern = typeof rule === 'string' ? rule : rule.pattern;
-  const type = typeof rule === 'object' ? rule.type : detectRuleType(pattern);
-
   try {
-    const regex = ruleToRegex(pattern, type);
-    return historyItems.filter(item => item && item.url && regex.test(item.url));
+    return historyItems.filter(item => item && matchesRule(rule, item));
   } catch {
     return [];
   }
@@ -252,13 +280,13 @@ export function computeCandidateStatus(candidate, existingRules) {
     if (candType === 'domain') {
       const candNorm = normalizeDomain(candRule);
       const rNorm = normalizeDomain(rPattern);
-      if (candNorm && candNorm === rNorm) {
+      if ((r.type || 'domain') === 'domain' && candNorm && candNorm === rNorm) {
         result.isExactMatch = true;
         result.exactRule = r;
         return result;
       }
     } else {
-      if (candRule === rPattern) {
+      if ((r.type || 'domain') === candType && candRule === rPattern) {
         result.isExactMatch = true;
         result.exactRule = r;
         return result;
@@ -266,7 +294,18 @@ export function computeCandidateStatus(candidate, existingRules) {
     }
   }
 
-  // 2. 层级覆盖判定 (上级父域名或前缀路径已拦截)
+  // 2. 关键词规则全局覆盖判定：只要候选规则字符串中包含了已启用的关键词规则，即判定为被覆盖
+  for (const r of existingRules) {
+    if (r.enabled === false || r.type !== 'keyword') continue;
+    const kwRegex = keywordRuleToRegex(r.pattern);
+    if (kwRegex.test(candRule)) {
+      result.isCovered = true;
+      result.coveringRule = r;
+      return result;
+    }
+  }
+
+  // 3. 层级覆盖判定 (上级父域名或前缀路径已拦截)
   // 用户需求: 例如 aa.bb.cc.dd，当 cc.dd 加入列表后，aa.bb.cc.dd 和 bb.cc.dd 判定为被覆盖变灰且不能选中
   if (candType === 'domain') {
     const candDomain = normalizeDomain(candRule);

@@ -17,7 +17,8 @@ import {
   convertSearchTermToRule,
   normalizeDomain,
   isSubdomainOf,
-  computeCandidateStatus
+  computeCandidateStatus,
+  keywordRuleToRegex
 } from '../src/core/ruleMatcher.js';
 
 describe('ruleMatcher - detectRuleType', () => {
@@ -29,6 +30,11 @@ describe('ruleMatcher - detectRuleType', () => {
     assert.strictEqual(detectRuleType('google.com/search'), 'path');
     assert.strictEqual(detectRuleType('https://github.com/user/*'), 'path');
     assert.strictEqual(detectRuleType('domain.com/'), 'path');
+
+    // 关键词规则自动识别：既无斜杠也无点号的关键词
+    assert.strictEqual(detectRuleType('xxx'), 'keyword');
+    assert.strictEqual(detectRuleType('secret-key'), 'keyword');
+    assert.strictEqual(detectRuleType('password'), 'keyword');
   });
 });
 
@@ -263,5 +269,109 @@ describe('ruleMatcher - computeCandidateStatus (多级域名层级覆盖与状�
     assert.strictEqual(statusP2.isCovered, true);
     assert.strictEqual(statusP2.coveringRule.id, '3');
   });
+
+  it('关键词规则全局覆盖：当候选域名或路径包含已启用的关键词时判定为 isCovered', () => {
+    const rulesWithKw = [
+      ...existingRules,
+      { id: '4', pattern: 'xxx', type: 'keyword', enabled: true }
+    ];
+
+    const candDomainWithKw = { rule: 'xxx.com', type: 'domain' };
+    const statusD = computeCandidateStatus(candDomainWithKw, rulesWithKw);
+    assert.strictEqual(statusD.isCovered, true);
+    assert.strictEqual(statusD.coveringRule.id, '4');
+
+    const candPathWithKw = { rule: 'other.com/search/xxx/detail', type: 'path' };
+    const statusP = computeCandidateStatus(candPathWithKw, rulesWithKw);
+    assert.strictEqual(statusP.isCovered, true);
+    assert.strictEqual(statusP.coveringRule.id, '4');
+  });
 });
+
+describe('ruleMatcher - keywordRuleToRegex & 关键词匹配 (跨域无条件拦截)', () => {
+  const kwRule = { id: 'k1', pattern: 'xxx', type: 'keyword', enabled: true };
+
+  it('无论在 a.com 还是 b.com，只要 URL 出现关键词即命中拦截', () => {
+    // a.com 域名下的搜索参或路径
+    assert.strictEqual(matchesRule(kwRule, 'https://a.com/search?q=xxx'), true);
+    assert.strictEqual(matchesRule(kwRule, 'https://a.com/xxx/articles'), true);
+    // b.com 域名下的子域名或文件
+    assert.strictEqual(matchesRule(kwRule, 'https://xxx.b.com/index.html'), true);
+    assert.strictEqual(matchesRule(kwRule, 'https://sub.b.com/view/xxx'), true);
+    // c.org 任意位置
+    assert.strictEqual(matchesRule(kwRule, 'http://c.org/path?ref=xxx&tag=1'), true);
+  });
+
+  it('URL 中不包含关键词的页面严禁误匹配', () => {
+    assert.strictEqual(matchesRule(kwRule, 'https://a.com/search?q=normal'), false);
+    assert.strictEqual(matchesRule(kwRule, 'https://b.com/home'), false);
+    assert.strictEqual(matchesRule(kwRule, 'https://google.com/test'), false);
+  });
+
+  it('关键词匹配应当大小写不敏感 (case-insensitive)', () => {
+    assert.strictEqual(matchesRule(kwRule, 'https://a.com/XXX'), true);
+    assert.strictEqual(matchesRule(kwRule, 'https://b.com/search?Q=XxX'), true);
+  });
+
+  it('支持百分比 URL 编码自动解码匹配 (如中文关键词)', () => {
+    const chineseKwRule = { id: 'k2', pattern: '测试', type: 'keyword', enabled: true };
+    // 已编码的 URL: %E6%B5%8B%E8%AF%95 = 测试
+    assert.strictEqual(matchesRule(chineseKwRule, 'https://a.com/search?q=%E6%B5%8B%E8%AF%95'), true);
+    // 原生中文 URL
+    assert.strictEqual(matchesRule(chineseKwRule, 'https://b.com/wiki/测试文档'), true);
+    assert.strictEqual(matchesRule(chineseKwRule, 'https://b.com/wiki/其他文档'), false);
+  });
+
+  it('当页面标题包含关键词时也应准确命中', () => {
+    const targetWithTitle = {
+      url: 'https://news.com/post/10086',
+      title: '关于 xxx 的最新技术报道'
+    };
+    assert.strictEqual(matchesRule(kwRule, targetWithTitle), true);
+
+    const targetWithoutTitle = {
+      url: 'https://news.com/post/10086',
+      title: '其他常规新闻报道'
+    };
+    assert.strictEqual(matchesRule(kwRule, targetWithoutTitle), false);
+  });
+
+  it('findMatchingRule 能在混合规则列表中精准识别并返回命中的关键词规则', () => {
+    const mixedRules = [
+      { id: '1', pattern: 'google.com', type: 'domain', enabled: true },
+      { id: '2', pattern: 'github.com/blog/*', type: 'path', enabled: true },
+      { id: '3', pattern: 'xxx', type: 'keyword', enabled: true }
+    ];
+
+    // 在未知域名 b.com 上命中关键词
+    const resB = findMatchingRule(mixedRules, 'https://b.com/articles/xxx-deep-dive');
+    assert.strictEqual(resB.matched, true);
+    assert.strictEqual(resB.rule.id, '3');
+    assert.strictEqual(resB.rule.pattern, 'xxx');
+
+    // 在 a.com 上命中关键词
+    const resA = findMatchingRule(mixedRules, 'https://a.com/search?kw=xxx');
+    assert.strictEqual(resA.matched, true);
+    assert.strictEqual(resA.rule.id, '3');
+
+    // 未命中任何规则
+    const resNone = findMatchingRule(mixedRules, 'https://bing.com/search?q=hello');
+    assert.strictEqual(resNone.matched, false);
+    assert.strictEqual(resNone.rule, null);
+  });
+
+  it('filterHistoryByRule 能够准确按关键词筛选历史记录', () => {
+    const historyList = [
+      { url: 'https://a.com/xxx', title: 'Page A' },
+      { url: 'https://b.com/post', title: 'Title containing xxx keyword' },
+      { url: 'https://c.com/normal', title: 'Regular Page' }
+    ];
+
+    const filtered = filterHistoryByRule(kwRule, historyList);
+    assert.strictEqual(filtered.length, 2);
+    assert.strictEqual(filtered[0].url, 'https://a.com/xxx');
+    assert.strictEqual(filtered[1].url, 'https://b.com/post');
+  });
+});
+
 

@@ -210,13 +210,14 @@
                 id="new-rule-input" 
                 class="text-input" 
                 data-i18n-placeholder="options.newRulePlaceholder"
-                placeholder="输入如 *.example.com 或 www.domain.com/path/*"
+                placeholder="输入域名 (*.domain.com)、路径 (domain.com/path/*) 或关键词 (如 xxx)" 
                 spellcheck="false"
               >
               <select id="new-rule-type" class="type-select">
                 <option value="auto" data-i18n="options.typeAuto">自动类型</option>
                 <option value="domain" data-i18n="options.typeDomain">域名匹配</option>
                 <option value="path" data-i18n="options.typePath">路径匹配</option>
+                <option value="keyword" data-i18n="options.typeKeyword">关键词匹配</option>
               </select>
             </div>
             <button id="btn-add-rule" class="btn btn-primary-add">
@@ -419,9 +420,10 @@
                   </div>
                   <div class="setting-control">
                     <select id="setting-default-rule-type" class="settings-select">
-                      <option value="auto" data-i18n="options.ruleTypeAuto" selected>智能识别 (包含斜杠为路径，否则为域名)</option>
+                      <option value="auto" data-i18n="options.ruleTypeAuto" selected>智能识别 (包含斜杠为路径，包含点号为域名，否则为关键词)</option>
                       <option value="domain" data-i18n="options.ruleTypeDomain">强制域名匹配 (*.domain.com)</option>
                       <option value="path" data-i18n="options.ruleTypePath">强制路径匹配 (domain.com/path/*)</option>
+                      <option value="keyword" data-i18n="options.ruleTypeKeyword">强制关键词匹配 (只要包含关键词即隐藏)</option>
                     </select>
                   </div>
                 </div>

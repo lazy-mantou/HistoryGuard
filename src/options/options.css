@@ -1034,6 +1034,16 @@ button, input, select, textarea {
   color: #fcd34d;
 }
 
+.type-keyword {
+  background-color: rgba(236, 72, 153, 0.15);
+  color: #f472b6;
+}
+
+[data-theme="light"] .type-keyword {
+  background-color: rgba(219, 39, 119, 0.12);
+  color: #be185d;
+}
+
 .rule-pattern {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12.5px;
