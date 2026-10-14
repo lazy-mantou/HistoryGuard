@@ -1,7 +1,7 @@
 /**
  * @file FirefoxAdapter.js
  * @description Firefox (Gecko 内核) 专用适配器实现
- * 封装原生 browser.* Promise 命名空间，处理 Firefox 历史记录查询参数与生命周期差异
+ * 封装原生 browser.* Promise 命名空间，处理 Firefox 历史记录查询参数、弹窗上下文与生命周期差异
  */
 
 import { IBrowserAdapter } from './IBrowserAdapter.js';
@@ -33,10 +33,14 @@ export class FirefoxAdapter extends IBrowserAdapter {
         }
 
         const queryDetails = {
-          text: typeof text === 'string' ? text : '',
           startTime: typeof startTime === 'number' ? startTime : 0,
           maxResults: typeof maxResults === 'number' && maxResults > 0 ? maxResults : 100
         };
+
+        // Firefox 历史搜索：仅当 text 非空时传值，空字符串在部分版本下可能无法正确匹配全量
+        if (typeof text === 'string') {
+          queryDetails.text = text;
+        }
 
         const results = await api.history.search(queryDetails);
         return results || [];
@@ -48,7 +52,10 @@ export class FirefoxAdapter extends IBrowserAdapter {
           throw new Error('browser.history API is not available');
         }
 
-        await api.history.deleteUrl({ url });
+        const targetUrl = typeof url === 'string' ? url : url?.url;
+        if (!targetUrl) return;
+
+        await api.history.deleteUrl({ url: targetUrl });
       }
     };
 
@@ -93,12 +100,19 @@ export class FirefoxAdapter extends IBrowserAdapter {
           throw new Error('browser.tabs API is not available');
         }
 
-        const tabs = await api.tabs.query({ active: true, currentWindow: true });
+        // 1. 优先查询当前活动窗口中的活动标签页
+        let tabs = await api.tabs.query({ active: true, currentWindow: true });
+
+        // 2. Firefox 核心兜底机制：在 Popup 独立视窗中，currentWindow 可能指向弹出层自身，需查询 lastFocusedWindow
+        if (!tabs || tabs.length === 0 || (!tabs[0].url && !tabs[0].pendingUrl)) {
+          tabs = await api.tabs.query({ active: true, lastFocusedWindow: true });
+        }
+
         if (tabs && tabs.length > 0) {
           const activeTab = tabs[0];
           return {
             id: activeTab.id,
-            url: activeTab.url || '',
+            url: activeTab.url || activeTab.pendingUrl || '',
             title: activeTab.title || ''
           };
         }

@@ -13,11 +13,8 @@ import { IBrowserAdapter } from './IBrowserAdapter.js';
  */
 function createBrowserAdapter() {
   const isFirefox = (
-    typeof browser !== 'undefined' &&
-    (
-      Boolean(browser.runtime?.getBrowserInfo) ||
-      (typeof navigator !== 'undefined' && /Firefox|Gecko/i.test(navigator.userAgent))
-    )
+    (typeof browser !== 'undefined' && Boolean(browser.runtime?.getBrowserInfo)) ||
+    (typeof navigator !== 'undefined' && /Firefox/i.test(navigator.userAgent))
   );
 
   if (isFirefox) {

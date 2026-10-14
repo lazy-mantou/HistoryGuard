@@ -4,6 +4,27 @@
 
 ---
 
+## [1.0.1] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **Firefox Popup “隐藏并清理” 按钮无响应 Bug 修复**：
+   - 修复 Firefox 独立弹出层视窗下 `currentWindow: true` 无法获取标签页对象的问题，增加 `lastFocusedWindow: true` 与 `pendingUrl` 兜底。
+   - 在 Manifest 清单权限中补齐 `"activeTab"` 与 `"host_permissions": ["<all_urls>"]`，彻底解决 Firefox MV3 下 `tab.url` 无法读取导致规则候选列表初始化为空、点击静默拦截退出的问题。
+   - 增强点击执行交互反馈：按钮提供“正在处理...”及“✓ 已添加并清理”即时视觉状态反馈，自动回退兜底候选规则选择，并优化 Toast 定时器防抖清理。
+2. **Chrome 与 Firefox Options 管理页排版错误全面重构修复**：
+   - 解决 Flex 子项缺乏 `min-width: 0` 导致的文本省略失效、超长 URL / 规则表达式将删除按钮与 Toggle 开关挤出卡片边界的溢出问题。
+   - 重构 Module A 与 Module B 双卡片布局，使用 `align-items: stretch` 与统一定高（Header 34px、Action Row 40px、Toolbar 26px、Footer 38px、List 弹性填满 420-460px），确保左右双卡片高度与行高绝对齐平。
+   - 优化添加规则表单的类型选择器宽度（收敛至固定 88px），调整时间胶囊筛选与工具栏自适应，杜绝因元素长文本导致的折行跳动。
+   - 补充 Module B 底部批量启用与清理停用规则等对称操作按钮，提升控制台整体视觉平衡度与实用性。
+
+### 变更明细 (Detailed Changes)
+- `fix(firefox)`: 完善 `FirefoxAdapter.js` 与 `ChromiumAdapter.js` 的 `getCurrentActiveTab` 窗口查询兜底逻辑与 `deleteUrl` 传参解构。
+- `fix(manifest)`: 在 `manifest.chrome.json` 与 `manifest.firefox.json` 中配置 `"activeTab"` 与 `"host_permissions": ["<all_urls>"]`。
+- `fix(popup)`: 优化 `popup.js` 候选规则自动选择兜底、即时按钮文字反馈与 Toast 逻辑。
+- `fix(options)`: 重构 `options.html` 与 `options.css`，加入全套 `min-width: 0` 与 `flex-shrink: 0` 防溢出样式规则，实现左右双卡片对称严格对齐；并在 `options.js` 中增加批量控制交互。
+
+---
+
 ## [1.0.0] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

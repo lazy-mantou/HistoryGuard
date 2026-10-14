@@ -44,17 +44,23 @@ let allCandidateRules = [];
 let selectedRule = null;
 let cachedHistoryItems = [];
 let silentCountdownTimer = null;
+let toastDismissTimer = null;
 
 /**
  * 显示临时浮层提示 Toast
  * @param {string} message
- * @param {number} [duration=2000]
+ * @param {number} [duration=2500]
  */
-function showToast(message, duration = 2000) {
+function showToast(message, duration = 2500) {
+  if (toastDismissTimer) {
+    clearTimeout(toastDismissTimer);
+    toastDismissTimer = null;
+  }
   elements.toast.textContent = message;
   elements.toast.classList.remove('hidden');
-  setTimeout(() => {
+  toastDismissTimer = setTimeout(() => {
     elements.toast.classList.add('hidden');
+    toastDismissTimer = null;
   }, duration);
 }
 
@@ -113,10 +119,9 @@ function updateActionButtons() {
   elements.btnHideText.textContent = `隐藏并清理 (${selectedRule.rule})`;
   elements.btnCleanText.textContent = `仅删 ${count} 条`;
 
-  // 若匹配数量为 0，禁用仅删按钮
-  elements.btnCleanOnly.disabled = (count === 0);
-  elements.btnCleanOnly.style.opacity = (count === 0) ? '0.5' : '1';
-  elements.btnCleanOnly.style.cursor = (count === 0) ? 'not-allowed' : 'pointer';
+  // 若匹配数量为 0，允许点击以清理当前已在历史中的本页或提示
+  elements.btnCleanOnly.disabled = false;
+  elements.btnCleanOnly.style.opacity = (count === 0) ? '0.75' : '1';
 }
 
 /**
@@ -124,6 +129,7 @@ function updateActionButtons() {
  * @param {Object} candidate
  */
 function selectRuleCapsule(candidate) {
+  if (!candidate) return;
   selectedRule = candidate;
 
   // 移除所有已选中的高亮样式
@@ -132,7 +138,8 @@ function selectRuleCapsule(candidate) {
   });
 
   // 添加当前选中的高亮
-  const activeEl = document.querySelector(`.rule-capsule[data-rule="${CSS.escape(candidate.rule)}"]`);
+  const escapedRule = (candidate.rule || '').replace(/["\\]/g, '\\$&');
+  const activeEl = document.querySelector(`.rule-capsule[data-rule="${escapedRule}"]`);
   if (activeEl) {
     activeEl.classList.add('selected');
   }
@@ -195,7 +202,7 @@ async function refreshPageData() {
       maxResults: 1000
     });
   } catch (err) {
-    console.error('History search failed:', err);
+    console.warn('History search notice:', err);
     cachedHistoryItems = [];
   }
 
@@ -226,9 +233,11 @@ async function refreshPageData() {
   renderCapsuleGroup(elements.domainCapsulesGroup, parsedUrlInfo.domainRules);
   renderCapsuleGroup(elements.pathCapsulesGroup, parsedUrlInfo.pathRules);
 
-  // 6. 如果此前未选中，默认选中第一个域名规则
+  // 6. 默认选中第一条规则
   if (!selectedRule && parsedUrlInfo.domainRules.length > 0) {
     selectRuleCapsule(parsedUrlInfo.domainRules[0]);
+  } else if (!selectedRule && parsedUrlInfo.pathRules.length > 0) {
+    selectRuleCapsule(parsedUrlInfo.pathRules[0]);
   } else if (selectedRule) {
     // 重新校准当前选中的 candidate 对象数据
     const refreshed = allCandidateRules.find(r => r.rule === selectedRule.rule);
@@ -251,8 +260,12 @@ async function initPopup() {
   }
 
   if (!currentTab || !currentTab.url) {
-    elements.tabUrlText.textContent = '无法获取当前页面信息';
-    elements.tabStatusBadge.textContent = '未知状态';
+    elements.tabUrlText.textContent = '无法获取当前页面信息 (请在常规网页标签页中打开)';
+    elements.tabStatusBadge.className = 'badge badge-internal';
+    elements.tabStatusBadge.textContent = '● 无法获取';
+    await updateSilentModeState();
+    const existingRules = await getRules();
+    elements.footerLinkText.textContent = `🔍 按搜索结果批量删除历史 / 管理规则 (${existingRules.length})`;
     return;
   }
 
@@ -267,7 +280,6 @@ async function initPopup() {
     elements.tabStatusBadge.textContent = '⚠️ 内部页面';
     elements.internalPageTip.classList.remove('hidden');
     elements.mainContent.classList.add('hidden');
-    // 仍需更新静默模式状态与底部规则数
     await updateSilentModeState();
     const existingRules = await getRules();
     elements.footerLinkText.textContent = `🔍 按搜索结果批量删除历史 / 管理规则 (${existingRules.length})`;
@@ -284,11 +296,9 @@ async function initPopup() {
 elements.btnSilentMode.addEventListener('click', async () => {
   const silent = await getSilentMode();
   if (silent.active) {
-    // 正在开启，点击提前解除
     await clearSilentMode();
     showToast('已退出静默模式，恢复正常记录');
   } else {
-    // 开启 30 分钟免记录
     await setSilentMode(30);
     showToast('已开启静默免记录模式 (30分钟)');
   }
@@ -305,11 +315,24 @@ elements.footerLink.addEventListener('click', openOptions);
 
 // C. 主按钮：隐藏并清理 (当前选中规则)
 elements.btnHideAndClean.addEventListener('click', async () => {
-  if (!selectedRule) return;
+  // 兜底：若未显式选择，自动回退到第一个候选规则
+  if (!selectedRule && parsedUrlInfo?.domainRules?.length > 0) {
+    selectRuleCapsule(parsedUrlInfo.domainRules[0]);
+  } else if (!selectedRule && parsedUrlInfo?.pathRules?.length > 0) {
+    selectRuleCapsule(parsedUrlInfo.pathRules[0]);
+  }
+
+  if (!selectedRule) {
+    showToast('请先选择一条要隐藏的候选规则');
+    return;
+  }
+
+  const originalText = elements.btnHideText.textContent;
 
   try {
     elements.btnHideAndClean.disabled = true;
     elements.btnHideAndClean.style.opacity = '0.7';
+    elements.btnHideText.textContent = '正在处理...';
 
     // 1. 添加隐藏规则到存储
     const { rule, isNew } = await addRule({
@@ -320,9 +343,13 @@ elements.btnHideAndClean.addEventListener('click', async () => {
 
     let deletedCount = 0;
     // 2. 若勾选了回溯清理，批量删除已有历史
-    if (elements.cbRetroactive.checked && selectedRule.matchingHistory?.length > 0) {
-      for (const item of selectedRule.matchingHistory) {
-        if (item.url) {
+    if (elements.cbRetroactive.checked) {
+      const itemsToDelete = (selectedRule.matchingHistory && selectedRule.matchingHistory.length > 0)
+        ? selectedRule.matchingHistory
+        : (currentTab?.url ? [{ url: currentTab.url }] : []);
+
+      for (const item of itemsToDelete) {
+        if (item && item.url) {
           try {
             await browserApi.history.deleteUrl(item.url);
             deletedCount++;
@@ -333,21 +360,41 @@ elements.btnHideAndClean.addEventListener('click', async () => {
       }
     }
 
+    elements.btnHideText.textContent = `✓ 已${isNew ? '添加' : '更新'}并清理`;
     showToast(`已${isNew ? '添加' : '更新'}规则并清理 ${deletedCount} 条历史记录`);
 
     // 3. 刷新数据
     await refreshPageData();
   } catch (err) {
+    console.error('Hide and clean error:', err);
+    elements.btnHideText.textContent = originalText;
     showToast(`操作失败: ${err.message}`);
   } finally {
-    elements.btnHideAndClean.disabled = false;
-    elements.btnHideAndClean.style.opacity = '1';
+    setTimeout(() => {
+      elements.btnHideAndClean.disabled = false;
+      elements.btnHideAndClean.style.opacity = '1';
+      updateActionButtons();
+    }, 1200);
   }
 });
 
 // D. 副按钮：仅删 X 条历史记录
 elements.btnCleanOnly.addEventListener('click', async () => {
-  if (!selectedRule || !selectedRule.matchingHistory || selectedRule.matchingHistory.length === 0) {
+  if (!selectedRule && parsedUrlInfo?.domainRules?.length > 0) {
+    selectRuleCapsule(parsedUrlInfo.domainRules[0]);
+  }
+
+  if (!selectedRule) {
+    showToast('请先选择要清理的历史规则');
+    return;
+  }
+
+  const itemsToDelete = (selectedRule.matchingHistory && selectedRule.matchingHistory.length > 0)
+    ? selectedRule.matchingHistory
+    : (currentTab?.url ? [{ url: currentTab.url }] : []);
+
+  if (itemsToDelete.length === 0) {
+    showToast('暂无匹配的历史记录可清理');
     return;
   }
 
@@ -356,8 +403,8 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     elements.btnCleanOnly.style.opacity = '0.7';
 
     let deletedCount = 0;
-    for (const item of selectedRule.matchingHistory) {
-      if (item.url) {
+    for (const item of itemsToDelete) {
+      if (item && item.url) {
         try {
           await browserApi.history.deleteUrl(item.url);
           deletedCount++;
@@ -368,9 +415,9 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     }
 
     showToast(`成功物理删除 ${deletedCount} 条历史记录`);
-    // 刷新数据
     await refreshPageData();
   } catch (err) {
+    console.error('Clean only error:', err);
     showToast(`清理失败: ${err.message}`);
   } finally {
     elements.btnCleanOnly.disabled = false;

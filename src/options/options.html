@@ -38,31 +38,31 @@
       </div>
     </header>
 
-    <!-- 主控台双卡片布局 -->
+    <!-- 主控台双卡片对齐栅格 -->
     <main class="main-grid">
-      <!-- 模块 A：按搜索结果批量删除历史 -->
+      <!-- 模块 A：历史批量大扫除 -->
       <section class="card module-card">
         <div class="card-header">
           <div class="card-title-group">
             <span class="module-tag tag-a">模块 A</span>
-            <h2 class="card-title">按搜索结果批量大扫除</h2>
+            <h2 class="card-title">历史批量大扫除</h2>
           </div>
           <div class="time-filters">
-            <button class="filter-capsule active" data-time="all">全部时间</button>
-            <button class="filter-capsule" data-time="1h">最近 1 小时</button>
+            <button class="filter-capsule active" data-time="all">全部</button>
+            <button class="filter-capsule" data-time="1h">1小时</button>
             <button class="filter-capsule" data-time="today">今天</button>
-            <button class="filter-capsule" data-time="7d">最近 7 天</button>
+            <button class="filter-capsule" data-time="7d">7天</button>
           </div>
         </div>
 
         <!-- 搜索栏 -->
-        <div class="search-box-wrapper">
+        <div class="action-row search-box-wrapper">
           <span class="search-icon">🔍</span>
           <input 
             type="text" 
             id="search-input" 
             class="search-input" 
-            placeholder="搜索域名、URL 路径片段或页面标题 (支持防抖实时检索)..." 
+            placeholder="搜索域名、URL 路径或标题 (支持防抖检索)..." 
             autocomplete="off"
             spellcheck="false"
           >
@@ -72,7 +72,7 @@
         <!-- 列表控制工具栏 -->
         <div class="list-toolbar">
           <div class="toolbar-left">
-            <span id="search-results-summary" class="results-summary">共检索到 0 条历史记录</span>
+            <span id="search-results-summary" class="results-summary">共检索到 0 条</span>
             <span class="summary-separator">·</span>
             <span id="selected-summary" class="selected-summary">已勾选 0 条</span>
           </div>
@@ -83,9 +83,8 @@
         </div>
 
         <!-- 防误删预览列表容器 -->
-        <div class="preview-list-wrapper">
+        <div class="list-wrapper preview-list-wrapper">
           <div id="history-preview-list" class="preview-list">
-            <!-- 动态生成历史记录条目 -->
             <div class="empty-state">
               <span class="empty-icon">🔎</span>
               <p>输入搜索词开始检索，或选择时间范围查看历史</p>
@@ -93,7 +92,7 @@
           </div>
         </div>
 
-        <!-- 底部操作按钮栏 -->
+        <!-- 模块 A 底部操作栏 -->
         <div class="card-footer">
           <button id="btn-delete-selected" class="btn btn-danger" disabled>
             <span class="btn-icon">🗑️</span>
@@ -106,42 +105,42 @@
         </div>
       </section>
 
-      <!-- 模块 B：自动隐藏规则管理列表 -->
+      <!-- 模块 B：自动防护规则管理 -->
       <section class="card module-card">
         <div class="card-header">
           <div class="card-title-group">
             <span class="module-tag tag-b">模块 B</span>
-            <h2 class="card-title">自动隐藏规则管理</h2>
+            <h2 class="card-title">防护规则管理</h2>
           </div>
           <div class="header-tools">
-            <button id="btn-import-json" class="tool-btn" title="从 JSON 文件导入规则">
-              <span>📥 导入 JSON</span>
+            <button id="btn-import-json" class="tool-btn" title="从 JSON 文件导入规则备份">
+              <span>📥 导入</span>
             </button>
-            <button id="btn-export-json" class="tool-btn" title="导出当前所有规则备份">
-              <span>📤 导出 JSON</span>
+            <button id="btn-export-json" class="tool-btn" title="导出当前所有规则为 JSON 备份">
+              <span>📤 导出</span>
             </button>
             <input type="file" id="file-import-input" accept=".json,application/json" class="hidden">
           </div>
         </div>
 
         <!-- 手动新增规则栏 -->
-        <div class="add-rule-form">
+        <div class="action-row add-rule-form">
           <div class="input-with-select">
             <input 
               type="text" 
               id="new-rule-input" 
               class="text-input" 
-              placeholder="输入如 *.example.com 或 www.domain.com/path/*"
+              placeholder="输入如 *.example.com 或 domain.com/path/*"
               spellcheck="false"
             >
             <select id="new-rule-type" class="type-select">
-              <option value="auto">自动识别类型</option>
-              <option value="domain">域名匹配 (*.domain.com)</option>
-              <option value="path">路径匹配 (domain.com/path/*)</option>
+              <option value="auto">自动类型</option>
+              <option value="domain">域名匹配</option>
+              <option value="path">路径匹配</option>
             </select>
           </div>
           <button id="btn-add-rule" class="btn btn-primary-add">
-            <span>+ 添加规则</span>
+            <span>+ 添加</span>
           </button>
         </div>
 
@@ -150,17 +149,31 @@
           <div class="toolbar-left">
             <span id="rules-count-summary" class="results-summary">当前共有 0 条防护规则</span>
           </div>
+          <div class="toolbar-right">
+            <button id="btn-toggle-all" class="text-btn" title="一键反转所有规则启用状态">反转状态</button>
+          </div>
         </div>
 
         <!-- 规则管理列表容器 -->
-        <div class="rules-list-wrapper">
+        <div class="list-wrapper rules-list-wrapper">
           <div id="rules-container" class="rules-container">
-            <!-- 动态生成规则条目 -->
             <div class="empty-state">
               <span class="empty-icon">📋</span>
               <p>暂无配置规则，您可在左侧搜索加入，或在上方手动添加</p>
             </div>
           </div>
+        </div>
+
+        <!-- 模块 B 底部操作栏 -->
+        <div class="card-footer">
+          <button id="btn-enable-all" class="btn btn-secondary">
+            <span class="btn-icon">⚡</span>
+            <span>全部启用</span>
+          </button>
+          <button id="btn-clear-disabled" class="btn btn-secondary-danger">
+            <span class="btn-icon">🧹</span>
+            <span>清理已停用规则</span>
+          </button>
         </div>
       </section>
     </main>

@@ -8,6 +8,7 @@ import { browserApi } from '../adapters/index.js';
 import { convertSearchTermToRule } from '../core/ruleMatcher.js';
 import {
   getRules,
+  saveRules,
   addRule,
   toggleRule,
   deleteRule,
@@ -46,6 +47,9 @@ const elements = {
   fileImportInput: document.getElementById('file-import-input'),
   rulesCountSummary: document.getElementById('rules-count-summary'),
   rulesContainer: document.getElementById('rules-container'),
+  btnToggleAll: document.getElementById('btn-toggle-all'),
+  btnEnableAll: document.getElementById('btn-enable-all'),
+  btnClearDisabled: document.getElementById('btn-clear-disabled'),
 
   // 全局 Toast
   toast: document.getElementById('toast')
@@ -57,6 +61,7 @@ let searchDebounceTimer = null;
 let currentHistoryResults = [];
 let checkedUrls = new Set();
 let cachedRules = [];
+let toastDismissTimer = null;
 
 /**
  * 弹出提示 Toast
@@ -64,10 +69,15 @@ let cachedRules = [];
  * @param {number} [duration=2500]
  */
 function showToast(msg, duration = 2500) {
+  if (toastDismissTimer) {
+    clearTimeout(toastDismissTimer);
+    toastDismissTimer = null;
+  }
   elements.toast.textContent = msg;
   elements.toast.classList.remove('hidden');
-  setTimeout(() => {
+  toastDismissTimer = setTimeout(() => {
     elements.toast.classList.add('hidden');
+    toastDismissTimer = null;
   }, duration);
 }
 
@@ -253,7 +263,6 @@ async function performHistorySearch() {
       maxResults: 1500
     });
 
-    // 过滤掉内部空 URL 并在前端匹配
     currentHistoryResults = (rawResults || []).filter(item => {
       return item && item.url && (item.url.startsWith('http://') || item.url.startsWith('https://'));
     });
@@ -261,7 +270,7 @@ async function performHistorySearch() {
     // 默认全选新搜索到的条目
     checkedUrls = new Set(currentHistoryResults.map(i => i.url));
 
-    elements.searchResultsSummary.textContent = `共检索到 ${currentHistoryResults.length} 条历史记录`;
+    elements.searchResultsSummary.textContent = `共检索到 ${currentHistoryResults.length} 条`;
     renderHistoryList();
   } catch (err) {
     console.error('Search history failed:', err);
@@ -331,8 +340,7 @@ elements.btnDeleteSelected.addEventListener('click', async () => {
         console.error('Delete url failed:', url, err);
       }
     }
-    showToast(`成功删除 ${count} 条选中的历史记录`);
-    // 重新检索刷新列表
+    showToast(`成功物理删除 ${count} 条历史记录`);
     await performHistorySearch();
   } catch (err) {
     showToast(`删除失败: ${err.message}`);
@@ -376,9 +384,7 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
       }
     }
 
-    showToast(`已${isNew ? '添加' : '更新'}规则 [${pattern}] 并清理 ${deletedCount} 条历史记录`);
-
-    // 3. 刷新规则列表与搜索结果
+    showToast(`已${isNew ? '添加' : '更新'}规则 [${pattern}] 并清理 ${deletedCount} 条历史`);
     await refreshRulesList();
     await performHistorySearch();
   } catch (err) {
@@ -390,7 +396,7 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
 });
 
 /* ==========================================================================
-   模块 B：自动隐藏规则管理
+   模块 B：自动防护规则管理
    ========================================================================== */
 
 /**
@@ -428,7 +434,7 @@ async function refreshRulesList() {
       </div>
       <div class="rule-right">
         <span class="hits-badge" title="累计拦截次数">拦截 ${rule.hits || 0} 次</span>
-        <label class="toggle-switch" title="${rule.enabled ? '已启用，点击暂停' : '已暂停，点击启用'}">
+        <label class="toggle-switch" title="${rule.enabled !== false ? '已启用，点击暂停' : '已暂停，点击启用'}">
           <input type="checkbox" class="rule-toggle" ${rule.enabled !== false ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
@@ -487,6 +493,44 @@ elements.newRuleInput.addEventListener('keydown', (e) => {
     elements.btnAddRule.click();
   }
 });
+
+// 模块 B 底部操作：一键全部启用
+if (elements.btnEnableAll) {
+  elements.btnEnableAll.addEventListener('click', async () => {
+    const rules = await getRules();
+    rules.forEach(r => r.enabled = true);
+    await saveRules(rules);
+    showToast('已全部启用所有防护规则');
+    await refreshRulesList();
+  });
+}
+
+// 模块 B 工具栏：反转状态
+if (elements.btnToggleAll) {
+  elements.btnToggleAll.addEventListener('click', async () => {
+    const rules = await getRules();
+    rules.forEach(r => r.enabled = !r.enabled);
+    await saveRules(rules);
+    showToast('已反转所有规则启用状态');
+    await refreshRulesList();
+  });
+}
+
+// 模块 B 底部操作：清理已停用规则
+if (elements.btnClearDisabled) {
+  elements.btnClearDisabled.addEventListener('click', async () => {
+    const rules = await getRules();
+    const activeRules = rules.filter(r => r.enabled !== false);
+    const removedCount = rules.length - activeRules.length;
+    if (removedCount === 0) {
+      showToast('当前没有已停用的规则可清理');
+      return;
+    }
+    await saveRules(activeRules);
+    showToast(`已清理 ${removedCount} 条已停用的防护规则`);
+    await refreshRulesList();
+  });
+}
 
 // JSON 导出
 elements.btnExportJson.addEventListener('click', async () => {

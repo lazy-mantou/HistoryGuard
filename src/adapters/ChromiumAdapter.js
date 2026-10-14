@@ -45,7 +45,10 @@ export class ChromiumAdapter extends IBrowserAdapter {
             return reject(new Error('chrome.history API is not available'));
           }
 
-          chrome.history.deleteUrl({ url }, () => {
+          const targetUrl = typeof url === 'string' ? url : url?.url;
+          if (!targetUrl) return resolve();
+
+          chrome.history.deleteUrl({ url: targetUrl }, () => {
             if (chrome.runtime?.lastError) {
               return reject(new Error(chrome.runtime.lastError.message));
             }
@@ -111,15 +114,26 @@ export class ChromiumAdapter extends IBrowserAdapter {
               return reject(new Error(chrome.runtime.lastError.message));
             }
 
-            if (tabs && tabs.length > 0) {
+            if (tabs && tabs.length > 0 && (tabs[0].url || tabs[0].pendingUrl)) {
               const activeTab = tabs[0];
               resolve({
                 id: activeTab.id,
-                url: activeTab.url || '',
+                url: activeTab.url || activeTab.pendingUrl || '',
                 title: activeTab.title || ''
               });
             } else {
-              resolve(null);
+              chrome.tabs.query({ active: true, lastFocusedWindow: true }, (fallbackTabs) => {
+                if (fallbackTabs && fallbackTabs.length > 0) {
+                  const fallbackTab = fallbackTabs[0];
+                  resolve({
+                    id: fallbackTab.id,
+                    url: fallbackTab.url || fallbackTab.pendingUrl || '',
+                    title: fallbackTab.title || ''
+                  });
+                } else {
+                  resolve(null);
+                }
+              });
             }
           });
         });
