@@ -60,7 +60,7 @@ export default {
     statTotalHitsDisabledTitle: '统计已在设置中停用，命中规则时不记录新拦截次数',
     statSilentStatus: '静默模式',
     statSilentOff: '未开启',
-    statSilentOn: '开启中 (余 {min}m)',
+    statSilentOn: '开启中 ({time})',
     navHistoryTitle: '历史批量删除',
     navHistoryDesc: '分批检索与流式清理',
     navRulesTitle: '防护规则管理',

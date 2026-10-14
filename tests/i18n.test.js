@@ -121,8 +121,8 @@ describe('i18n - t() 文本翻译与动态参数插值', () => {
     const loaded = t('options.loadedSummary', { count: 1200 });
     assert.strictEqual(loaded, '已加载 1200 条历史记录');
 
-    const silent = t('options.statSilentOn', { min: 25 });
-    assert.strictEqual(silent, '开启中 (余 25m)');
+    const silent = t('options.statSilentOn', { time: '25:00' });
+    assert.strictEqual(silent, '开启中 (25:00)');
   });
 
   it('切换到英文后应当返回对应的英文翻译', () => {

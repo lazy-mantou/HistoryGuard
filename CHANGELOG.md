@@ -4,6 +4,25 @@
 
 ---
 
+## [1.0.15] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **Options 管理控制台静默模式倒计时实时自动更新机制**：
+   - **痛点排查**：
+     - **缺少心跳定时器驱动**：原 `options.js` 仅在页面初始加载调用 `refreshGlobalStats()` 时拉取一次 `getSilentMode()` 静态计算分钟数，此后即使时间推移、静默模式分秒递减或已自然过期，页面从未启动任何定时器进行动态重绘，导致界面永远停留在初次加载时的数值；
+     - **跨页面与后台节流不同步**：跨页面存储监听 `storage.onChanged` 中对 `SILENT_MODE` 仅间接刷新规则列表，未独立触发静默状态重算；当浏览器对后台标签页实施 Timer Throttling 后切回页面时缺少可见性校准。
+   - **重构与优化细节**：
+     - **毫秒级目标时间差分计算**：基于 `silent.until` 绝对时间戳在 `refreshSilentModeStatus()` 中启动 1 秒心跳定时器，动态格式化 `MM:SS` 分秒倒计时展示（如 `开启中 (29:45)` / `Active (29:45)`），等宽字体下跳动丝滑直观；
+     - **生命周期与自然到期重置**：当剩余时间归零时，自动注销定时器并调用底层清理，静默模式徽章自动平滑恢复为 `未开启` / `Off`；
+     - **多标签与前台可见性校验**：监听 `document.visibilitychange`，切回标签页时瞬时校准真实剩余时间，彻底杜绝后台节流产生的显示时滞；在 `storage.onChanged` 中精准捕获 `SILENT_MODE` 变更并即时重置倒计时。
+
+### 变更明细 (Detailed Changes)
+- `feat(options)`: 封装 `formatRemainingTime` 与 `refreshSilentModeStatus`，实现秒级倒计时心跳驱动与自动注销清理；接入 `visibilitychange` 前台焦点校准与 `storage.onChanged` 实时重绘。
+- `i18n(core)`: 升级 `options.statSilentOn` 为支持 `{time}` 动态插值（`开启中 ({time})` / `Active ({time})`）。
+- `test(i18n)`: 同步更新单元测试 `tests/i18n.test.js` 中的插值验证断言。
+
+---
+
 ## [1.0.14] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

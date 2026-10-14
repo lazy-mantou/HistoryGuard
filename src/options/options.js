@@ -114,6 +114,7 @@ let currentHistoryResults = [];
 let checkedUrls = new Set();
 let cachedRules = [];
 let toastDismissTimer = null;
+let silentCountdownTimer = null;
 
 // 游标分页与海量历史加载状态
 let cursorEndTime = 0; // 当前批次最旧访问时间游标
@@ -231,6 +232,56 @@ function escapeHtml(str) {
    全局统计与状态展示
    ========================================================================== */
 
+/**
+ * 格式化倒计时毫秒数 (分:秒)
+ * @param {number} ms
+ * @returns {string}
+ */
+function formatRemainingTime(ms) {
+  if (ms <= 0) return '00:00';
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+/**
+ * 实时刷新并启动静默免记录倒计时定时器
+ */
+async function refreshSilentModeStatus() {
+  if (silentCountdownTimer) {
+    clearInterval(silentCountdownTimer);
+    silentCountdownTimer = null;
+  }
+
+  const silent = await getSilentMode();
+  if (silent.active && silent.remainingMs > 0) {
+    elements.statSilentStatus.textContent = t('options.statSilentOn', {
+      time: formatRemainingTime(silent.remainingMs)
+    });
+    elements.statSilentStatus.className = 'stat-value silent-on';
+
+    const targetUntil = silent.until;
+    silentCountdownTimer = setInterval(async () => {
+      const remaining = targetUntil - Date.now();
+      if (remaining > 0) {
+        elements.statSilentStatus.textContent = t('options.statSilentOn', {
+          time: formatRemainingTime(remaining)
+        });
+      } else {
+        clearInterval(silentCountdownTimer);
+        silentCountdownTimer = null;
+        await getSilentMode(); // 触发 storage 内部到期重置
+        elements.statSilentStatus.textContent = t('options.statSilentOff');
+        elements.statSilentStatus.className = 'stat-value silent-off';
+      }
+    }, 1000);
+  } else {
+    elements.statSilentStatus.textContent = t('options.statSilentOff');
+    elements.statSilentStatus.className = 'stat-value silent-off';
+  }
+}
+
 async function refreshGlobalStats() {
   cachedRules = await getRules();
   const activeCount = cachedRules.filter(r => r.enabled !== false).length;
@@ -250,15 +301,7 @@ async function refreshGlobalStats() {
     elements.tabRulesBadge.textContent = cachedRules.length;
   }
 
-  const silent = await getSilentMode();
-  if (silent.active && silent.remainingMs > 0) {
-    const min = Math.ceil(silent.remainingMs / 60000);
-    elements.statSilentStatus.textContent = t('options.statSilentOn', { min });
-    elements.statSilentStatus.className = 'stat-value silent-on';
-  } else {
-    elements.statSilentStatus.textContent = t('options.statSilentOff');
-    elements.statSilentStatus.className = 'stat-value silent-off';
-  }
+  await refreshSilentModeStatus();
 
   elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: cachedRules.length });
 }
@@ -1100,7 +1143,10 @@ if (elements.settingToastDuration) {
 
 // 监听跨页面存储变更，实现多窗口实时同步
 browserApi.storage.onChanged(async (changes) => {
-  if (changes[STORAGE_KEYS.RULES] || changes[STORAGE_KEYS.SILENT_MODE]) {
+  if (changes[STORAGE_KEYS.SILENT_MODE]) {
+    await refreshSilentModeStatus();
+  }
+  if (changes[STORAGE_KEYS.RULES]) {
     await refreshRulesList();
   }
   if (changes[STORAGE_KEYS.SETTINGS]) {
@@ -1110,6 +1156,13 @@ browserApi.storage.onChanged(async (changes) => {
     }
     await loadSettingsToUI();
     await refreshGlobalStats();
+  }
+});
+
+// 当页面从后台标签页切回前台可见时，立即校验倒计时避免后台节流偏差
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    refreshSilentModeStatus();
   }
 });
 

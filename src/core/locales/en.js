@@ -60,7 +60,7 @@ export default {
     statTotalHitsDisabledTitle: 'Hit tracking disabled in settings; no counts incremented',
     statSilentStatus: 'Silent Mode',
     statSilentOff: 'Off',
-    statSilentOn: 'Active ({min}m left)',
+    statSilentOn: 'Active ({time})',
     navHistoryTitle: 'Batch History Delete',
     navHistoryDesc: 'Batch Search & Stream Clean',
     navRulesTitle: 'Protection Rules',
