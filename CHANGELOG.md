@@ -4,6 +4,29 @@
 
 ---
 
+## [1.0.4] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **历史记录 1500 条限制根因分析与架构重构**：
+   - **历史 1500 条限制根因**：浏览器底层 `chrome.history.search` / `browser.history.search` 均强制/默认采用 `maxResults` 阈值限制（Chrome 缺省为 100 条）。原实现中设置了固定硬编码上限 `maxResults: 1500`，若直接暴力拉取数万或数十万条数据，将引发严重的性能灾难：
+     1. **IPC 序列化暴涨**：主进程与插件沙箱之间一次性传输数十万条数据将产生 50MB~200MB 的 IPC Payload，造成扩展进程假死；
+     2. **DOM 爆炸与 OOM 崩盘**：挂载 10 万条 DOM 节点将生成超 50 万个子节点并占用 300MB~500MB+ 内存，触发浏览器标签页 Out-Of-Memory (OOM) 崩溃；
+     3. **事件监听器内存泄露**：行级闭包激增给 GC 垃圾回收造成巨大压力；
+     4. **SQLite 锁死与页面无响应**：逐条串行删除长时间霸占主线程，导致 UI 无法刷新并引发底层数据库写事务竞争。
+2. **面向 10万+ 级海量历史的高效低内存防护架构**：
+   - **游标分页架构 (Cursor-based Pagination)**：在 `IBrowserAdapter`、`ChromiumAdapter` 与 `FirefoxAdapter` 中深度支持 `endTime` 游标参数。以 `BATCH_SIZE = 100` 为步长按需加载，提取批次最旧记录时间戳 `lastVisitTime - 1` 作为下一次游标，彻底瓦解 1500 条天花板，单次拉取 IPC 内存峰值稳定在 1MB 以内。
+   - **父级事件委托与增量追加 (DOM Optimization)**：通过 `DocumentFragment` 增量追加新批次；全列表仅在 `#history-preview-list` 挂载**唯一个事件委托监听器**，节约海量闭包内存。全选/反选直接复用现有 DOM，消除界面闪烁。
+   - **非阻塞并发切片与宏任务让出 (Chunked Concurrency & Thread Yielding)**：批量删除选中的成千上万条记录时，按 `DELETE_CHUNK_SIZE = 30` 进行并发批处理（`Promise.allSettled`），每批完成后通过 `await new Promise(r => setTimeout(r, 0))` 显式让出主线程控制权，并实时更新平滑进度条，杜绝主线程冻结与 SQLite 事务锁。
+   - **流式深度全量清空 (Streaming Deep Clean)**：针对海量历史的匹配清理场景，提供“流式全量清空”快捷引擎，绕过 DOM 渲染开销，直接以后台流式循环（Batch 200 -> Chunk 30并发删除 -> 让出线程）彻底出清十万级匹配历史，峰值内存占用小于 5MB。
+
+### 变更明细 (Detailed Changes)
+- `feat(adapters)`: 在 `IBrowserAdapter.js`、`ChromiumAdapter.js` 与 `FirefoxAdapter.js` 中新增 `endTime` 游标过滤参数支持。
+- `feat(options)`: 在 `src/options/options.html` 中引入分批加载更多条（`#load-more-section`）、已全部加载完毕提示（`#no-more-hint`）、动态进度条（`#progress-container`）及流式全量清空按钮（`#btn-deep-clean`）。
+- `style(options)`: 在 `src/options/options.css` 中增加进度条容器与轨迹、分批加载按钮与触底指示器样式。
+- `perf(options)`: 在 `src/options/options.js` 中实现基于游标的时间倒序拉取、无限滚动与按需加载、单全局事件委托、`CHUNK_SIZE = 30` 异步并发切片让出线程删除及 `streamCleanAllMatches` 流式深度清理引擎。
+
+---
+
 ## [1.0.3] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

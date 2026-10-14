@@ -26,7 +26,7 @@ export class FirefoxAdapter extends IBrowserAdapter {
         }
       },
 
-      search: async ({ text = '', startTime = 0, maxResults = 100 } = {}) => {
+      search: async ({ text = '', startTime = 0, endTime = 0, maxResults = 100 } = {}) => {
         const api = getApi();
         if (!api.history?.search) {
           throw new Error('browser.history API is not available');
@@ -36,6 +36,11 @@ export class FirefoxAdapter extends IBrowserAdapter {
           startTime: typeof startTime === 'number' ? startTime : 0,
           maxResults: typeof maxResults === 'number' && maxResults > 0 ? maxResults : 100
         };
+
+        // 支持 endTime 游标分页
+        if (typeof endTime === 'number' && endTime > 0) {
+          queryDetails.endTime = endTime;
+        }
 
         // Firefox 历史搜索：仅当 text 非空时传值，空字符串在部分版本下可能无法正确匹配全量
         if (typeof text === 'string') {

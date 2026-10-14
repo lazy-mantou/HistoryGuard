@@ -630,6 +630,43 @@ button, input, select, textarea {
   border-color: var(--border-hover);
 }
 
+/* 异步执行进度条 */
+.progress-bar-container {
+  background-color: #161922;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background-color: #0c0e14;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #a5b4fc);
+  border-radius: 999px;
+  transition: width 0.15s ease-out;
+}
+
 /* 统一列表容器：宽敞舒适的高度 */
 .list-wrapper {
   background-color: #12141a;
@@ -640,6 +677,53 @@ button, input, select, textarea {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
+}
+
+/* 分批加载更多与触底提示 */
+.load-more-section {
+  padding: 12px 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid rgba(38, 42, 54, 0.4);
+  background-color: rgba(18, 20, 26, 0.7);
+}
+
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  outline: none;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  color: var(--text-main);
+  background-color: var(--card-hover);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.no-more-hint {
+  padding: 14px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(38, 42, 54, 0.4);
+  background-color: rgba(18, 20, 26, 0.4);
 }
 
 /* 自定义极简滚动条 */

@@ -18,7 +18,7 @@ export class ChromiumAdapter extends IBrowserAdapter {
         }
       },
 
-      search: ({ text = '', startTime = 0, maxResults = 100 } = {}) => {
+      search: ({ text = '', startTime = 0, endTime = 0, maxResults = 100 } = {}) => {
         return new Promise((resolve, reject) => {
           if (typeof chrome === 'undefined' || !chrome.history) {
             return reject(new Error('chrome.history API is not available'));
@@ -29,6 +29,11 @@ export class ChromiumAdapter extends IBrowserAdapter {
             startTime: typeof startTime === 'number' ? startTime : 0,
             maxResults: typeof maxResults === 'number' && maxResults > 0 ? maxResults : 100
           };
+
+          // 支持 endTime 游标分页与海量数据分批拉取
+          if (typeof endTime === 'number' && endTime > 0) {
+            queryDetails.endTime = endTime;
+          }
 
           chrome.history.search(queryDetails, (results) => {
             if (chrome.runtime?.lastError) {

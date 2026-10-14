@@ -52,9 +52,9 @@
             </div>
             <div class="tab-info">
               <span class="tab-title">历史批量大扫除</span>
-              <span class="tab-desc">搜索检索与批量删除</span>
+              <span class="tab-desc">分批检索与流式清理</span>
             </div>
-            <span id="tab-history-badge" class="tab-count-badge" title="检索到的历史条目">0</span>
+            <span id="tab-history-badge" class="tab-count-badge" title="当前已加载历史条数">0</span>
           </button>
 
           <button class="nav-tab" data-tab="rules" id="tab-btn-rules">
@@ -75,10 +75,10 @@
         <div class="sidebar-footer">
           <div class="sidebar-card">
             <div class="sidebar-card-title">
-              <span>💡 隐私防护小贴士</span>
+              <span>💡 海量数据分批防护</span>
             </div>
             <p class="sidebar-card-text">
-              命中已启用规则的页面在访问瞬间将被底层物理抹除，不留任何痕迹。
+              支持数十万级历史数据游标分批拉取与流式异步删除，保障系统低内存占用与 0 卡顿。
             </p>
           </div>
         </div>
@@ -117,24 +117,44 @@
           <!-- 列表控制工具栏 -->
           <div class="list-toolbar">
             <div class="toolbar-left">
-              <span id="search-results-summary" class="results-summary">共检索到 0 条历史记录</span>
+              <span id="search-results-summary" class="results-summary">已加载 0 条历史记录</span>
               <span class="summary-separator">·</span>
               <span id="selected-summary" class="selected-summary">已勾选 0 条</span>
             </div>
             <div class="toolbar-right">
-              <button id="btn-select-all" class="text-btn">全选</button>
+              <button id="btn-select-all" class="text-btn">全选已加载</button>
               <button id="btn-invert-select" class="text-btn">反选</button>
             </div>
           </div>
 
-          <!-- 防误删预览列表容器 -->
-          <div class="list-wrapper preview-list-wrapper">
+          <!-- 异步执行进度条 (在巨量清理时展示，杜绝卡死) -->
+          <div id="progress-container" class="progress-bar-container hidden">
+            <div class="progress-info">
+              <span id="progress-status-text">正在批量清理中...</span>
+              <span id="progress-percent-text">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progress-fill-bar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <!-- 防误删预览列表容器 (支持海量数据滚动触底分批加载) -->
+          <div class="list-wrapper preview-list-wrapper" id="history-scroll-container">
             <div id="history-preview-list" class="preview-list">
               <div class="empty-state">
                 <span class="empty-icon">🔎</span>
                 <p>输入搜索词开始检索，或选择上方时间范围查看历史</p>
               </div>
             </div>
+
+            <!-- 分批加载更多控制条 -->
+            <div id="load-more-section" class="load-more-section hidden">
+              <button id="btn-load-more" class="load-more-btn">
+                <span class="load-more-icon">⬇️</span>
+                <span id="load-more-text">加载下一批历史记录 (100 条)...</span>
+              </button>
+            </div>
+            <div id="no-more-hint" class="no-more-hint hidden">—— 已加载全部匹配的历史记录 ——</div>
           </div>
 
           <!-- 底部操作栏 -->
@@ -146,6 +166,10 @@
             <button id="btn-delete-and-add-rule" class="btn btn-primary" disabled>
               <span class="btn-icon">🛡️</span>
               <span>删除记录并将搜索词加入永久隐藏</span>
+            </button>
+            <button id="btn-deep-clean" class="btn btn-secondary-danger hidden" title="直接流式遍历清理当前搜索词匹配的所有历史 (即使超过10万条也可分批无阻塞秒级清理)">
+              <span class="btn-icon">⚡</span>
+              <span>流式全量清空</span>
             </button>
           </div>
         </section>

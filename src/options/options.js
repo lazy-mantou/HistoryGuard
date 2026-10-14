@@ -40,10 +40,22 @@ const elements = {
   selectedSummary: document.getElementById('selected-summary'),
   btnSelectAll: document.getElementById('btn-select-all'),
   btnInvertSelect: document.getElementById('btn-invert-select'),
+  historyScrollContainer: document.getElementById('history-scroll-container'),
   historyPreviewList: document.getElementById('history-preview-list'),
+  loadMoreSection: document.getElementById('load-more-section'),
+  btnLoadMore: document.getElementById('btn-load-more'),
+  loadMoreText: document.getElementById('load-more-text'),
+  noMoreHint: document.getElementById('no-more-hint'),
   btnDeleteSelected: document.getElementById('btn-delete-selected'),
   btnDeleteText: document.getElementById('btn-delete-text'),
   btnDeleteAndAddRule: document.getElementById('btn-delete-and-add-rule'),
+  btnDeepClean: document.getElementById('btn-deep-clean'),
+
+  // 异步执行进度条
+  progressContainer: document.getElementById('progress-container'),
+  progressStatusText: document.getElementById('progress-status-text'),
+  progressPercentText: document.getElementById('progress-percent-text'),
+  progressFillBar: document.getElementById('progress-fill-bar'),
 
   // 防护规则管理
   newRuleInput: document.getElementById('new-rule-input'),
@@ -62,13 +74,22 @@ const elements = {
   toast: document.getElementById('toast')
 };
 
-// 状态
+// 状态与配置常量
+const BATCH_SIZE = 100; // 每次游标拉取批次大小，防止巨量 IPC 传输挤爆内存
+const DELETE_CHUNK_SIZE = 30; // 批量并发删除切片大小，配合时间分片避免主线程与 SQLite 锁死
+
 let currentSearchTimeFilter = 'all'; // 'all' | '1h' | 'today' | '7d'
 let searchDebounceTimer = null;
 let currentHistoryResults = [];
 let checkedUrls = new Set();
 let cachedRules = [];
 let toastDismissTimer = null;
+
+// 游标分页与海量历史加载状态
+let cursorEndTime = 0; // 当前批次最旧访问时间游标
+let hasMoreHistory = true;
+let isLoadingBatch = false;
+let isOperatingCleaning = false;
 
 /**
  * 弹出提示 Toast
@@ -215,7 +236,7 @@ async function refreshGlobalStats() {
 }
 
 /* ==========================================================================
-   历史记录批量清理
+   海量历史记录分批检索、事件委托与非阻塞流式清理
    ========================================================================== */
 
 /**
@@ -227,32 +248,24 @@ function updateSelectedSummary() {
   elements.btnDeleteText.textContent = `删除选中的 ${selectedCount} 条记录`;
 
   const hasSelected = selectedCount > 0;
-  elements.btnDeleteSelected.disabled = !hasSelected;
-  elements.btnDeleteAndAddRule.disabled = !hasSelected;
+  elements.btnDeleteSelected.disabled = !hasSelected || isOperatingCleaning;
+  elements.btnDeleteAndAddRule.disabled = !hasSelected || isOperatingCleaning;
 }
 
 /**
- * 渲染历史记录预览列表
+ * 将单批次历史条目追加渲染到 DOM（采用 DocumentFragment，零重复开销）
+ * @param {Array<Object>} items - 历史记录条目数组
+ * @param {boolean} [autoCheck=false] - 是否默认勾选
  */
-function renderHistoryList() {
-  elements.historyPreviewList.innerHTML = '';
-
-  if (currentHistoryResults.length === 0) {
-    elements.historyPreviewList.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">🔎</span>
-        <p>未找到符合条件的历史记录</p>
-      </div>
-    `;
-    updateSelectedSummary();
-    return;
-  }
-
+function appendHistoryBatchToDOM(items, autoCheck = false) {
   const fragment = document.createDocumentFragment();
 
-  currentHistoryResults.forEach((item) => {
-    const row = document.createElement('div');
+  items.forEach((item) => {
+    if (autoCheck) {
+      checkedUrls.add(item.url);
+    }
     const isChecked = checkedUrls.has(item.url);
+    const row = document.createElement('div');
     row.className = `history-item ${isChecked ? 'checked' : ''}`;
     row.dataset.url = item.url;
 
@@ -269,23 +282,6 @@ function renderHistoryList() {
       <div class="history-time">${formatTime(item.lastVisitTime)}</div>
     `;
 
-    const checkbox = row.querySelector('.history-checkbox');
-
-    // 点击行切换勾选状态
-    row.addEventListener('click', (e) => {
-      if (e.target !== checkbox) {
-        checkbox.checked = !checkbox.checked;
-      }
-      if (checkbox.checked) {
-        checkedUrls.add(item.url);
-        row.classList.add('checked');
-      } else {
-        checkedUrls.delete(item.url);
-        row.classList.remove('checked');
-      }
-      updateSelectedSummary();
-    });
-
     fragment.appendChild(row);
   });
 
@@ -294,72 +290,292 @@ function renderHistoryList() {
 }
 
 /**
- * 执行历史记录搜索
+ * 游标分批拉取历史记录（核心解决 1500 条限制与 10万+ 巨量数据内存/IPC 暴涨问题）
+ * @param {Object} options
+ * @param {boolean} [options.isReset=false] - 是否为全新检索（重置游标与清空列表）
  */
-async function performHistorySearch() {
+async function fetchHistoryBatch({ isReset = false } = {}) {
+  if (isLoadingBatch) return;
+  if (!isReset && !hasMoreHistory) return;
+
   const query = (elements.searchInput.value || '').trim();
   const startTime = getStartTimeByFilter(currentSearchTimeFilter);
 
   elements.btnClearSearch.classList.toggle('hidden', query.length === 0);
+  if (elements.btnDeepClean) {
+    elements.btnDeepClean.classList.toggle('hidden', query.length === 0);
+  }
+
+  if (isReset) {
+    cursorEndTime = 0;
+    hasMoreHistory = true;
+    currentHistoryResults = [];
+    checkedUrls.clear();
+    elements.historyPreviewList.innerHTML = '';
+    elements.loadMoreSection.classList.add('hidden');
+    elements.noMoreHint.classList.add('hidden');
+  }
+
+  isLoadingBatch = true;
+  elements.btnLoadMore.disabled = true;
+  elements.loadMoreText.textContent = '正在检索历史数据...';
 
   try {
-    const rawResults = await browserApi.history.search({
+    const searchParams = {
       text: query,
       startTime,
-      maxResults: 1500
-    });
+      maxResults: BATCH_SIZE
+    };
 
-    currentHistoryResults = (rawResults || []).filter(item => {
+    if (cursorEndTime > 0) {
+      searchParams.endTime = cursorEndTime;
+    }
+
+    const rawResults = await browserApi.history.search(searchParams);
+
+    const validItems = (rawResults || []).filter(item => {
       return item && item.url && (item.url.startsWith('http://') || item.url.startsWith('https://'));
     });
 
-    // 默认全选新搜索到的条目
-    checkedUrls = new Set(currentHistoryResults.map(i => i.url));
+    // 如果接口返回条数小于请求批次大小，说明历史记录已全部检索完毕
+    if (!rawResults || rawResults.length < BATCH_SIZE) {
+      hasMoreHistory = false;
+    }
 
-    elements.searchResultsSummary.textContent = `共检索到 ${currentHistoryResults.length} 条`;
+    if (validItems.length > 0) {
+      // 游标移动：设定下一次批次拉取的截止时间为本次最后一条记录时间减 1 毫秒
+      const oldestVisitTime = validItems[validItems.length - 1].lastVisitTime;
+      cursorEndTime = oldestVisitTime - 1;
+
+      if (startTime > 0 && cursorEndTime <= startTime) {
+        hasMoreHistory = false;
+      }
+
+      currentHistoryResults.push(...validItems);
+      appendHistoryBatchToDOM(validItems, true);
+    }
+
+    // 状态与空状态处理
+    if (currentHistoryResults.length === 0) {
+      elements.historyPreviewList.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">🔎</span>
+          <p>未找到符合条件的历史记录</p>
+        </div>
+      `;
+      elements.loadMoreSection.classList.add('hidden');
+      elements.noMoreHint.classList.add('hidden');
+    } else {
+      if (hasMoreHistory) {
+        elements.loadMoreSection.classList.remove('hidden');
+        elements.noMoreHint.classList.add('hidden');
+        elements.btnLoadMore.disabled = false;
+        elements.loadMoreText.textContent = `加载下一批历史记录 (${BATCH_SIZE} 条)...`;
+      } else {
+        elements.loadMoreSection.classList.add('hidden');
+        elements.noMoreHint.classList.remove('hidden');
+      }
+    }
+
+    elements.searchResultsSummary.textContent = `已加载 ${currentHistoryResults.length} 条历史记录`;
     if (elements.tabHistoryBadge) {
       elements.tabHistoryBadge.textContent = currentHistoryResults.length;
     }
-
-    renderHistoryList();
   } catch (err) {
-    console.error('Search history failed:', err);
-    showToast(`搜索历史失败: ${err.message}`);
+    console.error('Fetch history batch failed:', err);
+    showToast(`检索历史失败: ${err.message}`);
+  } finally {
+    isLoadingBatch = false;
   }
 }
 
 /**
- * 防抖执行历史检索
+ * 防抖执行全新检索
  */
 function debouncedSearch() {
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer);
   }
-  searchDebounceTimer = setTimeout(performHistorySearch, 250);
+  searchDebounceTimer = setTimeout(() => {
+    fetchHistoryBatch({ isReset: true });
+  }, 250);
 }
 
-// 绑定搜索框事件
+/**
+ * 分块并发删除指定的 URL 列表，通过宏任务分片让出主线程，实时更新进度条
+ * @param {string[]} urls - 目标 URL 列表
+ * @param {string} [title='正在批量清理历史...']
+ * @returns {Promise<number>} 成功处理条数
+ */
+async function deleteUrlsWithProgress(urls, title = '正在批量清理历史...') {
+  if (!urls || urls.length === 0) return 0;
+  if (isOperatingCleaning) {
+    showToast('已有清理任务正在执行中，请稍候...');
+    return 0;
+  }
+
+  isOperatingCleaning = true;
+  elements.progressContainer.classList.remove('hidden');
+  elements.progressStatusText.textContent = title;
+  elements.progressPercentText.textContent = `0% (0/${urls.length})`;
+  elements.progressFillBar.style.width = '0%';
+
+  elements.btnDeleteSelected.disabled = true;
+  elements.btnDeleteAndAddRule.disabled = true;
+  if (elements.btnDeepClean) elements.btnDeepClean.disabled = true;
+
+  const total = urls.length;
+  let processed = 0;
+
+  try {
+    for (let i = 0; i < total; i += DELETE_CHUNK_SIZE) {
+      const chunk = urls.slice(i, i + DELETE_CHUNK_SIZE);
+      await Promise.allSettled(chunk.map(url => browserApi.history.deleteUrl(url)));
+      processed += chunk.length;
+
+      const percent = Math.min(100, Math.round((processed / total) * 100));
+      elements.progressFillBar.style.width = `${percent}%`;
+      elements.progressPercentText.textContent = `${percent}% (${processed}/${total})`;
+
+      // 宏任务让出主线程控制权，给浏览器重绘 UI 和响应事件的机会（避免 10万级操作导致无响应弹窗）
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  } finally {
+    setTimeout(() => {
+      elements.progressContainer.classList.add('hidden');
+      elements.progressFillBar.style.width = '0%';
+    }, 800);
+
+    isOperatingCleaning = false;
+    updateSelectedSummary();
+    if (elements.btnDeepClean) elements.btnDeepClean.disabled = false;
+  }
+
+  return processed;
+}
+
+/**
+ * 流式全量清空：针对十万级匹配结果，无需挂载海量 DOM，直接在底层按批次边检索边删除并分片让出线程
+ */
+async function streamCleanAllMatches() {
+  const query = (elements.searchInput.value || '').trim();
+  if (!query) {
+    showToast('请先输入搜索关键词');
+    return;
+  }
+
+  const confirmed = window.confirm(`确认要全量清理所有与 "${query}" 匹配的历史记录吗？\n即使包含数万甚至数十万条，系统也将以流式低内存分块方式彻底清空。`);
+  if (!confirmed) return;
+
+  if (isOperatingCleaning) {
+    showToast('已有清理任务正在执行中，请稍候...');
+    return;
+  }
+
+  isOperatingCleaning = true;
+  elements.progressContainer.classList.remove('hidden');
+  elements.progressStatusText.textContent = `正在准备全量流式清理 [${query}]...`;
+  elements.progressPercentText.textContent = '扫描中';
+  elements.progressFillBar.style.width = '100%';
+
+  const startTime = getStartTimeByFilter(currentSearchTimeFilter);
+  let totalDeleted = 0;
+  const STREAM_BATCH_SIZE = 200;
+
+  try {
+    while (true) {
+      const batch = await browserApi.history.search({
+        text: query,
+        startTime,
+        maxResults: STREAM_BATCH_SIZE
+      });
+
+      const validUrls = (batch || [])
+        .map(item => item?.url)
+        .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
+
+      if (validUrls.length === 0) {
+        break;
+      }
+
+      // 分块删除
+      for (let i = 0; i < validUrls.length; i += DELETE_CHUNK_SIZE) {
+        const chunk = validUrls.slice(i, i + DELETE_CHUNK_SIZE);
+        await Promise.allSettled(chunk.map(url => browserApi.history.deleteUrl(url)));
+        totalDeleted += chunk.length;
+        elements.progressStatusText.textContent = `流式全量清理中... 已清理 ${totalDeleted} 条历史`;
+        elements.progressPercentText.textContent = `已清除 ${totalDeleted} 条`;
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+
+      // 稍微让出 10ms，避免底层 SQLite 写事务竞争
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    showToast(`流式清理完成！共彻底删除 ${totalDeleted} 条历史记录`);
+    await fetchHistoryBatch({ isReset: true });
+  } catch (err) {
+    console.error('Stream clean failed:', err);
+    showToast(`流式清理异常: ${err.message}`);
+  } finally {
+    setTimeout(() => {
+      elements.progressContainer.classList.add('hidden');
+      elements.progressFillBar.style.width = '0%';
+    }, 800);
+    isOperatingCleaning = false;
+  }
+}
+
+// 绑定搜索与筛选事件
 elements.searchInput.addEventListener('input', debouncedSearch);
 elements.btnClearSearch.addEventListener('click', () => {
   elements.searchInput.value = '';
   elements.btnClearSearch.classList.add('hidden');
-  performHistorySearch();
+  fetchHistoryBatch({ isReset: true });
 });
 
-// 绑定时间筛选胶囊
 elements.timeFilters.forEach(btn => {
   btn.addEventListener('click', () => {
     elements.timeFilters.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentSearchTimeFilter = btn.dataset.time;
-    performHistorySearch();
+    fetchHistoryBatch({ isReset: true });
   });
 });
 
-// 全选与反选
+// 单一事件委托监听器：无论加载 100 条还是 10 万条，只使用一个父级事件监听器，避免海量内存闭包
+elements.historyPreviewList.addEventListener('click', (e) => {
+  const row = e.target.closest('.history-item');
+  if (!row) return;
+
+  const url = row.dataset.url;
+  if (!url) return;
+
+  const checkbox = row.querySelector('.history-checkbox');
+  if (e.target !== checkbox) {
+    checkbox.checked = !checkbox.checked;
+  }
+
+  if (checkbox.checked) {
+    checkedUrls.add(url);
+    row.classList.add('checked');
+  } else {
+    checkedUrls.delete(url);
+    row.classList.remove('checked');
+  }
+  updateSelectedSummary();
+});
+
+// 全选与反选（直接操作现有 DOM 状态，杜绝重新渲染导致的界面白屏闪烁）
 elements.btnSelectAll.addEventListener('click', () => {
-  checkedUrls = new Set(currentHistoryResults.map(i => i.url));
-  renderHistoryList();
+  currentHistoryResults.forEach(item => checkedUrls.add(item.url));
+  const rows = elements.historyPreviewList.querySelectorAll('.history-item');
+  rows.forEach(row => {
+    row.classList.add('checked');
+    const cb = row.querySelector('.history-checkbox');
+    if (cb) cb.checked = true;
+  });
+  updateSelectedSummary();
 });
 
 elements.btnInvertSelect.addEventListener('click', () => {
@@ -370,33 +586,44 @@ elements.btnInvertSelect.addEventListener('click', () => {
     }
   });
   checkedUrls = newSet;
-  renderHistoryList();
+
+  const rows = elements.historyPreviewList.querySelectorAll('.history-item');
+  rows.forEach(row => {
+    const isChecked = checkedUrls.has(row.dataset.url);
+    row.classList.toggle('checked', isChecked);
+    const cb = row.querySelector('.history-checkbox');
+    if (cb) cb.checked = isChecked;
+  });
+  updateSelectedSummary();
 });
 
-// 批量删除选中的记录
+// 点击加载下一批与触底滚动监听
+elements.btnLoadMore.addEventListener('click', () => {
+  fetchHistoryBatch({ isReset: false });
+});
+
+if (elements.historyScrollContainer) {
+  elements.historyScrollContainer.addEventListener('scroll', () => {
+    if (!hasMoreHistory || isLoadingBatch) return;
+    const { scrollTop, scrollHeight, clientHeight } = elements.historyScrollContainer;
+    if (scrollTop + clientHeight >= scrollHeight - 60) {
+      fetchHistoryBatch({ isReset: false });
+    }
+  });
+}
+
+// 批量删除选中的记录（分块并发 + 宏任务让出线程）
 elements.btnDeleteSelected.addEventListener('click', async () => {
   const targets = Array.from(checkedUrls);
   if (targets.length === 0) return;
 
   const count = targets.length;
-  elements.btnDeleteSelected.disabled = true;
-  elements.btnDeleteSelected.style.opacity = '0.7';
-
   try {
-    for (const url of targets) {
-      try {
-        await browserApi.history.deleteUrl(url);
-      } catch (err) {
-        console.error('Delete url failed:', url, err);
-      }
-    }
-    showToast(`成功物理删除 ${count} 条历史记录`);
-    await performHistorySearch();
+    const deletedCount = await deleteUrlsWithProgress(targets, `正在删除选中的 ${count} 条记录...`);
+    showToast(`成功物理删除 ${deletedCount} 条历史记录`);
+    await fetchHistoryBatch({ isReset: true });
   } catch (err) {
     showToast(`删除失败: ${err.message}`);
-  } finally {
-    elements.btnDeleteSelected.disabled = false;
-    elements.btnDeleteSelected.style.opacity = '1';
   }
 });
 
@@ -416,34 +643,28 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
     return;
   }
 
-  elements.btnDeleteAndAddRule.disabled = true;
-  elements.btnDeleteAndAddRule.style.opacity = '0.7';
-
   try {
     // 1. 添加为永久规则
     const { rule, isNew } = await addRule({ pattern, type, enabled: true });
 
-    // 2. 删除选中的记录
+    // 2. 分块删除记录
     let deletedCount = 0;
-    for (const url of targets) {
-      try {
-        await browserApi.history.deleteUrl(url);
-        deletedCount++;
-      } catch (err) {
-        console.error('Delete url failed:', url, err);
-      }
+    if (targets.length > 0) {
+      deletedCount = await deleteUrlsWithProgress(targets, `正在删除并永久拦截匹配历史...`);
     }
 
     showToast(`已${isNew ? '添加' : '更新'}规则 [${pattern}] 并清理 ${deletedCount} 条历史`);
     await refreshRulesList();
-    await performHistorySearch();
+    await fetchHistoryBatch({ isReset: true });
   } catch (err) {
     showToast(`操作失败: ${err.message}`);
-  } finally {
-    elements.btnDeleteAndAddRule.disabled = false;
-    elements.btnDeleteAndAddRule.style.opacity = '1';
   }
 });
+
+// 流式全量清空
+if (elements.btnDeepClean) {
+  elements.btnDeepClean.addEventListener('click', streamCleanAllMatches);
+}
 
 /* ==========================================================================
    防护规则管理
@@ -651,7 +872,7 @@ async function initOptions() {
   }
 
   await refreshRulesList();
-  await performHistorySearch();
+  await fetchHistoryBatch({ isReset: true });
 }
 
 document.addEventListener('DOMContentLoaded', initOptions);

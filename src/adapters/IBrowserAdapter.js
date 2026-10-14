@@ -16,8 +16,8 @@ export class IBrowserAdapter {
       },
 
       /**
-       * 搜索历史记录
-       * @param {Object} query - { text: string, startTime: number, maxResults: number }
+       * 搜索历史记录 (支持 startTime, endTime 游标分页与海量数据分批拉取)
+       * @param {Object} query - { text: string, startTime?: number, endTime?: number, maxResults?: number }
        * @returns {Promise<Array<HistoryItem>>}
        */
       search: (query) => {
@@ -26,7 +26,7 @@ export class IBrowserAdapter {
 
       /**
        * 删除指定 URL 的历史记录
-       * @param {string} url
+       * @param {string|{url: string}} url
        * @returns {Promise<void>}
        */
       deleteUrl: (url) => {
