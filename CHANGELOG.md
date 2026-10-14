@@ -4,6 +4,25 @@
 
 ---
 
+## [1.0.7] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **Options 控制台左右双侧视窗联动与自适应弹性闭环**：
+   - **痛点与需求**：要求右侧面板 `.tab-panel` 与左侧 `.sidebar-nav` 实现完全对称的动态高度追踪，能够随浏览器视窗缩放实时动态调整，且支持明确的 `min-height` 与 `max-height` 安全阈值约束。
+   - **双侧完全对称视窗追踪**：
+     - 将左侧 `.sidebar-nav` 与右侧主卡片 `.tab-panel` 统一绑定动态高度公式：
+       `height: calc(100vh - 175px); min-height: 560px; max-height: 960px;`
+     - 左右两侧实时对称，无论浏览器窗口如何纵向拉伸或缩小，双侧高度完全一致。
+   - **内部滚动区域现代 Flex 1 沉浸填充**：
+     - 将 `.tab-panel` 内的 `.list-wrapper`（历史列表与规则列表）及 `.settings-scroll-container`（设置卡片列表）全部重构为 `flex: 1; min-height: 0;`；
+     - 头部搜索/工具栏与底部操作栏牢牢吸附上下两侧，中间内容区域随视窗高度动态拉伸填满，并由内部实现高性能丝滑滚动，彻底杜绝外层页面跳动与不协调的额外滚动条；
+     - 空状态 `.empty-state` 调整为 `flex: 1` 自动占满容器并在任意视窗高度下始终保持居中优雅。
+
+### 变更明细 (Detailed Changes)
+- `style(options)`: 在 `src/options/options.css` 中重构 `.sidebar-nav`、`.tab-panel`、`.list-wrapper`、`.settings-scroll-container` 与 `.empty-state`，建立左右双侧视窗联动、合理 min/max 阈值及内部 `flex: 1; min-height: 0;` 弹性滚动布局。
+
+---
+
 ## [1.0.6] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

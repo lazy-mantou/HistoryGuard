@@ -165,7 +165,7 @@ button, input, select, textarea {
   }
 }
 
-/* 左侧 Tab 侧边栏 - 自适应视窗高度，左右高度平衡 */
+/* 左侧 Tab 侧边栏 - 随视窗高度动态响应，限制合理 min/max 阈值 */
 .sidebar-nav {
   width: 260px;
   min-width: 260px;
@@ -179,8 +179,9 @@ button, input, select, textarea {
   gap: 16px;
   position: sticky;
   top: 20px;
-  min-height: 720px;
-  min-height: calc(100vh - 170px);
+  height: calc(100vh - 175px);
+  min-height: 560px;
+  max-height: 960px;
 }
 
 @media (max-width: 860px) {
@@ -188,7 +189,9 @@ button, input, select, textarea {
     width: 100%;
     min-width: 100%;
     position: static;
+    height: auto;
     min-height: auto;
+    max-height: none;
   }
 }
 
@@ -347,7 +350,7 @@ button, input, select, textarea {
   min-width: 0;
 }
 
-/* Tab 主卡片面板 - 宽敞大气的可视高度，自适应视窗高度 */
+/* Tab 主卡片面板 - 随视窗高度动态响应，与左侧完全对称，支持 min/max 阈值 */
 .tab-panel {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -357,8 +360,9 @@ button, input, select, textarea {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-  min-height: 720px;
-  min-height: calc(100vh - 170px);
+  height: calc(100vh - 175px);
+  min-height: 560px;
+  max-height: 960px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -673,15 +677,13 @@ button, input, select, textarea {
   transition: width 0.15s ease-out;
 }
 
-/* 统一列表容器：宽敞舒适的高度，自适应填充父级容器，消除频繁滚动条 */
+/* 统一列表容器：弹性充满右侧面板可用空间 (flex: 1)，由内部自适应滚动 */
 .list-wrapper {
   background-color: #12141a;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   flex: 1;
-  min-height: 540px;
-  max-height: calc(100vh - 350px);
-  max-height: 740px;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
@@ -966,14 +968,14 @@ button, input, select, textarea {
   background-color: var(--danger-light);
 }
 
-/* 空状态 */
+/* 空状态 - 弹性填满容器并在任何视窗高度下垂直居中 */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  min-height: 420px;
+  flex: 1;
+  min-height: 280px;
   gap: 10px;
   color: var(--text-muted);
   padding: 24px;
@@ -1070,8 +1072,7 @@ button, input, select, textarea {
   flex-direction: column;
   gap: 20px;
   flex: 1;
-  max-height: calc(100vh - 270px);
-  max-height: 760px;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 6px;
