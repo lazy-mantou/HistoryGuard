@@ -165,19 +165,22 @@ button, input, select, textarea {
   }
 }
 
-/* 左侧 Tab 侧边栏 */
+/* 左侧 Tab 侧边栏 - 自适应视窗高度，左右高度平衡 */
 .sidebar-nav {
-  width: 256px;
-  min-width: 256px;
+  width: 260px;
+  min-width: 260px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 16px;
   position: sticky;
   top: 20px;
+  min-height: 720px;
+  min-height: calc(100vh - 170px);
 }
 
 @media (max-width: 860px) {
@@ -185,6 +188,7 @@ button, input, select, textarea {
     width: 100%;
     min-width: 100%;
     position: static;
+    min-height: auto;
   }
 }
 
@@ -343,16 +347,18 @@ button, input, select, textarea {
   min-width: 0;
 }
 
-/* Tab 主卡片面板 */
+/* Tab 主卡片面板 - 宽敞大气的可视高度，自适应视窗高度 */
 .tab-panel {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
+  min-height: 720px;
+  min-height: calc(100vh - 170px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -667,13 +673,15 @@ button, input, select, textarea {
   transition: width 0.15s ease-out;
 }
 
-/* 统一列表容器：宽敞舒适的高度 */
+/* 统一列表容器：宽敞舒适的高度，自适应填充父级容器，消除频繁滚动条 */
 .list-wrapper {
   background-color: #12141a;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  min-height: 480px;
-  max-height: 560px;
+  flex: 1;
+  min-height: 540px;
+  max-height: calc(100vh - 350px);
+  max-height: 740px;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
@@ -965,7 +973,7 @@ button, input, select, textarea {
   align-items: center;
   justify-content: center;
   height: 100%;
-  min-height: 320px;
+  min-height: 420px;
   gap: 10px;
   color: var(--text-muted);
   padding: 24px;
@@ -1061,10 +1069,12 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-height: 580px;
+  flex: 1;
+  max-height: calc(100vh - 270px);
+  max-height: 760px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 4px;
+  padding-right: 6px;
 }
 
 .settings-scroll-container::-webkit-scrollbar {

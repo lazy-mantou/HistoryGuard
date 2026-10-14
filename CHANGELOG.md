@@ -4,6 +4,22 @@
 
 ---
 
+## [1.0.6] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **Options 控制台面板高度与滚动条视觉重构优化**：
+   - **痛点分析**：原实现中 `.tab-panel` 与 `.list-wrapper` 固定限高为 560px，在大屏/高分辨率（如 1080p、2K）下可视面积受限，展示少量条目即过早触发垂直滚动条，使得界面局促且美观度受损。
+   - **自适应视窗高度拓展**：
+     - 将左侧 `.sidebar-nav` 与右侧主卡片 `.tab-panel` 统一重构为响应式弹性高度：`min-height: calc(100vh - 170px); min-height: 720px;`，使控制台自然充盈当前浏览器视窗，告别矮窄感；
+     - 将历史记录与规则列表容器 `.list-wrapper` 调整为 `flex: 1` 自动填满面板可用空间，并将最大可视高度从 560px 大幅扩充至 `max-height: calc(100vh - 350px); max-height: 740px;`，可舒适呈现约 18~20 条历史记录与 15+ 条规则而无需滚动；
+     - 将设置容器 `.settings-scroll-container` 扩充至 `max-height: calc(100vh - 270px); max-height: 760px;`，消除大部分显示器下的内部滚动条，5 大设置分组一览无余；
+     - 同步调整空状态 `.empty-state` 垂直居中基准高度至 420px，并在移动端（<860px）平滑回退，保持全端视觉协调。
+
+### 变更明细 (Detailed Changes)
+- `style(options)`: 在 `src/options/options.css` 中优化 `.sidebar-nav`、`.tab-panel`、`.list-wrapper`、`.settings-scroll-container` 与 `.empty-state` 的高度、内边距与视窗自适应规则。
+
+---
+
 ## [1.0.5] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
