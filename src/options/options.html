@@ -51,7 +51,7 @@
               </svg>
             </div>
             <div class="tab-info">
-              <span class="tab-title" data-i18n="options.navHistoryTitle">历史批量大扫除</span>
+              <span class="tab-title" data-i18n="options.navHistoryTitle">历史批量删除</span>
               <span class="tab-desc" data-i18n="options.navHistoryDesc">分批检索与流式清理</span>
             </div>
             <span id="tab-history-badge" class="tab-count-badge" title="当前已加载历史条数">0</span>
@@ -100,11 +100,11 @@
 
       <!-- 右侧主内容区域 (根据 Tab 切换显示) -->
       <main class="tab-content-area">
-        <!-- 面板 A：历史记录批量大扫除 -->
+        <!-- 面板 A：历史批量删除 -->
         <section id="panel-history" class="tab-panel active">
           <div class="card-header">
             <div class="card-title-group">
-              <h2 class="card-title" data-i18n="options.historyTitle">历史记录批量大扫除</h2>
+              <h2 class="card-title" data-i18n="options.historyTitle">历史批量删除</h2>
             </div>
             <div class="time-filters">
               <button class="filter-capsule active" data-time="all" data-i18n="options.filterAll">全部时间</button>
@@ -239,7 +239,7 @@
             <div id="rules-container" class="rules-container">
               <div class="empty-state">
                 <span class="empty-icon">📋</span>
-                <p data-i18n="options.emptyRules">暂无配置规则，您可在左侧历史大扫除中加入，或在上方手动添加</p>
+                <p data-i18n="options.emptyRules">暂无配置规则，您可在左侧历史删除中加入，或在上方手动添加</p>
               </div>
             </div>
           </div>
@@ -401,7 +401,7 @@
                 <div class="setting-row">
                   <div class="setting-info">
                     <div class="setting-title" data-i18n="options.settingDefaultRuleTypeTitle">快捷搜索词转规则策略</div>
-                    <div class="setting-desc" data-i18n="options.settingDefaultRuleTypeDesc">在历史大扫除中点击“删除并将搜索词加入永久隐藏”时，缺省的规则类型识别模式。</div>
+                    <div class="setting-desc" data-i18n="options.settingDefaultRuleTypeDesc">在历史批量删除中点击“删除并将搜索词加入永久隐藏”时，缺省的规则类型识别模式。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-default-rule-type" class="settings-select">
@@ -424,7 +424,7 @@
                 <div class="setting-row">
                   <div class="setting-info">
                     <div class="setting-title" data-i18n="options.settingBatchSizeTitle">单批次游标拉取条数 (Batch Size)</div>
-                    <div class="setting-desc" data-i18n="options.settingBatchSizeDesc">历史大扫除单次向底层 SQLite 请求的数据量。低配设备推荐 50 条以获得极致轻量内存，常规推荐 100 条。</div>
+                    <div class="setting-desc" data-i18n="options.settingBatchSizeDesc">历史批量删除单次向底层 SQLite 请求的数据量。低配设备推荐 50 条以获得极致轻量内存，常规推荐 100 条。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-history-batch-size" class="settings-select">

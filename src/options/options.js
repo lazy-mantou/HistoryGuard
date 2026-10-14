@@ -1,7 +1,7 @@
 /**
  * @file options.js
  * @description Options 独立管理控制台业务逻辑
- * 支持左侧 Tab 导航切换、按搜索结果批量大扫除、规则增删改查、JSON 备份导入导出及全局状态联动
+ * 支持左侧 Tab 导航切换、按搜索结果批量删除、规则增删改查、JSON 备份导入导出及全局状态联动
  */
 
 import { browserApi } from '../adapters/index.js';
@@ -270,12 +270,25 @@ async function refreshGlobalStats() {
  */
 function updateSelectedSummary() {
   const selectedCount = checkedUrls.size;
+  const searchTerm = (elements.searchInput.value || '').trim();
+  const hasSelected = selectedCount > 0;
+  const hasKeyword = searchTerm.length > 0;
+
   elements.selectedSummary.textContent = t('options.selectedSummary', { count: selectedCount });
   elements.btnDeleteText.textContent = t('options.btnDeleteSelected', { count: selectedCount });
 
-  const hasSelected = selectedCount > 0;
   elements.btnDeleteSelected.disabled = !hasSelected || isOperatingCleaning;
-  elements.btnDeleteAndAddRule.disabled = !hasSelected || isOperatingCleaning;
+  // 必须同时满足：1. 已勾选待删除记录；2. 已输入搜索关键词（用于提取生成永久隐藏规则）；3. 当前未在执行清理任务
+  elements.btnDeleteAndAddRule.disabled = !hasSelected || !hasKeyword || isOperatingCleaning;
+
+  // 动态更新悬浮提示，为用户提供清晰的交互指引
+  if (!hasKeyword) {
+    elements.btnDeleteAndAddRule.title = t('options.btnDeleteAndAddRuleNoKeyword');
+  } else if (!hasSelected) {
+    elements.btnDeleteAndAddRule.title = t('options.btnDeleteAndAddRuleNoSelected');
+  } else {
+    elements.btnDeleteAndAddRule.title = `${t('options.btnDeleteSelected', { count: selectedCount })} & "${searchTerm}"`;
+  }
 }
 
 /**
@@ -393,6 +406,7 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
       `;
       elements.loadMoreSection.classList.add('hidden');
       elements.noMoreHint.classList.add('hidden');
+      updateSelectedSummary();
     } else {
       if (hasMoreHistory) {
         elements.loadMoreSection.classList.remove('hidden');
@@ -559,10 +573,14 @@ async function streamCleanAllMatches() {
 }
 
 // 绑定搜索与筛选事件
-elements.searchInput.addEventListener('input', debouncedSearch);
+elements.searchInput.addEventListener('input', () => {
+  updateSelectedSummary();
+  debouncedSearch();
+});
 elements.btnClearSearch.addEventListener('click', () => {
   elements.searchInput.value = '';
   elements.btnClearSearch.classList.add('hidden');
+  updateSelectedSummary();
   fetchHistoryBatch({ isReset: true });
 });
 

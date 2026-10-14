@@ -4,6 +4,30 @@
 
 ---
 
+## [1.0.11] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **模块与文案命名规范统一（“大扫除”改为“批量删除”）**：
+   - **优化背景**：为使功能表达更加准确、严肃且贴合浏览历史管理工具的专业性，将原“历史批量大扫除”全面更名为“历史批量删除”；
+   - **覆盖范围**：涵盖 Options 页面左侧 Tab 侧边栏标题、主卡片面板标题、空状态引导文本、高级偏好设置说明，以及 `zh-CN.js` 与 `en.js`（“Batch History Delete”）中英双语字典。
+2. **“删除并隐藏”操作防呆校验与实时交互联动优化**：
+   - **痛点分析与交互设计决策**：
+     - 用户提出了非常敏锐且符合防呆规范（Poka-Yoke）的建议：“删除并隐藏按钮在没有输入关键词前设置为 disabled 比较合适”；
+     - 业务逻辑上，该操作的核心功能是将选中的历史记录从底层删除的同时，将当前搜索框中输入的关键词通过 `convertSearchTermToRule(searchTerm)` 转化为永久拦截规则。若搜索框无任何内容，根本无法提取并建立拦截规则；
+     - 原先仅根据是否勾选记录（`selectedCount > 0`）来控制按钮启用状态，若用户未输入关键词点击，无法提取规则。因此，将输入关键词作为激活的强前置条件至关重要。
+   - **技术实现细节**：
+     - **多条件激活判定**：`btnDeleteAndAddRule.disabled = !hasSelected || !hasKeyword || isOperatingCleaning;`，必须同时满足已勾选、已输入有效关键词且无并发删除任务；
+     - **即时响应与零延迟**：不等待 250ms 的历史搜索防抖，而在搜索框原生 `input` 事件与清空按钮 `click` 事件中立即触发 `updateSelectedSummary()`，保证用户键入/清空时按钮即时切换禁用状态；
+     - **动态智能 Tooltip 提示**：无关键词时悬浮提示“请先在上方搜索框输入关键词，以作为自动生成的永久隐藏规则”；未勾选记录时提示“请至少勾选一条待处理的历史记录”；条件满足时精准展示删除条数与生成规则词，提供极致清晰的状态感知。
+
+### 变更明细 (Detailed Changes)
+- `style(options)`: 更新 `options.html` 面板标题、Tab 标题及空状态文案为“历史批量删除”。
+- `i18n`: 在 `zh-CN.js` 与 `en.js` 中更新相关文本，并新增 `btnDeleteAndAddRuleNoKeyword` 与 `btnDeleteAndAddRuleNoSelected` 双语悬浮提示字典项。
+- `feat(options)`: 在 `options.js` 的 `updateSelectedSummary()` 中加入 `hasKeyword` 校验与动态 Tooltip 指引，并在 `input` 事件中即时触发联动。
+- `docs`: 同步更新 `storage.js` 偏好配置说明与 `CHANGELOG.md`。
+
+---
+
 ## [1.0.10] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
