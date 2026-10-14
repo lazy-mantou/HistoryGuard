@@ -269,13 +269,27 @@
           </div>
 
           <div class="settings-scroll-container">
-            <!-- 分组 1：语言与区域设置 -->
+            <!-- 分组 1：外观主题与语言设置 -->
             <div class="settings-group">
               <div class="settings-group-header">
-                <span class="settings-group-icon">🌐</span>
-                <span class="settings-group-title" data-i18n="options.groupLanguage">语言与区域设置</span>
+                <span class="settings-group-icon">🎨</span>
+                <span class="settings-group-title" data-i18n="options.groupAppearance">外观主题与个性化</span>
               </div>
               <div class="settings-card">
+                <div class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-title" data-i18n="options.settingThemeTitle">界面外观主题</div>
+                    <div class="setting-desc" data-i18n="options.settingThemeDesc">选择控制台与弹窗的色彩方案。支持跟随操作系统日夜模式自动交替，或固定使用夜间/白天模式。</div>
+                  </div>
+                  <div class="setting-control">
+                    <select id="setting-theme" class="settings-select" data-i18n-title="options.settingThemeTitle" title="选择界面外观主题">
+                      <option value="auto" data-i18n="options.themeAuto">自动跟随系统 (Auto)</option>
+                      <option value="dark" data-i18n="options.themeDark">夜间深色模式 (Dark)</option>
+                      <option value="light" data-i18n="options.themeLight">白天浅色模式 (Light)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div class="setting-row">
                   <div class="setting-info">
                     <div class="setting-title" data-i18n="options.settingLanguageTitle">界面显示语言</div>

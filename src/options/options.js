@@ -7,6 +7,7 @@
 import { browserApi } from '../adapters/index.js';
 import { convertSearchTermToRule } from '../core/ruleMatcher.js';
 import { t, initI18n, setLanguage, formatRelativeTime } from '../core/i18n.js';
+import { initTheme } from '../core/theme.js';
 import {
   getRules,
   saveRules,
@@ -76,6 +77,7 @@ const elements = {
   btnGotoSettings: document.getElementById('btn-goto-settings'),
 
   // 高级偏好设置
+  settingTheme: document.getElementById('setting-theme'),
   settingLanguage: document.getElementById('setting-language'),
   settingEnableHitTracking: document.getElementById('setting-enable-hit-tracking'),
   btnResetHits: document.getElementById('btn-reset-hits'),
@@ -868,6 +870,9 @@ if (elements.btnClearDisabled) {
 async function loadSettingsToUI() {
   currentSettings = await getSettings();
 
+  if (elements.settingTheme) {
+    elements.settingTheme.value = currentSettings.theme || 'auto';
+  }
   if (elements.settingLanguage) {
     elements.settingLanguage.value = currentSettings.language || 'auto';
   }
@@ -895,6 +900,35 @@ async function loadSettingsToUI() {
 }
 
 // 绑定设置变更事件并即时持久化
+let themeCleanup = () => {};
+
+/**
+ * 切换并应用当前主题偏好，若设为 auto 则挂载系统偏好监听
+ * @param {'auto' | 'dark' | 'light'} themePref
+ */
+function updateActiveTheme(themePref) {
+  if (typeof themeCleanup === 'function') {
+    themeCleanup();
+  }
+  const result = initTheme(themePref, {
+    onChange: (systemTheme) => {
+      console.log(`[HistGuard] System theme changed to: ${systemTheme}`);
+    }
+  });
+  themeCleanup = result.cleanup;
+}
+
+// 外观主题选项选择与即时生效
+if (elements.settingTheme) {
+  elements.settingTheme.addEventListener('change', async () => {
+    const val = elements.settingTheme.value;
+    await saveSettings({ theme: val });
+    currentSettings.theme = val;
+    updateActiveTheme(val);
+    showToast(t('options.toastThemeChanged'));
+  });
+}
+
 // 语言选项选择与即时生效
 if (elements.settingLanguage) {
   elements.settingLanguage.addEventListener('change', async () => {
@@ -1097,9 +1131,11 @@ async function initOptions() {
   try {
     const settings = await getSettings();
     initI18n(settings.language || 'auto');
+    updateActiveTheme(settings.theme || 'auto');
   } catch (err) {
-    console.warn('Init i18n notice:', err);
+    console.warn('Init settings notice:', err);
     initI18n('auto');
+    updateActiveTheme('auto');
   }
 
   await loadSettingsToUI();

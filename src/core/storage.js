@@ -265,6 +265,7 @@ export async function exportRules() {
  * 默认偏好配置项
  */
 export const DEFAULT_SETTINGS = {
+  theme: 'auto',                 // 界面外观主题 ('auto' | 'dark' | 'light')
   language: 'auto',              // 界面显示语言 ('auto' | 'zh-CN' | 'en')
   enableHitTracking: true,       // 是否统计规则拦截次数
   silentModeDuration: 30,        // 默认静默模式时长 (分钟)

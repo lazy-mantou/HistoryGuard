@@ -16,6 +16,7 @@ const testFiles = [
   'ruleMatcher.test.js',
   'storage.test.js',
   'i18n.test.js',
+  'theme.test.js',
   'adapters.test.js'
 ];
 

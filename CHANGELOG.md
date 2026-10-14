@@ -4,6 +4,43 @@
 
 ---
 
+## [1.0.12] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **浏览器系统日间/夜间色彩模式原生探测机制**：
+   - **技术可行性解答**：现代跨平台浏览器（Chromium、Firefox，包含 Android 移动端）完整原生支持系统日夜主题探测：
+     - **CSS 原生媒体查询**：`@media (prefers-color-scheme: dark)` 与 `@media (prefers-color-scheme: light)`；
+     - **JavaScript 响应式 API**：`window.matchMedia('(prefers-color-scheme: dark)')`。通过 `.matches` 属性可在页面挂载瞬间判定系统主题；通过 `addEventListener('change', listener)` 能毫秒级捕获操作系统日出/日落自动切换或用户偏好变更，实现零刷新平滑自适应。
+2. **主题驱动引擎架构 (`src/core/theme.js`)**：
+   - 封装 `isSystemDarkMode()`、`resolveTheme(preference)`、`applyTheme(theme)` 与 `initTheme(preference, options)`；
+   - 支持 3 种主题策略：
+     - `auto`：默认值，自动侦测并监听系统日夜交替；
+     - `dark`：固定夜间深色模式；
+     - `light`：固定白天浅色模式；
+   - 具备针对非 DOM 宿主环境的无缝降级与 `cleanup` 注销机制。
+3. **偏好设置与多语言国际化扩展**：
+   - 在 `storage.js` 的 `DEFAULT_SETTINGS` 中引入 `theme: 'auto'`；
+   - 将 Options 设置页面首个分组升级为“🎨 外观主题与个性化”，新增“界面外观主题”下拉选择控件；
+   - `zh-CN.js` 与 `en.js` 新增双语外观字典项与 `toastThemeChanged` 即时提示，保持 100% 字典键对等。
+4. **全端白天/夜间双模顶级现代设计规范 (`options.css` & `popup.css`)**：
+   - **夜间模式 (Dark Mode)**：保持原有沉稳科技感深空灰黑底板（`#0f1117`）、高阶深色卡片与幽蓝紫微光强调色；
+   - **白天模式 (Light Mode)**：采用现代顶级 SaaS 风格（Stripe / Linear 调色盘），冷灰护眼底板（`#f8fafc`）、纯白悬浮卡片（`#ffffff`）、精致细腻边界（`#e2e8f0`）、高对比度深紫蓝强调色（`#4f46e5`）及深岩灰高清晰文字（`#0f172a`）；
+   - **首屏防白屏与防闪烁 (Anti-FOUC)**：在 CSS 根层引入 `@media (prefers-color-scheme: light)` 兜底，即便在 JS 尚未加载完成的微秒级阶段，也能依系统偏好精准呈现对应色彩。
+5. **单元测试与构建验证 (`tests/theme.test.js`)**：
+   - 编写 13 项涵盖系统探测、偏好解析、DOM 挂载与响应式动态监听的单元测试用例；
+   - 全套自动化测试套件扩充至 29 个套件、共 90 项单元测试，通过率 100%。
+
+### 变更明细 (Detailed Changes)
+- `feat(theme)`: 新增 `src/core/theme.js` 主题管理驱动引擎。
+- `feat(settings)`: 在 `src/core/storage.js` 默认设置中增加 `theme: 'auto'`。
+- `feat(options)`: 在 `options.html` 设置中心首组加入外观主题下拉选择框；在 `options.js` 中接入 `initTheme` 与即时切换监听。
+- `feat(popup)`: 在 `popup.js` 初始化生命周期中接入 `initTheme`，同步遵循全局外观。
+- `style`: 重构 `options.css` 与 `popup.css`，支持完整的白天浅色与夜间深色主题 CSS 变量系统与 Anti-FOUC 机制。
+- `i18n`: 在 `zh-CN.js` 与 `en.js` 中新增主题配置多语言字典与 Toast 提示。
+- `test`: 新增 `tests/theme.test.js` 并更新 `tests/run-all.js` 与 `tests/storage.test.js`。
+
+---
+
 ## [1.0.11] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

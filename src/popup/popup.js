@@ -8,6 +8,7 @@ import { browserApi } from '../adapters/index.js';
 import { parseUrl } from '../core/urlParser.js';
 import { filterHistoryByRule, findMatchingRule } from '../core/ruleMatcher.js';
 import { t, initI18n, localizeCapsule } from '../core/i18n.js';
+import { initTheme } from '../core/theme.js';
 import {
   getRules,
   addRule,
@@ -259,13 +260,15 @@ async function refreshPageData() {
  * 初始化 Popup 页面
  */
 async function initPopup() {
-  // 1. 加载偏好设置并初始化 i18n
+  // 1. 加载偏好设置并初始化 i18n 与外观主题
   try {
     const settings = await getSettings();
     initI18n(settings.language || 'auto');
+    initTheme(settings.theme || 'auto');
   } catch (err) {
-    console.warn('Failed to load settings for i18n:', err);
+    console.warn('Failed to load settings:', err);
     initI18n('auto');
+    initTheme('auto');
   }
 
   // 2. 获取当前活动标签页
