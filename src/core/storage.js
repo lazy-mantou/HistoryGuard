@@ -67,6 +67,18 @@ export async function addRule({ pattern, type, enabled = true }) {
   }
 
   actualType = actualType || detectRuleType(cleanPattern);
+
+  // 核心规范化：针对域名规则（无论是自动推断还是显式指定为 domain）
+  // 若用户输入带有协议前缀 (https:// / http://) 或末尾根路径斜杠 (/)，自动纯化为纯域名
+  // 例如：输入 "https://www.google.com/" -> 优先识别为 domain 并保存为 "www.google.com"
+  if (actualType === 'domain') {
+    cleanPattern = cleanPattern.replace(/^https?:\/\//i, '');
+    cleanPattern = cleanPattern.replace(/\/+$/, '').trim();
+  } else if (actualType === 'path') {
+    // 路径规则同样剥离协议头，规范化前缀格式
+    cleanPattern = cleanPattern.replace(/^https?:\/\//i, '').trim();
+  }
+
   const currentRules = await getRules();
 
   // 检查是否已有完全相同的规则表达式

@@ -93,6 +93,25 @@ describe('storage - 规则增删改查与计数', () => {
     assert.strictEqual(list[0].pattern, 'twitter.com');
   });
 
+  it('输入完整根路径 URL (如 https://www.google.com/) 时应当优先识别为 domain 并保存纯域名 www.google.com', async () => {
+    // 自动类型推断测试：输入带协议与尾随斜杠的根 URL
+    const res1 = await addRule({ pattern: 'https://www.google.com/' });
+    assert.strictEqual(res1.isNew, true);
+    assert.strictEqual(res1.rule.type, 'domain');
+    assert.strictEqual(res1.rule.pattern, 'www.google.com');
+
+    // 显式指定 domain 测试：http 协议与尾随斜杠自动纯化
+    const res2 = await addRule({ pattern: 'http://m.baidu.com/', type: 'domain' });
+    assert.strictEqual(res2.isNew, true);
+    assert.strictEqual(res2.rule.type, 'domain');
+    assert.strictEqual(res2.rule.pattern, 'm.baidu.com');
+
+    // 重复去重容错测试：输入带协议斜杠的已存在域名，应正确命中已有规则并复用
+    const resDup = await addRule({ pattern: 'https://www.google.com' });
+    assert.strictEqual(resDup.isNew, false);
+    assert.strictEqual(resDup.rule.pattern, 'www.google.com');
+  });
+
   it('应当能正常添加关键词规则 (type: keyword) 并支持纯词自动识别与前缀清洗', async () => {
     const res = await addRule({ pattern: 'xxx', type: 'keyword' });
     assert.strictEqual(res.isNew, true);

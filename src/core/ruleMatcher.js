@@ -24,6 +24,9 @@ export function detectRuleType(pattern) {
   if (/^path:\s*/i.test(cleaned)) return 'path';
   if (/^domain:\s*/i.test(cleaned)) return 'domain';
 
+  // 根路径容错：剥离尾随斜杠 (如 "www.google.com/" 或 "https://www.google.com/")
+  cleaned = cleaned.replace(/\/+$/, '');
+
   if (cleaned.includes('/')) return 'path';
   if (cleaned.includes('.') || cleaned.startsWith('*') || cleaned === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(cleaned)) {
     return 'domain';

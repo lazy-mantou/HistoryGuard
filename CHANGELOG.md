@@ -44,14 +44,22 @@
      - `refreshRulesList()` 根据 `enableHitTracking` 动态判断，停用时完全不渲染 `.hits-badge` DOM 节点；
      - 设置开关变更与 `storage.onChanged` 实时重新渲染规则列表与顶部统计，实现无刷新即时响应。
 
+4. **根路径 URL 规则输入智能识别与纯化（优先判定为 domain 并保存纯域名）**：
+   - **问题现象**：
+     - 当用户直接粘贴完整根路径 URL（如 `https://www.google.com/`）到规则输入框时，系统因末尾带 `/` 误将其归类为 `path` 路径规则，并原样保存包含协议头的冗长表达式，违背直觉且导致域名通配机制失效。
+   - **技术重构与方案**：
+     - `ruleMatcher.js` 的 `detectRuleType` 自动剥离末尾根路径斜杠后再做判定，若除去尾部斜杠后不含其他路由路径，一律优先识别为 `domain` 类型；
+     - `storage.js` 的 `addRule` 新增域名规范化清洗通道：当规则类型为 `domain` 时，自动剥离前导协议（`https?://`）和末尾斜杠（`/`），将 `https://www.google.com/` 规范化为标准的纯域名 `www.google.com` 存储；
+     - 规则查重机制无缝升级：输入带协议或斜杠的变体时，能够精准匹配并复用已存在的同名纯域名规则，杜绝冗余重复项。
+
 ### 变更明细 (Detailed Changes)
 - `feat(manifest)`: `manifest.chrome.json` 与 `manifest.firefox.json` 新增 `"webNavigation"` 权限。
 - `feat(adapters)`:
   - `src/adapters/IBrowserAdapter.js`: 抽象基类新增 `tabs.onUpdated`，新增 `webNavigation` 命名空间及 `onHistoryStateUpdated`、`onCommitted` 规范；新增 `history.onVisitRemoved` 事件契约。
   - `src/adapters/ChromiumAdapter.js` & `src/adapters/FirefoxAdapter.js`: 完整实现 `tabs.onUpdated`、`webNavigation.onHistoryStateUpdated`、`webNavigation.onCommitted` 与 `history.onVisitRemoved`。
 - `feat(core)`:
-  - `src/core/ruleMatcher.js`: 防御性剥离 `keyword:` / `kw:` / `domain:` / `path:` 等语法前缀，支持直接包含前缀规则的自动纯化匹配。
-  - `src/core/storage.js`: 在 `addRule` 入库时自动推断前缀语法并剥离前缀存储纯 pattern。
+  - `src/core/ruleMatcher.js`: 防御性剥离 `keyword:` / `kw:` / `domain:` / `path:` 前缀；在 `detectRuleType` 中剥离根路径尾部斜杠，将 `https://www.google.com/` 优先推断为 `domain`。
+  - `src/core/storage.js`: 在 `addRule` 入库时推断前缀语法并剥离；针对 `domain` 规则自动清洗协议头与末尾斜杠，规范保存纯域名。
 - `feat(background)`:
   - `src/background/index.js`: 重构为多通道事件侦听网，新增 `cleanResiduals` 防异步滞后出清，完美覆盖 Google 搜索及所有 SPA 动态路由。
 - `feat(options)`:
@@ -60,9 +68,9 @@
   - `src/core/locales/`: 调整 `statTotalHitsDisabled` 为纯状态词“已停用” / “Disabled”。
 - `test`:
   - `tests/adapters.test.js`: 增加针对 `webNavigation`、`tabs.onUpdated` 与 `history.onVisitRemoved` 接口契约的单元测试。
-  - `tests/ruleMatcher.test.js`: 增加用户反馈的 Google 搜索 URL 与 `keyword:bagaga` 容错匹配单元测试。
-  - `tests/storage.test.js`: 增加 `addRule` 前缀自动清洗单元测试。
-  - `tests/historyCleaner.test.js`: 全套回溯扫描与精准出清测试。全部测试用例均通过。
+  - `tests/ruleMatcher.test.js`: 增加用户反馈的 Google 搜索 URL 与 `keyword:bagaga` 容错匹配单元测试，增加 `https://www.google.com/` 根 URL 识别为 domain 的单元测试。
+  - `tests/storage.test.js`: 增加 `addRule` 前缀自动清洗单元测试，增加 `https://www.google.com/` 自动纯化保存为 `www.google.com` 单元测试。
+  - `tests/historyCleaner.test.js`: 全套回溯扫描与精准出清测试。全部 117 项测试用例全部通过。
 
 ---
 

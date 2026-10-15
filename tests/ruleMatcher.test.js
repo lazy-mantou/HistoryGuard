@@ -29,7 +29,12 @@ describe('ruleMatcher - detectRuleType', () => {
 
     assert.strictEqual(detectRuleType('google.com/search'), 'path');
     assert.strictEqual(detectRuleType('https://github.com/user/*'), 'path');
-    assert.strictEqual(detectRuleType('domain.com/'), 'path');
+    assert.strictEqual(detectRuleType('google.com/search/'), 'path');
+
+    // 根路径 URL 容错：仅带尾部斜杠时优先判定为 domain
+    assert.strictEqual(detectRuleType('https://www.google.com/'), 'domain');
+    assert.strictEqual(detectRuleType('domain.com/'), 'domain');
+    assert.strictEqual(detectRuleType('http://localhost/'), 'domain');
 
     // 关键词规则自动识别：既无斜杠也无点号的关键词
     assert.strictEqual(detectRuleType('xxx'), 'keyword');
