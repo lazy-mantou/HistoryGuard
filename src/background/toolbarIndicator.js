@@ -6,6 +6,7 @@
 
 import { browserApi } from '../adapters/index.js';
 import { findMatchingRule } from '../core/ruleMatcher.js';
+import { t } from '../core/i18n.js';
 
 // 图标资源路径配置（统一以 / 开头，确保 Service Worker 嵌套目录下绝对从扩展根路径解析）
 export const ICON_PATHS = {
@@ -76,7 +77,6 @@ export function evaluatePageStatus(url, title = '', rules = [], silentUntil = 0)
  * @param {string} [lang='zh-CN']
  */
 export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-CN') {
-  const isZh = !lang || lang.startsWith('zh');
   const now = Date.now();
   const isSilent = silentUntil > now;
 
@@ -85,13 +85,13 @@ export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-C
       await browserApi.action.setIcon({ path: ICON_PATHS.PROTECTED });
       await browserApi.action.setBadgeText({ text: '' });
       await browserApi.action.setTitle({
-        title: isZh ? 'HistGuard: 临时无痕模式中 (全局不记录历史)' : 'HistGuard: Trace-free mode active (Global history tracking paused)'
+        title: t('toolbar.tooltipTraceFree', {}, lang)
       });
     } else {
       await browserApi.action.setIcon({ path: ICON_PATHS.NORMAL });
       await browserApi.action.setBadgeText({ text: '' });
       await browserApi.action.setTitle({
-        title: isZh ? 'HistGuard: 正常记录历史 (点击图标可开启保护)' : 'HistGuard: Recording history (Click icon to protect)'
+        title: t('toolbar.tooltipRecording', {}, lang)
       });
     }
   } catch (err) {
@@ -111,7 +111,6 @@ export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-C
 export async function updateTabToolbarIndicator(tabId, url, title, rules, silentUntil, lang = 'zh-CN') {
   if (!tabId || typeof tabId !== 'number') return;
 
-  const isZh = !lang || lang.startsWith('zh');
   const { status, rule } = evaluatePageStatus(url, title, rules, silentUntil);
 
   try {
@@ -119,9 +118,10 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
       case PAGE_PROTECT_STATUS.PROTECTED_RULE: {
         await browserApi.action.setIcon({ tabId, path: ICON_PATHS.PROTECTED });
         await browserApi.action.setBadgeText({ tabId, text: '' });
-        const tooltip = isZh
-          ? `HistGuard: 当前页面处于保护中 (不记录历史${rule?.pattern ? ` - 规则: ${rule.pattern}` : ''})`
-          : `HistGuard: Protected (History recording disabled${rule?.pattern ? ` - rule: ${rule.pattern}` : ''})`;
+        const ruleText = rule?.pattern
+          ? t('toolbar.tooltipProtectedRuleLabel', { pattern: rule.pattern }, lang)
+          : '';
+        const tooltip = t('toolbar.tooltipProtected', { ruleText }, lang);
         await browserApi.action.setTitle({ tabId, title: tooltip });
         break;
       }
@@ -129,9 +129,7 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
       case PAGE_PROTECT_STATUS.PROTECTED_SILENT: {
         await browserApi.action.setIcon({ tabId, path: ICON_PATHS.PROTECTED });
         await browserApi.action.setBadgeText({ tabId, text: '' });
-        const tooltip = isZh
-          ? 'HistGuard: 临时无痕模式中 (全局不记录历史)'
-          : 'HistGuard: Trace-free mode active (Global history tracking paused)';
+        const tooltip = t('toolbar.tooltipTraceFree', {}, lang);
         await browserApi.action.setTitle({ tabId, title: tooltip });
         break;
       }
@@ -139,9 +137,7 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
       case PAGE_PROTECT_STATUS.RECORDING: {
         await browserApi.action.setIcon({ tabId, path: ICON_PATHS.NORMAL });
         await browserApi.action.setBadgeText({ tabId, text: '' });
-        const tooltip = isZh
-          ? 'HistGuard: 正常记录历史 (点击图标可开启保护)'
-          : 'HistGuard: Recording history (Click icon to protect)';
+        const tooltip = t('toolbar.tooltipRecording', {}, lang);
         await browserApi.action.setTitle({ tabId, title: tooltip });
         break;
       }
@@ -150,9 +146,7 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
       default: {
         await browserApi.action.setIcon({ tabId, path: ICON_PATHS.NORMAL });
         await browserApi.action.setBadgeText({ tabId, text: '' });
-        const tooltip = isZh
-          ? 'HistGuard: 浏览器内部页面 (不可记录)'
-          : 'HistGuard: Browser internal page';
+        const tooltip = t('toolbar.tooltipInternal', {}, lang);
         await browserApi.action.setTitle({ tabId, title: tooltip });
         break;
       }

@@ -232,5 +232,12 @@ export default {
     timeJustNow: 'Just now',
     timeMinutesAgo: '{m}m ago',
     timeHoursAgo: '{h}h ago'
+  },
+  toolbar: {
+    tooltipProtected: 'HistGuard: Protected (History recording disabled{ruleText})',
+    tooltipProtectedRuleLabel: ' - rule: {pattern}',
+    tooltipTraceFree: 'HistGuard: Trace-free mode active (Global history tracking paused)',
+    tooltipRecording: 'HistGuard: Recording history (Click icon to protect)',
+    tooltipInternal: 'HistGuard: Browser internal page'
   }
 };

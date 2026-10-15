@@ -232,5 +232,12 @@ export default {
     timeJustNow: '刚刚',
     timeMinutesAgo: '{m} 分钟前',
     timeHoursAgo: '{h} 小时前'
+  },
+  toolbar: {
+    tooltipProtected: 'HistGuard: 当前页面处于保护中 (不记录历史{ruleText})',
+    tooltipProtectedRuleLabel: ' - 规则: {pattern}',
+    tooltipTraceFree: 'HistGuard: 临时无痕模式中 (全局不记录历史)',
+    tooltipRecording: 'HistGuard: 正常记录历史 (点击图标可开启保护)',
+    tooltipInternal: 'HistGuard: 浏览器内部页面 (不可记录)'
   }
 };

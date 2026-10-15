@@ -131,6 +131,19 @@ describe('i18n - t() 文本翻译与动态参数插值', () => {
     assert.strictEqual(t('popup.matchesCount', { count: 5 }), 'Matches 5 existing records');
   });
 
+  it('支持显式指定 lang 参数，无需切换全局语言状态即可按指定语言输出', () => {
+    // 全局当前语言为 zh-CN
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'en'), 'HistGuard: Recording history (Click icon to protect)');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'zh-CN'), 'HistGuard: 正常记录历史 (点击图标可开启保护)');
+    
+    // 测试带插值的规则提示
+    const ruleLabelZh = t('toolbar.tooltipProtectedRuleLabel', { pattern: 'youtube.com' }, 'zh-CN');
+    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelZh }, 'zh-CN'), 'HistGuard: 当前页面处于保护中 (不记录历史 - 规则: youtube.com)');
+
+    const ruleLabelEn = t('toolbar.tooltipProtectedRuleLabel', { pattern: 'youtube.com' }, 'en');
+    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelEn }, 'en'), 'HistGuard: Protected (History recording disabled - rule: youtube.com)');
+  });
+
   it('不存在的键应当直接安全回退返回 key 本身', () => {
     assert.strictEqual(t('unknown.non_existent_key'), 'unknown.non_existent_key');
   });

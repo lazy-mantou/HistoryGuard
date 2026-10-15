@@ -73,15 +73,17 @@ export function resolveLanguage(preference = 'auto') {
 }
 
 /**
- * 翻译指定 key 并进行动态参数插值
+ * 翻译指定 key 并进行动态参数插值 (支持显式指定目标语言，便于后台无 DOM 环境下直接使用)
  * @param {string} key - 如 'options.statActiveRules'
  * @param {Object} [params] - 如 { count: 5 }
+ * @param {string} [lang] - 显式指定语言代码 (如 'zh-CN', 'en')，缺省使用当前激活语言
  * @returns {string}
  */
-export function t(key, params = {}) {
+export function t(key, params = {}, lang = null) {
   if (!key) return '';
 
-  const activeDict = LOCALES[activeLanguage] || LOCALES['zh-CN'];
+  const targetLang = lang ? resolveLanguage(lang) : activeLanguage;
+  const activeDict = LOCALES[targetLang] || LOCALES['zh-CN'];
   const fallbackDict = LOCALES['zh-CN'];
 
   let val = getNestedValue(activeDict, key);
