@@ -19,7 +19,7 @@ function escapeRegexExceptWildcard(str) {
  * @returns {'domain'|'path'|'keyword'}
  */
 export function detectRuleType(pattern) {
-  let cleaned = (pattern || '').trim().replace(/^https?:\/\//i, '');
+  let cleaned = (pattern || '').trim().replace(/^(?:https?:)?\/\//i, '');
   if (/^(?:keyword|kw):\s*/i.test(cleaned)) return 'keyword';
   if (/^path:\s*/i.test(cleaned)) return 'path';
   if (/^domain:\s*/i.test(cleaned)) return 'domain';
@@ -28,7 +28,15 @@ export function detectRuleType(pattern) {
   cleaned = cleaned.replace(/\/+$/, '');
 
   if (cleaned.includes('/')) return 'path';
-  if (cleaned.includes('.') || cleaned.startsWith('*') || cleaned === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(cleaned)) {
+
+  const hostPart = cleaned.split(':')[0];
+  if (
+    cleaned.includes('.') ||
+    cleaned.startsWith('*') ||
+    hostPart === 'localhost' ||
+    /^(\d{1,3}\.){3}\d{1,3}$/.test(hostPart) ||
+    hostPart.startsWith('[')
+  ) {
     return 'domain';
   }
   return 'keyword';
@@ -58,18 +66,14 @@ export function keywordRuleToRegex(pattern) {
 export function domainRuleToRegex(pattern) {
   let domain = (pattern || '').trim().toLowerCase();
   // 移除可能存在的协议与路径
-  domain = domain.replace(/^https?:\/\//i, '').split('/')[0];
-  // 移除开头的 *.
-  if (domain.startsWith('*.')) {
-    domain = domain.slice(2);
-  } else if (domain.startsWith('*')) {
-    domain = domain.slice(1);
-  }
+  domain = domain.replace(/^(?:https?:)?\/\//i, '').split('/')[0];
+  // 移除开头的通配符与点号 (*. / * / **..)
+  domain = domain.replace(/^[*.]+/g, '');
 
   const escapedDomain = domain.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
   // 匹配: exact host 或 以 .domain 结尾的主机名
-  // URL: ^(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)*escapedDomain(?::\d+)?(?:\/.*)?$
-  return new RegExp(`^(?:https?:\\/\\/)?(?:[a-zA-Z0-9-]+\\.)*${escapedDomain}(?::\\d+)?(?:[\\/?#].*)?$`, 'i');
+  // 支持: user:pass@ 身份认证前缀、下划线及横杠子域名、端口号、各种查询及哈希边界
+  return new RegExp(`^(?:https?:\\/\\/)?(?:[^/@:\\s]+(?::[^/@:\\s]*)?@)?(?:[a-zA-Z0-9_-]+\\.)*${escapedDomain}(?::\\d+)?(?:[\\/?#].*)?$`, 'i');
 }
 
 /**
@@ -80,15 +84,17 @@ export function domainRuleToRegex(pattern) {
  */
 export function pathRuleToRegex(pattern) {
   let cleaned = (pattern || '').trim();
-  // 移除开头可能包含的协议
-  cleaned = cleaned.replace(/^https?:\/\//i, '');
+  // 移除开头可能包含的协议 (包括协议自适应 //)
+  cleaned = cleaned.replace(/^(?:https?:)?\/\//i, '');
 
   const regexStr = escapeRegexExceptWildcard(cleaned);
-  // 允许匹配 http:// 或 https://，且在无通配符结尾时匹配 query 与 hash 边界
+  // 允许匹配 http:// 或 https://，支持 userinfo，且在无通配符结尾时匹配 query 与 hash 边界
   if (cleaned.endsWith('*')) {
-    return new RegExp(`^(?:https?:\\/\\/)?${regexStr}`, 'i');
+    return new RegExp(`^(?:https?:\\/\\/)?(?:[^/@:\\s]+(?::[^/@:\\s]*)?@)?${regexStr}`, 'i');
   }
-  return new RegExp(`^(?:https?:\\/\\/)?${regexStr}(?:[?#].*)?$`, 'i');
+  // 精确路径匹配：允许 URL 自适应尾随斜杠 (如 example.com/login 与 example.com/login/ 均能无缝命中)
+  const baseRegex = regexStr.replace(/\/+$/, '');
+  return new RegExp(`^(?:https?:\\/\\/)?(?:[^/@:\\s]+(?::[^/@:\\s]*)?@)?${baseRegex}(?:\\/?(?:[?#].*)?)?$`, 'i');
 }
 
 /**
@@ -141,8 +147,12 @@ export function matchesRule(rule, target) {
       if (urlString) {
         if (regex.test(urlString)) return true;
         try {
-          const decoded = decodeURI(urlString);
-          if (decoded !== urlString && regex.test(decoded)) return true;
+          const decodedComponent = decodeURIComponent(urlString);
+          if (decodedComponent !== urlString && regex.test(decodedComponent)) return true;
+        } catch {}
+        try {
+          const decodedUri = decodeURI(urlString);
+          if (decodedUri !== urlString && regex.test(decodedUri)) return true;
         } catch {}
       }
       if (titleString && regex.test(titleString)) return true;
@@ -252,9 +262,10 @@ export function convertSearchTermToRule(searchTerm) {
  */
 export function normalizeDomain(raw) {
   if (!raw) return '';
-  let d = raw.trim().toLowerCase().replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
-  if (d.startsWith('*.')) d = d.slice(2);
-  else if (d.startsWith('*')) d = d.slice(1);
+  let d = raw.trim().toLowerCase().replace(/^(?:https?:)?\/\//i, '').split('/')[0];
+  if (d.includes('@')) d = d.split('@').pop();
+  d = d.split(':')[0];
+  d = d.replace(/^[*.]+/g, '');
   return d;
 }
 
@@ -309,7 +320,9 @@ export function computeCandidateStatus(candidate, existingRules) {
         return result;
       }
     } else {
-      if ((r.type || 'domain') === candType && candRule === rPattern) {
+      const cleanCand = candRule.replace(/^https?:\/\//i, '');
+      const cleanR = rPattern.replace(/^https?:\/\//i, '');
+      if ((r.type || 'domain') === candType && (candRule === rPattern || cleanCand === cleanR)) {
         result.isExactMatch = true;
         result.exactRule = r;
         return result;
@@ -356,10 +369,11 @@ export function computeCandidateStatus(candidate, existingRules) {
           return result;
         }
       } else if (r.type === 'path') {
-        const rPattern = (r.pattern || '').trim().toLowerCase();
+        const rPattern = (r.pattern || '').trim().toLowerCase().replace(/^https?:\/\//i, '');
+        const cleanCand = candRule.replace(/^https?:\/\//i, '');
         if (rPattern.endsWith('*')) {
           const prefix = rPattern.slice(0, -1);
-          if (candRule !== rPattern && candRule.startsWith(prefix)) {
+          if (cleanCand !== rPattern && cleanCand.startsWith(prefix)) {
             result.isCovered = true;
             result.coveringRule = r;
             return result;
