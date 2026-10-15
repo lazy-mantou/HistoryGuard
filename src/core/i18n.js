@@ -21,17 +21,17 @@ import ko from './locales/ko.js';
 
 // 支持的语言代码常量列表
 export const SUPPORTED_LANGUAGES = [
+  'en',
   'zh-CN',
   'zh-TW',
-  'en',
   'es',
   'ar',
-  'id',
   'pt',
+  'id',
   'fr',
-  'ja',
   'ru',
   'de',
+  'ja',
   'ko'
 ];
 

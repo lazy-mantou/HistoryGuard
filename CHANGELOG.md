@@ -4,6 +4,23 @@
 
 ---
 
+## [1.0.41] - 2026-10-15
+
+### 界面语言选单按全球使用规模与母语人口重排 (Reorder Language Selector by Usage & Population)
+1. **多语言下拉选单排序优化 (采纳方案 2)**:
+   - **排序规则**：
+     - 遵循全球母语人口与互联网使用规模科学分布：
+     - `Auto (自动跟随浏览器)` ➜ `English (en)` ➜ `简体中文 (zh-CN)` ➜ `繁體中文 (zh-TW)` ➜ `Español (es)` ➜ `العربية (ar)` ➜ `Português (pt)` ➜ `Bahasa Indonesia / Melayu (id)` ➜ `Français (fr)` ➜ `Русский (ru)` ➜ `Deutsch (de)` ➜ `日本語 (ja)` ➜ `한국어 (ko)`；
+   - **视觉与检索体验提升**：
+     - 控制台偏好设置下拉菜单与核心 `SUPPORTED_LANGUAGES` 常量完全同步；
+     - 国际通用语言与前列大语种一目了然，便于全球用户快速定位母语。
+
+2. **验证与打包**:
+   - 212 项自动化单元测试全绿通过；
+   - 重新构建输出 Chrome / Firefox 双端 1.0.41 分发产物。
+
+---
+
 ## [1.0.40] - 2026-10-15
 
 ### 国际化多语言矩阵扩展至 12 种主流语言 (Expand i18n Matrix to 12 Major Languages)
