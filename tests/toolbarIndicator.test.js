@@ -106,7 +106,7 @@ describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器
     assert.strictEqual(badgeTextCall.details.text, '');
 
     assert.ok(titleCall);
-    assert.match(titleCall.details.title, /当前页面处于保护中/);
+    assert.match(titleCall.details.title, /当前页面处于防护中/);
     assert.match(titleCall.details.title, /google\.com/);
   });
 

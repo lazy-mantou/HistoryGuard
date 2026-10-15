@@ -4,6 +4,44 @@
 
 ---
 
+## [1.0.38] - 2026-10-15
+
+### 中英文多语言文案全方位润色与术语去黑话 (Comprehensive Copy Polish & Jargon Sanitization)
+1. **中文文案润色与统一 (zh-CN)**:
+   - **去研发黑话与技术暗语**：
+     - 将开发视角底层的“物理抹除 / 物理删除”统一步伐优化为普通用户直观易懂的“拦截并彻底清除 / 彻底删除”，消除恐慌感；
+     - 将偏向程序员术语的“自动持久化”优化为自然通俗的“自动保存”；
+     - 将“后台闹钟”等浏览器底层 API 术语移除，优化为“倒计时结束自动恢复正常防护”；
+     - 将前端开发术语“Toast 停留时长”优化为“操作反馈提示停留时长”；
+     - 将“Firefox 深度防锁推荐”优化为“Firefox 流畅防卡顿推荐”，避免使用数据库写锁等底层术语；
+     - 将“翻页浏览”更正为符合现代无限加载交互的“滚动浏览”。
+   - **术语体系与一致性收敛**：
+     - 统一“防护”与“保护”两个近义词为插件核心术语“防护”（如将“当前页面处于保护中 / 点击图标可开启保护”统一为“当前页面处于防护中 / 点击图标可开启防护”）；
+     - 精炼 Popup 底部控制台跳转按钮文案，由长串文案简化为“🔍 打开控制台与规则管理 ({count})”；
+     - 下拉选单与 HTML 模板全面遵循 RFC 2606 规范，统一使用 `*.example.com` 和 `example.com/path/*` 替代 `domain.com`。
+
+2. **英文本地化地道化与语法修复 (en)**:
+   - **自然原生表达重构**：
+     - `silentTooltip`: 由机械翻译 `All new visits within 30 minutes will leave no traces` 重构为地道表达 `No browsing history will be recorded for the next 30 minutes`；
+     - `cannotGetPageInfo`: 由 `Cannot access active tab (please open on a regular web page)` 优化为 `Unable to access tab info (please open on a standard webpage)`；
+     - `internalDesc`: 优化为 `Browser system pages do not create history; no protection required.`；
+     - `domainHint`: 修正中式英语 `Single Choice` 为地道原生的 `Select one`；
+     - `retroactiveLabel`: 简化为 `Also delete {count} existing history entries`；
+     - `footerLink`: 精炼为 `🔍 Open Dashboard & Rule Manager ({count})`；
+     - `coveredByParent`: 补全说明为 `Covered by Parent Domain`；
+     - `settingThemeDesc`: 简化为 `Choose color scheme for console and popup. Follow OS system appearance or lock to Dark/Light mode.`；
+     - `settingHitTrackingDesc`: 优化表达为 `Track visits prevented by protection rules. Disabling this enables pure zero-trace mode without saving hit counters.`；
+     - `btnResetHits`: 优化为标准英文 UI 用词 `🔄 Reset Hit Counters`；
+     - `importModeMerge` / `importModeReplace`: 统一采用标准动词短语 `Merge (keep existing rules)` 与 `Overwrite (replace existing rules)`；
+     - `settingToastDurationTitle`: 优化为通用的 `Notification Display Duration`；
+     - `toastCleanOnAddRuleChanged`: 修复词序倒装语病，由 `{state} clean existing history by default` 纠正为标准语法 `Clean existing history by default: {state}`。
+
+3. **测试套件与产物同步**:
+   - 同步更新 [tests/i18n.test.js](file:///e:/Workspace/HistGuard/tests/i18n.test.js) 与 [tests/toolbarIndicator.test.js](file:///e:/Workspace/HistGuard/tests/toolbarIndicator.test.js) 中针对防护指示器文案与正则断言；
+   - 保持 186 项单元测试全部高质通过，重新生成 Chrome 与 Firefox 双端发布版本。
+
+---
+
 ## [1.0.37] - 2026-10-15
 
 ### 侧边栏导航英文描述精炼与排版防穿模 (Refine Navigation Copy & Prevent Text Overflow)

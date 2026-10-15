@@ -134,11 +134,11 @@ describe('i18n - t() 文本翻译与动态参数插值', () => {
   it('支持显式指定 lang 参数，无需切换全局语言状态即可按指定语言输出', () => {
     // 全局当前语言为 zh-CN
     assert.strictEqual(t('toolbar.tooltipRecording', {}, 'en'), 'HistGuard: Recording history (Click icon to protect)');
-    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'zh-CN'), 'HistGuard: 正常记录历史 (点击图标可开启保护)');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'zh-CN'), 'HistGuard: 正常记录历史 (点击图标可开启防护)');
     
     // 测试带插值的规则提示
     const ruleLabelZh = t('toolbar.tooltipProtectedRuleLabel', { pattern: 'youtube.com' }, 'zh-CN');
-    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelZh }, 'zh-CN'), 'HistGuard: 当前页面处于保护中 (不记录历史 - 规则: youtube.com)');
+    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelZh }, 'zh-CN'), 'HistGuard: 当前页面处于防护中 (不记录历史 - 规则: youtube.com)');
 
     const ruleLabelEn = t('toolbar.tooltipProtectedRuleLabel', { pattern: 'youtube.com' }, 'en');
     assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelEn }, 'en'), 'HistGuard: Protected (History recording disabled - rule: youtube.com)');
