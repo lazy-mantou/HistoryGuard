@@ -475,6 +475,7 @@ elements.btnHideAndClean.addEventListener('click', async () => {
     try {
       elements.btnHideAndClean.disabled = true;
       elements.btnHideAndClean.style.opacity = '0.7';
+      elements.btnCleanOnly.disabled = true;
       elements.btnHideText.textContent = t('popup.toastProcessing');
 
       await deleteRule(selectedRule.exactRule.id);
@@ -497,6 +498,9 @@ elements.btnHideAndClean.addEventListener('click', async () => {
     elements.btnHideAndClean.style.opacity = '0.7';
     elements.btnHideText.textContent = t('popup.toastProcessing');
 
+    // 立即停用副按钮“仅删xx条”，防止重复操作
+    elements.btnCleanOnly.disabled = true;
+
     // 1. 添加隐藏规则到存储
     const { rule, isNew } = await addRule({
       pattern: selectedRule.rule,
@@ -505,34 +509,13 @@ elements.btnHideAndClean.addEventListener('click', async () => {
     });
 
     let deletedCount = 0;
-    // 2. 若勾选了回溯清理，全量回溯清理已有历史
+    // 2. 若勾选了回溯清理，全量回溯清理已有历史（完全由后台静默执行，前台无需展示数字进度，防止误以为必须保持前台运行）
     if (elements.cbRetroactive.checked) {
-      // 启动状态轮询计时器（在后台异步执行期间保持按钮计数同步）
-      const pollTimer = setInterval(async () => {
-        try {
-          if (browserApi.runtime?.sendMessage) {
-            const status = await browserApi.runtime.sendMessage({ action: 'GET_CLEANING_STATUS' });
-            if (status && status.isCleaning && status.deleted > 0) {
-              elements.btnHideText.textContent = `${t('popup.toastProcessing')} (${status.deleted})`;
-            }
-          }
-        } catch { /* ignore */ }
-      }, 300);
-
-      try {
-        const cleanResult = await executeHistoryCleaning(
-          rule,
-          currentTab?.url,
-          ({ deleted }) => {
-            if (deleted > 0) {
-              elements.btnHideText.textContent = `${t('popup.toastProcessing')} (${deleted})`;
-            }
-          }
-        );
-        deletedCount = cleanResult.deleted;
-      } finally {
-        clearInterval(pollTimer);
-      }
+      const cleanResult = await executeHistoryCleaning(
+        rule,
+        currentTab?.url
+      );
+      deletedCount = cleanResult.deleted;
     }
 
     const actionText = isNew ? t('popup.actionAdd') : t('popup.actionUpdate');
@@ -567,33 +550,16 @@ elements.btnCleanOnly.addEventListener('click', async () => {
   try {
     elements.btnCleanOnly.disabled = true;
     elements.btnCleanOnly.style.opacity = '0.7';
+    elements.btnCleanText.textContent = t('popup.toastProcessing');
 
-    const pollTimer = setInterval(async () => {
-      try {
-        if (browserApi.runtime?.sendMessage) {
-          const status = await browserApi.runtime.sendMessage({ action: 'GET_CLEANING_STATUS' });
-          if (status && status.isCleaning && status.deleted > 0) {
-            elements.btnCleanText.textContent = `🧹 (${status.deleted})`;
-          }
-        }
-      } catch { /* ignore */ }
-    }, 300);
+    // 立即停用主按钮，防止重复操作
+    elements.btnHideAndClean.disabled = true;
 
-    let deletedCount = 0;
-    try {
-      const cleanResult = await executeHistoryCleaning(
-        { pattern: selectedRule.rule, type: selectedRule.type },
-        currentTab?.url,
-        ({ deleted }) => {
-          if (deleted > 0) {
-            elements.btnCleanText.textContent = `🧹 (${deleted})`;
-          }
-        }
-      );
-      deletedCount = cleanResult.deleted;
-    } finally {
-      clearInterval(pollTimer);
-    }
+    const cleanResult = await executeHistoryCleaning(
+      { pattern: selectedRule.rule, type: selectedRule.type },
+      currentTab?.url
+    );
+    const deletedCount = cleanResult.deleted;
 
     showToast(t('popup.toastCleanOnlyDone', { count: deletedCount }));
     await refreshPageData();
@@ -615,6 +581,8 @@ if (elements.btnRemoveMatchedRule) {
     try {
       elements.btnRemoveMatchedRule.disabled = true;
       elements.btnRemoveMatchedRule.style.opacity = '0.7';
+      elements.btnHideAndClean.disabled = true;
+      elements.btnCleanOnly.disabled = true;
 
       await deleteRule(ruleToDelete.id);
       showToast(t('popup.toastRuleRemoved', { rule: ruleToDelete.pattern }));
@@ -628,6 +596,7 @@ if (elements.btnRemoveMatchedRule) {
         elements.btnRemoveMatchedRule.disabled = false;
         elements.btnRemoveMatchedRule.style.opacity = '1';
       }
+      updateActionButtons();
     }
   });
 }
