@@ -52,6 +52,9 @@
      - `storage.js` 的 `addRule` 新增域名规范化清洗通道：当规则类型为 `domain` 时，自动剥离前导协议（`https?://`）和末尾斜杠（`/`），将 `https://www.google.com/` 规范化为标准的纯域名 `www.google.com` 存储；
      - 规则查重机制无缝升级：输入带协议或斜杠的变体时，能够精准匹配并复用已存在的同名纯域名规则，杜绝冗余重复项。
 
+5. **Options 页面导航栏视觉决策（保留 Tab 右侧数字徽章与功能图标）**：
+   - **交互决策**：经界面实机体验与视觉效果对比评估，Tab 右侧具有动态统计数字徽章（当前已加载历史条数、已配置防护规则总数）及设置功能齿轮图标，能够为用户提供更清晰的数据概览与更直观的模块指示，决定保留徽章与图标的完整展现。
+
 ### 变更明细 (Detailed Changes)
 - `feat(manifest)`: `manifest.chrome.json` 与 `manifest.firefox.json` 新增 `"webNavigation"` 权限。
 - `feat(adapters)`:
