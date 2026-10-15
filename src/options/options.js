@@ -339,6 +339,11 @@ function updateSelectedSummary() {
   // 必须同时满足：1. 已勾选待删除记录；2. 已输入搜索关键词（用于提取生成永久隐藏规则）；3. 当前未在执行清理任务
   elements.btnDeleteAndAddRule.disabled = !hasSelected || !hasKeyword || isOperatingCleaning;
 
+  // 全部清空按钮逻辑优化：列表中没数据时不要隐藏，设置为 disabled；只要列表中有数据，就能点击
+  if (elements.btnDeepClean) {
+    elements.btnDeepClean.disabled = currentHistoryResults.length === 0 || isOperatingCleaning;
+  }
+
   // 动态更新悬浮提示，为用户提供清晰的交互指引
   if (!hasKeyword) {
     elements.btnDeleteAndAddRule.title = t('options.btnDeleteAndAddRuleNoKeyword');
@@ -409,7 +414,7 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     elements.loadMoreSection.classList.add('hidden');
     elements.noMoreHint.classList.add('hidden');
     if (elements.btnDeepClean) {
-      elements.btnDeepClean.classList.add('hidden');
+      elements.btnDeepClean.disabled = true;
     }
   }
 
@@ -482,9 +487,9 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
       elements.tabHistoryBadge.textContent = currentHistoryResults.length;
     }
 
-    // 历史批量删除页面，全部清空按钮应该在数据超过当前能显示的数量后才出现
+    // 历史批量删除页面全部清空按钮：列表中有数据即可点击，无数据时禁用
     if (elements.btnDeepClean) {
-      elements.btnDeepClean.classList.toggle('hidden', !hasMoreHistory || currentHistoryResults.length === 0);
+      elements.btnDeepClean.disabled = currentHistoryResults.length === 0 || isOperatingCleaning;
     }
   } catch (err) {
     console.error('Fetch history batch failed:', err);
@@ -567,7 +572,6 @@ async function deleteUrlsWithProgress(urls, title = '正在批量清理历史...
 
     isOperatingCleaning = false;
     updateSelectedSummary();
-    if (elements.btnDeepClean) elements.btnDeepClean.disabled = false;
   }
 
   return processed;
@@ -577,14 +581,17 @@ async function deleteUrlsWithProgress(urls, title = '正在批量清理历史...
  * 流式全量清空：针对十万级匹配结果，无需挂载海量 DOM，直接在底层按批次边检索边删除并分片让出线程
  */
 async function streamCleanAllMatches() {
-  const query = (elements.searchInput.value || '').trim();
-  if (!query) {
-    showToast(t('options.emptyHistoryStart'));
+  if (currentHistoryResults.length === 0) {
     return;
   }
 
+  const query = (elements.searchInput.value || '').trim();
+
   if (currentSettings.confirmDeepClean !== false) {
-    const confirmed = window.confirm(t('options.confirmDeepClean', { query }));
+    const confirmMessage = query
+      ? t('options.confirmDeepClean', { query })
+      : t('options.confirmDeepCleanAll');
+    const confirmed = window.confirm(confirmMessage);
     if (!confirmed) return;
   }
 
@@ -594,8 +601,12 @@ async function streamCleanAllMatches() {
   }
 
   isOperatingCleaning = true;
+  elements.btnDeleteSelected.disabled = true;
+  elements.btnDeleteAndAddRule.disabled = true;
+  if (elements.btnDeepClean) elements.btnDeepClean.disabled = true;
+
   elements.progressContainer.classList.remove('hidden');
-  elements.progressStatusText.textContent = t('options.progressStreamPreparing', { query });
+  elements.progressStatusText.textContent = t('options.progressStreamPreparing', { query: query || t('options.filterAll') });
   elements.progressPercentText.textContent = '...';
   elements.progressFillBar.style.width = '100%';
 
@@ -645,6 +656,7 @@ async function streamCleanAllMatches() {
       elements.progressFillBar.style.width = '0%';
     }, 800);
     isOperatingCleaning = false;
+    updateSelectedSummary();
   }
 }
 

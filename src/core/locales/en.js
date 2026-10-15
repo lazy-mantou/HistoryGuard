@@ -187,6 +187,7 @@ export default {
     toast2500: '2.5 Seconds (Default)',
     toast4000: '4.0 Seconds (Relaxed)',
     confirmDeepClean: 'Are you sure you want to clear all history records matching "{query}"?\nAll matched records will be permanently erased.',
+    confirmDeepCleanAll: 'Are you sure you want to clear all history records in the current time filter?\nAll matching records will be permanently erased.',
     confirmResetHits: 'Reset all rule hit counters to 0? Active rules will remain enabled.',
     confirmClearAllRules: '⚠️ Danger Warning: Are you sure you want to clear ALL protection rules?\nThis cannot be undone. Please export a JSON backup first.',
     toastStreamCleanSuccess: 'Clear All completed! Successfully wiped {count} history records',

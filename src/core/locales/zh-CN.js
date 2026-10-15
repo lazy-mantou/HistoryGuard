@@ -187,6 +187,7 @@ export default {
     toast2500: '2.5 秒 (推荐默认)',
     toast4000: '4.0 秒 (从容阅读)',
     confirmDeepClean: '确认要全部清空所有与 "{query}" 匹配的历史记录吗？\n即使包含数万甚至数十万条，系统也将以分批无阻塞方式彻底清空。',
+    confirmDeepCleanAll: '确认要全部清空当前时间范围内的所有历史记录吗？\n即使包含数万甚至数十万条，系统也将以分批无阻塞方式彻底清空。',
     confirmResetHits: '确认要将当前所有规则的拦截命中次数清零吗？此操作不影响规则的启用状态。',
     confirmClearAllRules: '⚠️ 高危警告：确定要清空本地所有防护规则吗？\n清空后将无法找回，建议先导出 JSON 备份。',
     toastStreamCleanSuccess: '全部清空完成！共彻底删除 {count} 条历史记录',
