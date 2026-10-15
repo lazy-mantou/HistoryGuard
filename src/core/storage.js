@@ -10,7 +10,8 @@ import { detectRuleType } from './ruleMatcher.js';
 export const STORAGE_KEYS = {
   RULES: 'histguard_rules',
   SILENT_MODE: 'histguard_silent_mode',
-  SETTINGS: 'histguard_settings'
+  SETTINGS: 'histguard_settings',
+  PENDING_CLEAN_JOB: 'histguard_pending_clean_job'
 };
 
 /**
@@ -121,6 +122,16 @@ export async function toggleRule(ruleId, forcedState) {
 
   rule.enabled = typeof forcedState === 'boolean' ? forcedState : !rule.enabled;
   await saveRules(currentRules);
+  if (!rule.enabled) {
+    try {
+      const pending = await getPendingCleanJob();
+      if (pending && (pending.rule?.id === ruleId || pending.rule?.pattern === rule.pattern)) {
+        await clearPendingCleanJob();
+      }
+    } catch {
+      // ignore
+    }
+  }
   return rule;
 }
 
@@ -131,9 +142,20 @@ export async function toggleRule(ruleId, forcedState) {
  */
 export async function deleteRule(ruleId) {
   const currentRules = await getRules();
+  const ruleToDelete = currentRules.find(r => r.id === ruleId);
   const filtered = currentRules.filter(r => r.id !== ruleId);
   if (filtered.length !== currentRules.length) {
     await saveRules(filtered);
+    if (ruleToDelete) {
+      try {
+        const pending = await getPendingCleanJob();
+        if (pending && (pending.rule?.id === ruleId || pending.rule?.pattern === ruleToDelete.pattern)) {
+          await clearPendingCleanJob();
+        }
+      } catch {
+        // ignore
+      }
+    }
     return true;
   }
   return false;
@@ -362,5 +384,50 @@ export async function resetRuleHits() {
  */
 export async function clearAllRules() {
   await saveRules([]);
+  await clearPendingCleanJob();
 }
+
+/**
+ * 获取当前持久化的挂起历史出清任务（若有）
+ * 用于浏览器意外退出、崩溃或关机重启后自愈续跑
+ * @returns {Promise<Object|null>}
+ */
+export async function getPendingCleanJob() {
+  const data = await browserApi.storage.get([STORAGE_KEYS.PENDING_CLEAN_JOB]);
+  const job = data[STORAGE_KEYS.PENDING_CLEAN_JOB];
+  if (job && typeof job === 'object' && job.rule && job.status === 'in_progress') {
+    return job;
+  }
+  return null;
+}
+
+/**
+ * 持久化记录正在执行的历史出清任务
+ * @param {Object} job - { id, rule, currentUrl, status, startedAt, updatedAt }
+ * @returns {Promise<void>}
+ */
+export async function savePendingCleanJob(job) {
+  if (!job || typeof job !== 'object' || !job.rule) return;
+  await browserApi.storage.set({
+    [STORAGE_KEYS.PENDING_CLEAN_JOB]: {
+      id: job.id || `clean_job_${Date.now()}`,
+      rule: job.rule,
+      currentUrl: job.currentUrl || '',
+      status: job.status || 'in_progress',
+      startedAt: job.startedAt || Date.now(),
+      updatedAt: Date.now()
+    }
+  });
+}
+
+/**
+ * 清除已完成或取消的挂起出清任务
+ * @returns {Promise<void>}
+ */
+export async function clearPendingCleanJob() {
+  await browserApi.storage.set({
+    [STORAGE_KEYS.PENDING_CLEAN_JOB]: null
+  });
+}
+
 

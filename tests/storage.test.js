@@ -21,7 +21,11 @@ import {
   exportRules,
   getSettings,
   saveSettings,
-  DEFAULT_SETTINGS
+  DEFAULT_SETTINGS,
+  getPendingCleanJob,
+  savePendingCleanJob,
+  clearPendingCleanJob,
+  STORAGE_KEYS
 } from '../src/core/storage.js';
 
 // 内存模拟存储
@@ -314,3 +318,71 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     assert.strictEqual(fetched.enableHitTracking, false);
   });
 });
+
+describe('storage - 挂起出清任务持久化与生命周期维护 (Pending Clean Job)', () => {
+  it('初次或无任务时 getPendingCleanJob 应返回 null', async () => {
+    const job = await getPendingCleanJob();
+    assert.strictEqual(job, null);
+  });
+
+  it('savePendingCleanJob 应当持久化任务详情，且 getPendingCleanJob 能正确读取', async () => {
+    const mockRule = { id: 'rule_123', pattern: 'youtube.com', type: 'domain', enabled: true };
+    await savePendingCleanJob({
+      rule: mockRule,
+      currentUrl: 'https://youtube.com/watch?v=123',
+      status: 'in_progress'
+    });
+
+    const job = await getPendingCleanJob();
+    assert.ok(job);
+    assert.strictEqual(job.rule.pattern, 'youtube.com');
+    assert.strictEqual(job.currentUrl, 'https://youtube.com/watch?v=123');
+    assert.strictEqual(job.status, 'in_progress');
+    assert.ok(job.id.startsWith('clean_job_'));
+    assert.ok(typeof job.startedAt === 'number');
+    assert.ok(typeof job.updatedAt === 'number');
+  });
+
+  it('clearPendingCleanJob 应当彻底清除挂起任务', async () => {
+    const mockRule = { id: 'rule_123', pattern: 'youtube.com', type: 'domain', enabled: true };
+    await savePendingCleanJob({ rule: mockRule, status: 'in_progress' });
+    assert.ok(await getPendingCleanJob());
+
+    await clearPendingCleanJob();
+    assert.strictEqual(await getPendingCleanJob(), null);
+  });
+
+  it('当任务状态非 in_progress 时，getPendingCleanJob 应安全返回 null', async () => {
+    const mockRule = { id: 'rule_123', pattern: 'youtube.com', type: 'domain', enabled: true };
+    await savePendingCleanJob({ rule: mockRule, status: 'completed' });
+    assert.strictEqual(await getPendingCleanJob(), null);
+  });
+
+  it('deleteRule 删除规则时，若该规则恰好有挂起出清任务，应自动取消并清理任务', async () => {
+    const { rule } = await addRule({ pattern: 'bilibili.com', type: 'domain' });
+    await savePendingCleanJob({ rule, status: 'in_progress' });
+    assert.ok(await getPendingCleanJob());
+
+    await deleteRule(rule.id);
+    assert.strictEqual(await getPendingCleanJob(), null);
+  });
+
+  it('toggleRule 禁用规则时，若该规则有挂起出清任务，应自动取消并清理任务', async () => {
+    const { rule } = await addRule({ pattern: 'weibo.com', type: 'domain' });
+    await savePendingCleanJob({ rule, status: 'in_progress' });
+    assert.ok(await getPendingCleanJob());
+
+    await toggleRule(rule.id, false);
+    assert.strictEqual(await getPendingCleanJob(), null);
+  });
+
+  it('clearAllRules 清空所有规则时，应联动清空挂起的出清任务', async () => {
+    const { rule } = await addRule({ pattern: 'zhihu.com', type: 'domain' });
+    await savePendingCleanJob({ rule, status: 'in_progress' });
+    assert.ok(await getPendingCleanJob());
+
+    await clearAllRules();
+    assert.strictEqual(await getPendingCleanJob(), null);
+  });
+});
+

@@ -21,7 +21,8 @@ const testFiles = [
   'theme.test.js',
   'toolbarIndicator.test.js',
   'popupRemoval.test.js',
-  'adapters.test.js'
+  'adapters.test.js',
+  'crashRecovery.test.js'
 ];
 
 console.log('\n========================================================');

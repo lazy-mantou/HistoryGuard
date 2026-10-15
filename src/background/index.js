@@ -14,7 +14,10 @@ import {
   incrementRuleHits,
   getSettings,
   DEFAULT_SETTINGS,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  getPendingCleanJob,
+  savePendingCleanJob,
+  clearPendingCleanJob
 } from '../core/storage.js';
 import { updateTabToolbarIndicator, updateGlobalToolbarIndicator, ICON_PATHS } from './toolbarIndicator.js';
 
@@ -286,6 +289,14 @@ if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
       backgroundCleaningState.scanned = 0;
       backgroundCleaningState.lastUpdated = Date.now();
 
+      // 持久化记录正在执行的任务，以防浏览器意外退出或关机
+      await savePendingCleanJob({
+        rule,
+        currentUrl,
+        status: 'in_progress',
+        startedAt: Date.now()
+      });
+
       try {
         console.log(`[HistGuard BG] 开始在后台执行历史记录全量出清: [${backgroundCleaningState.rulePattern}]`);
         const concurrency = resolveDeleteConcurrency(cachedSettings.deleteChunkSize, browserApi);
@@ -313,6 +324,8 @@ if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
         backgroundCleaningState.isCleaning = false;
         console.error('[HistGuard BG] 后台历史出清失败:', err);
         return { success: false, error: err.message, deleted: backgroundCleaningState.deleted, scanned: backgroundCleaningState.scanned };
+      } finally {
+        await clearPendingCleanJob();
       }
     }
 
@@ -323,5 +336,76 @@ if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
     return null;
   });
 }
+
+/**
+ * 启动自愈探测：检查是否存在因浏览器异常崩溃、强制退出或关机断电而中断的挂起历史出清任务
+ * 若存在，以无感让步模式自动续跑剩余未删记录，保障数据一致性与隐私抹除确定性
+ * @param {number} [delayMs=2500] 启动冷启动延时缓冲 (ms)
+ * @returns {Promise<Object|null>}
+ */
+export async function checkAndResumePendingCleanJob(delayMs = 2500) {
+  if (delayMs > 0) {
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+
+  try {
+    const pendingJob = await getPendingCleanJob();
+    if (!pendingJob || !pendingJob.rule) {
+      return null;
+    }
+
+    const rulePattern = typeof pendingJob.rule === 'string' ? pendingJob.rule : (pendingJob.rule.pattern || '');
+    console.log(`[HistGuard BG] 发现异常中断的历史出清任务 [${rulePattern}]，启动后台自愈续跑...`);
+
+    // 校验规则是否依然有效且未被停用
+    const allRules = await getRules();
+    const ruleId = pendingJob.rule.id;
+    const existingRule = allRules.find(r => (ruleId && r.id === ruleId) || r.pattern === rulePattern);
+
+    if (existingRule && existingRule.enabled === false) {
+      console.log(`[HistGuard BG] 挂起任务对应的规则已被停用，取消续跑:`, rulePattern);
+      await clearPendingCleanJob();
+      return null;
+    }
+
+    backgroundCleaningState.isCleaning = true;
+    backgroundCleaningState.rulePattern = rulePattern;
+    backgroundCleaningState.deleted = 0;
+    backgroundCleaningState.scanned = 0;
+    backgroundCleaningState.lastUpdated = Date.now();
+
+    const concurrency = resolveDeleteConcurrency(cachedSettings.deleteChunkSize, browserApi);
+    const result = await cleanHistoryByRule(pendingJob.rule, {
+      concurrency,
+      onProgress: ({ deleted, scanned }) => {
+        backgroundCleaningState.deleted = deleted;
+        backgroundCleaningState.scanned = scanned;
+        backgroundCleaningState.lastUpdated = Date.now();
+      }
+    });
+
+    if (pendingJob.currentUrl) {
+      try {
+        await browserApi.history.deleteUrl(pendingJob.currentUrl);
+      } catch {
+        // ignore
+      }
+    }
+
+    console.log(`[HistGuard BG] 异常断点历史自愈出清完成: 删除 ${result.deleted} 条, 扫描 ${result.scanned} 条`);
+    return result;
+  } catch (err) {
+    console.error('[HistGuard BG] 异常断点自愈出清执行失败:', err);
+    return null;
+  } finally {
+    backgroundCleaningState.isCleaning = false;
+    await clearPendingCleanJob();
+  }
+}
+
+// 5. 启动自愈机制：延迟检查并恢复因意外退出而中断的历史出清任务
+checkAndResumePendingCleanJob(2500).catch(err => {
+  console.error('[HistGuard BG] 恢复挂起出清任务异常:', err);
+});
 
 console.log('[HistGuard BG] 后台拦截守护服务已启动就绪 (多通道拦截、工具栏状态指示与后台出清引擎)');

@@ -4,6 +4,37 @@
 
 ---
 
+## [1.0.33] - 2026-10-15
+
+### 架构可靠性与崩溃自愈升级 (Fault Tolerance & Crash Recovery Auto-Resume System)
+1. **持久化历史出清任务队列 (Persistent History Clean Job Queue)**:
+   - **痛点场景**：
+     - 当用户在包含海量历史库的浏览器中触发“隐藏并清理”时，后台历史出清正在高并发与微让步模式下进行。若在此期间电脑突然断电关机、用户误关闭浏览器进程、或操作系统发生异常杀死浏览器，正在执行的历史删除任务被强行打断，导致残留的未删历史孤立在本地历史库中；
+   - **持久化任务契约设计**：
+     - 在 `src/core/storage.js` 新增 `STORAGE_KEYS.PENDING_CLEAN_JOB = 'histguard_pending_clean_job'`，提供 `savePendingCleanJob`、`getPendingCleanJob` 与 `clearPendingCleanJob` 事务方法；
+     - 当后台接收到 `CLEAN_HISTORY_BY_RULE` 出清指令时，优先将待清理规则元数据、当前页面 URL、状态（`status: 'in_progress'`）与时间戳原子持久化至 `browser.storage.local`；
+     - 任务正常完成或捕获已知不可逆异常后，触发 `finally` 块彻底擦除挂起任务记录。
+
+2. **浏览器启动自愈续跑机制 (Startup Self-Healing & Cold-Start Buffer)**:
+   - **零卡顿冷启动延时缓冲 (Cold-Start Buffer)**：
+     - 浏览器重启初期，底层 SQLite 历史库、标签页恢复与各类扩展初始化高度集中，若此时立即发起重型物理删除，极易引发主线程与磁盘 I/O 争用；
+     - `checkAndResumePendingCleanJob` 默认配置 `2500ms` 启动延迟缓冲，待浏览器环境初始化平稳后在后台静默发起自愈探测；
+   - **规则有效性校验与防死循环设计**：
+     - 自愈探测发现挂起任务后，先核验当前规则库；若该规则已被用户停用或删除，主动取消自愈出清并清空挂起任务；
+     - 基于 `cleanHistoryByRule` 本身的幂等性特性（已被物理删除的条目不会重复处理），仅全量检索并物理抹除剩余残留历史；
+     - 若自愈期间触发严重底层异常，自动安全捕获并清理任务标记，彻底避免浏览器每次启动都陷入重复出清死循环。
+
+3. **规则生命周期联动清理 (Lifecycle Hook Cleanup)**:
+   - 在 `deleteRule(ruleId)`、`toggleRule(ruleId, false)` 和 `clearAllRules()` 中深度挂接联动清理逻辑：一旦规则被用户停用、删除或全量重置，其关联的后台挂起出清任务立即作废释放，严防误删。
+
+4. **自动化测试与双端编译验证 (Testing & Verification)**:
+   - 补充 `tests/crashRecovery.test.js` 全套断点自愈与异常防护单元测试（覆盖无任务冷启、中断续跑、停用规则过滤、底层存储异常隔离）；
+   - 在 `tests/storage.test.js` 扩充挂起任务持久化契约与生命周期联动的全量断言；
+   - 全套 185 项单元测试 100% 通过（185 pass, 0 fail）；
+   - 双内核生产编译包顺利同步输出至 `dist/chrome/` 与 `dist/firefox/`。
+
+---
+
 ## [1.0.32] - 2026-10-15
 
 ### 性能优化与架构升级 (Performance Optimizations & Architectural Improvements)
