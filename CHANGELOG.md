@@ -4,6 +4,41 @@
 
 ---
 
+## [1.0.22] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **全新品牌视觉识别体系设计（打造 HistGuard "Chrono-Shield 时空之盾" 全套图标）**：
+   - **设计理念与视觉隐喻 (Brand Metaphors)**：
+     - **Chrono-Shield（时空之盾）**：外部采用坚固的立体切面防卫盾牌（Security Shield），象征对浏览器足迹与隐私的无死角守护；
+     - **History Dial（历史表盘）**：内部镶嵌 12 段精准时间刻度表盘，代表浏览器访问时间戳与历史日志；
+     - **Rewind / Stealth Sweep（逆向回溯与无痕出清）**：中心融入高亮逆向回溯光弧与箭头，直观传递“瞬间抹平敏感浏览痕迹、历史无痕可退”的核心业务特性；
+     - **Cyber Core Beacon（隐私信标）**：中央汇聚点如同智能探测信标，象征后台四通道多路实时自动化拦截网。
+   - **全套尺寸与工程化落地 (Asset Deliverables)**：
+     - `icon16.png` (16x16)：专为浏览器扩展栏 Favicon 与标签页设计，超高对比度保证极小尺寸下的高辨识度；
+     - `icon32.png` (32x32)：适配 Windows 高 DPI 屏幕扩展栏主按钮与 Popup 弹窗头部 Brand Logo；
+     - `icon48.png` (48x48)：专供 `chrome://extensions` 与 `about:addons` 扩展管理控制台卡片展示；
+     - `icon128.png` (128x128)：Chrome Web Store、Edge Addons 与 Firefox AMO 应用商店官方分发规格；
+     - `icon512.png` (512x512)：超高清视网膜母图；
+     - `icon.svg`：原生手绘纯矢量 SVG 母本，内置霓虹线性/径向渐变与高斯辉光滤镜，任意无损放大。
+   - **UI 界面深度融入**：
+     - 在 `popup.html` 与 `options.html` 中彻底替换原有的通用 Emoji `🛡️`，接入定制高精度圆角 Brand 图标与发光微阴影。
+2. **全项目版本号同步与发行闭环 (Version 1.0.22 Synchronization)**：
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.22`，并通过 `build.js` 重新分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `feat(assets)`:
+  - `icons/`: 新增并更新 `icon16.png`, `icon32.png`, `icon48.png`, `icon128.png`, `icon512.png`, `icon.svg`。
+- `feat(popup & options)`:
+  - `src/popup/popup.html` & `src/popup/popup.css`: 品牌标识由 Emoji 升级为专属 `icon32.png` 图标。
+  - `src/options/options.html` & `src/options/options.css`: 控制台顶部品牌标识升级为带悬浮蓝光微阴影的 `icon48.png` 图标。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.22`。
+  - `dist/`: 经 `node build.js` 重新编译更新发布包。
+- `test`:
+  - 全套 117 项自动化测试全部执行通过（117 pass, 0 fail）。
+
+---
+
 ## [1.0.21] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)

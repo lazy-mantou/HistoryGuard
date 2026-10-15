@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- 背景暗夜渐变 -->
+    <linearGradient id="hg-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e1726" />
+      <stop offset="100%" stop-color="#040711" />
+    </linearGradient>
+
+    <!-- 盾牌外轮廓赛博霓虹渐变 -->
+    <linearGradient id="hg-shield-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+
+    <!-- 盾牌内部哑光质感渐变 -->
+    <linearGradient id="hg-shield-body" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#162035" />
+      <stop offset="100%" stop-color="#080d1a" />
+    </linearGradient>
+
+    <!-- 盾牌高光折面渐变 -->
+    <linearGradient id="hg-facet-left" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.03" />
+    </linearGradient>
+
+    <!-- 回溯时钟光环渐变 -->
+    <linearGradient id="hg-clock-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="60%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+
+    <!-- 霓虹光晕滤镜 -->
+    <filter id="hg-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 圆角矩阵底座 (App Squircle) -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#hg-bg)" stroke="#1e293b" stroke-width="3" />
+
+  <!-- 外部环境光辉 -->
+  <ellipse cx="256" cy="256" rx="160" ry="160" fill="#38bdf8" opacity="0.08" filter="url(#hg-glow)" />
+
+  <!-- 盾牌外部霓虹外框 (Chrono-Shield Outer Rim) -->
+  <path d="M 256 68 
+           C 328 116, 404 116, 416 128 
+           C 416 268, 368 382, 256 444 
+           C 144 382, 96 268, 96 128 
+           C 108 116, 184 116, 256 68 Z" 
+        fill="none" 
+        stroke="url(#hg-shield-rim)" 
+        stroke-width="12" 
+        stroke-linejoin="round"
+        filter="url(#hg-glow)" />
+
+  <!-- 盾牌主体结构 (Shield Body) -->
+  <path d="M 256 82 
+           C 322 126, 392 126, 402 136 
+           C 402 262, 358 368, 256 428 
+           C 154 368, 110 262, 110 136 
+           C 120 126, 190 126, 256 82 Z" 
+        fill="url(#hg-shield-body)" 
+        stroke="#1e293b" 
+        stroke-width="2" />
+
+  <!-- 盾牌左半侧高光立体切面 -->
+  <path d="M 256 82 
+           C 190 126, 120 126, 110 136 
+           C 110 262, 154 368, 256 428 Z" 
+        fill="url(#hg-facet-left)" />
+
+  <!-- 历史刻度表盘外圈 (History Dial Outer Ring) -->
+  <circle cx="256" cy="256" r="108" fill="none" stroke="#334155" stroke-width="3" stroke-dasharray="4 12" opacity="0.7" />
+  <circle cx="256" cy="256" r="92" fill="#090d16" stroke="url(#hg-shield-rim)" stroke-width="2.5" opacity="0.9" />
+
+  <!-- 12 个时钟历史节点刻度 -->
+  <g stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round" opacity="0.75">
+    <line x1="256" y1="172" x2="256" y2="182" />
+    <line x1="256" y1="330" x2="256" y2="340" />
+    <line x1="172" y1="256" x2="182" y2="256" />
+    <line x1="330" y1="256" x2="340" y2="256" />
+    <line x1="197" y1="197" x2="204" y2="204" />
+    <line x1="308" y1="308" x2="315" y2="315" />
+    <line x1="197" y1="315" x2="204" y2="308" />
+    <line x1="308" y1="204" x2="315" y2="197" />
+  </g>
+
+  <!-- 核心回溯无痕扫掠光弧 (Rewind / Stealth Sweep Arc) -->
+  <path d="M 256 196 
+           A 60 60 0 1 0 316 256" 
+        fill="none" 
+        stroke="url(#hg-clock-glow)" 
+        stroke-width="12" 
+        stroke-linecap="round" 
+        filter="url(#hg-glow)" />
+
+  <!-- 逆向回溯箭头 (Rewind Arrowhead) -->
+  <polygon points="256,178 274,204 246,204" 
+           fill="#38bdf8" 
+           filter="url(#hg-glow)" />
+
+  <!-- 核心隐私信标核心 (Privacy Guard Core Beacon) -->
+  <circle cx="256" cy="256" r="14" fill="#38bdf8" filter="url(#hg-glow)" />
+  <circle cx="256" cy="256" r="7" fill="#ffffff" />
+</svg>

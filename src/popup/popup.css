@@ -167,8 +167,11 @@ body {
 }
 
 .brand-icon {
-  font-size: 17px;
-  line-height: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .brand-title {
