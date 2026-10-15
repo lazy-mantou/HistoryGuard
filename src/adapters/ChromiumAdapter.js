@@ -122,44 +122,77 @@ export class ChromiumAdapter extends IBrowserAdapter {
             return reject(new Error('chrome.tabs API is not available'));
           }
 
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (chrome.runtime?.lastError) {
-              return reject(new Error(chrome.runtime.lastError.message));
-            }
-
-            if (tabs && tabs.length > 0 && (tabs[0].url || tabs[0].pendingUrl)) {
+          // Service Worker 中首选 lastFocusedWindow: true 以精准定位用户当前活跃窗口
+          chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+            if (!chrome.runtime?.lastError && tabs && tabs.length > 0 && (tabs[0].url || tabs[0].pendingUrl)) {
               const activeTab = tabs[0];
-              resolve({
+              return resolve({
                 id: activeTab.id,
                 url: activeTab.url || activeTab.pendingUrl || '',
                 title: activeTab.title || ''
               });
-            } else {
-              chrome.tabs.query({ active: true, lastFocusedWindow: true }, (fallbackTabs) => {
-                if (fallbackTabs && fallbackTabs.length > 0 && (fallbackTabs[0].url || fallbackTabs[0].pendingUrl)) {
-                  const fallbackTab = fallbackTabs[0];
-                  resolve({
-                    id: fallbackTab.id,
-                    url: fallbackTab.url || fallbackTab.pendingUrl || '',
-                    title: fallbackTab.title || ''
-                  });
-                } else {
-                  // 移动端专用兜底：部分移动浏览器无独立窗口概念，直接查询当前活动标签
-                  chrome.tabs.query({ active: true }, (mobileTabs) => {
-                    if (mobileTabs && mobileTabs.length > 0 && (mobileTabs[0].url || mobileTabs[0].pendingUrl)) {
-                      const mTab = mobileTabs[0];
-                      resolve({
-                        id: mTab.id,
-                        url: mTab.url || mTab.pendingUrl || '',
-                        title: mTab.title || ''
-                      });
-                    } else {
-                      resolve(null);
-                    }
+            }
+
+            // 备用：currentWindow: true
+            chrome.tabs.query({ active: true, currentWindow: true }, (fallbackTabs) => {
+              if (!chrome.runtime?.lastError && fallbackTabs && fallbackTabs.length > 0 && (fallbackTabs[0].url || fallbackTabs[0].pendingUrl)) {
+                const fallbackTab = fallbackTabs[0];
+                return resolve({
+                  id: fallbackTab.id,
+                  url: fallbackTab.url || fallbackTab.pendingUrl || '',
+                  title: fallbackTab.title || ''
+                });
+              }
+
+              // 兜底：所有活动标签（兼容部分移动端或单一窗口模式）
+              chrome.tabs.query({ active: true }, (allActiveTabs) => {
+                if (!chrome.runtime?.lastError && allActiveTabs && allActiveTabs.length > 0 && (allActiveTabs[0].url || allActiveTabs[0].pendingUrl)) {
+                  const mTab = allActiveTabs[0];
+                  return resolve({
+                    id: mTab.id,
+                    url: mTab.url || mTab.pendingUrl || '',
+                    title: mTab.title || ''
                   });
                 }
+                resolve(null);
               });
+            });
+          });
+        });
+      },
+
+      get: (tabId) => {
+        return new Promise((resolve) => {
+          if (typeof chrome === 'undefined' || !chrome.tabs?.get || typeof tabId !== 'number') {
+            return resolve(null);
+          }
+          chrome.tabs.get(tabId, (tab) => {
+            if (chrome.runtime?.lastError || !tab) {
+              return resolve(null);
             }
+            resolve({
+              id: tab.id,
+              url: tab.url || tab.pendingUrl || '',
+              title: tab.title || ''
+            });
+          });
+        });
+      },
+
+      query: (queryInfo = {}) => {
+        return new Promise((resolve) => {
+          if (typeof chrome === 'undefined' || !chrome.tabs?.query) {
+            return resolve([]);
+          }
+          chrome.tabs.query(queryInfo, (tabs) => {
+            if (chrome.runtime?.lastError || !Array.isArray(tabs)) {
+              return resolve([]);
+            }
+            resolve(tabs.map(t => ({
+              id: t.id,
+              url: t.url || t.pendingUrl || '',
+              title: t.title || ''
+            })));
           });
         });
       },
@@ -242,14 +275,27 @@ export class ChromiumAdapter extends IBrowserAdapter {
           if (typeof chrome === 'undefined' || !chrome.action?.setIcon) {
             return resolve();
           }
-          const details = { path };
+          // 深度标准化路径：统一以 '/' 开头，避免在 Service Worker 嵌套目录 background/ 下解析成 background/icons/...
+          let normalizedPath = path;
+          if (typeof path === 'string') {
+            normalizedPath = path.startsWith('/') || path.startsWith('chrome-extension://') ? path : `/${path}`;
+          } else if (path && typeof path === 'object') {
+            normalizedPath = {};
+            for (const [size, p] of Object.entries(path)) {
+              normalizedPath[size] = (typeof p === 'string' && !p.startsWith('/') && !p.startsWith('chrome-extension://')) ? `/${p}` : p;
+            }
+          }
+          const details = { path: normalizedPath };
           if (typeof tabId === 'number') details.tabId = tabId;
           try {
             chrome.action.setIcon(details, () => {
-              if (chrome.runtime?.lastError) { /* ignore */ }
+              if (chrome.runtime?.lastError) {
+                console.warn('[HistGuard] chrome.action.setIcon 提示:', chrome.runtime.lastError.message, details);
+              }
               resolve();
             });
-          } catch {
+          } catch (err) {
+            console.warn('[HistGuard] chrome.action.setIcon 异常:', err);
             resolve();
           }
         });

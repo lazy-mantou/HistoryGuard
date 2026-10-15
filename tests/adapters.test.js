@@ -30,6 +30,8 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
     await assert.rejects(async () => adapter.history.search(), /must be implemented/);
     await assert.rejects(async () => adapter.storage.get(), /must be implemented/);
     await assert.rejects(async () => adapter.tabs.getCurrentActiveTab(), /must be implemented/);
+    await assert.rejects(async () => adapter.tabs.get(1), /must be implemented/);
+    await assert.rejects(async () => adapter.tabs.query(), /must be implemented/);
     assert.throws(() => adapter.tabs.onUpdated(), /must be implemented/);
     assert.throws(() => adapter.tabs.onActivated(), /must be implemented/);
     assert.throws(() => adapter.webNavigation.onHistoryStateUpdated(), /must be implemented/);
@@ -55,6 +57,8 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.storage.set, 'function');
     assert.strictEqual(typeof adapter.storage.onChanged, 'function');
     assert.strictEqual(typeof adapter.tabs.getCurrentActiveTab, 'function');
+    assert.strictEqual(typeof adapter.tabs.get, 'function');
+    assert.strictEqual(typeof adapter.tabs.query, 'function');
     assert.strictEqual(typeof adapter.tabs.onUpdated, 'function');
     assert.strictEqual(typeof adapter.tabs.onActivated, 'function');
     assert.strictEqual(typeof adapter.webNavigation.onHistoryStateUpdated, 'function');
@@ -152,6 +156,8 @@ describe('adapters - FirefoxAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.storage.set, 'function');
     assert.strictEqual(typeof adapter.storage.onChanged, 'function');
     assert.strictEqual(typeof adapter.tabs.getCurrentActiveTab, 'function');
+    assert.strictEqual(typeof adapter.tabs.get, 'function');
+    assert.strictEqual(typeof adapter.tabs.query, 'function');
     assert.strictEqual(typeof adapter.tabs.onUpdated, 'function');
     assert.strictEqual(typeof adapter.tabs.onActivated, 'function');
     assert.strictEqual(typeof adapter.webNavigation.onHistoryStateUpdated, 'function');

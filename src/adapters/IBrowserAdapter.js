@@ -80,6 +80,24 @@ export class IBrowserAdapter {
       },
 
       /**
+       * 获取指定标签页信息
+       * @param {number} tabId
+       * @returns {Promise<{id: number, url: string, title: string}|null>}
+       */
+      get: (tabId) => {
+        throw new Error('tabs.get must be implemented by adapter');
+      },
+
+      /**
+       * 查询标签页列表
+       * @param {Object} [queryInfo={}]
+       * @returns {Promise<Array<{id: number, url: string, title: string}>>}
+       */
+      query: (queryInfo = {}) => {
+        throw new Error('tabs.query must be implemented by adapter');
+      },
+
+      /**
        * 监听标签页更新（支持捕获 URL 变化、pushState、replaceState 等）
        * @param {function(number, Object, Object): void} callback - (tabId, changeInfo, tab)
        */

@@ -4,6 +4,39 @@
 
 ---
 
+## [1.0.29] - 2026-10-15
+
+### 需求整理与 Bug 修复 (Bug Fixes & Technical Decisions)
+1. **修复静默模式与命中规则时工具栏图标未动态改变的核心 Bug (Fix Toolbar Icon Not Changing in Silent Mode & Rule Hits)**:
+   - **Bug 根因排查与定位**：
+     - **根因一：Service Worker 相对路径解析失效**：
+       - `toolbarIndicator.js` 中 `ICON_PATHS` 使用了无前导斜杠的相对路径（如 `'icons/icon-green16.png'`）；
+       - 在 Chromium MV3 Service Worker（位于 `/background/index.js` 子目录）执行环境下，Chrome 会将未带前导斜杠的相对路径按 Service Worker 脚本所在目录解析（即 `background/icons/icon-green16.png`），导致 `chrome.action.setIcon` 在底层抛出 `Could not load icon` 异常并失败；
+     - **根因二：静默模式只针对单标签页且依赖前台窗口**：
+       - 静默模式是全局行为，但原本仅在缓存更新时调用 `getCurrentActiveTab()` 尝试获取单个活动标签，而当用户在 Popup 弹窗中点击开启静默模式时，`chrome.tabs.query({ active: true, currentWindow: true })` 往往无法正确返回用户当前背后的网页标签，且缺少全局默认图标设置（无 `tabId` 的 `setIcon`）；
+     - **根因三：`tabs.onUpdated` 状态未 complete 时跳过指示器更新**：
+       - 原代码使用 `changeInfo.status === 'complete' ? tab?.url : null` 判定，当网页在加载中（`status: 'loading'`）或同源页面跳转只变动 hash/title 时，更新被阻断，用户无法在导航开始瞬间看到图标切换为绿色；
+     - **根因四：活动标签切换事件（`onActivated`）无法及时同步**：
+       - 原逻辑依赖 `getCurrentActiveTab` 间接反查，而在 Service Worker 中推荐使用 `chrome.tabs.get(activeInfo.tabId)` 精确秒级直查。
+   - **全链路修复与架构优化**：
+     - **路径绝对根锚定与适配器自动标准化**：
+       - `ICON_PATHS` 中所有图标路径统一加上前置根路径斜杠（`'/icons/icon16.png'`, `'/icons/icon-green16.png'` 等）；
+       - 在 `ChromiumAdapter.js` 与 `FirefoxAdapter.js` 的 `action.setIcon` 中增加路径自动规范化防御（若未带 `/` 则自动补全），彻底根除底层路径解析异常。
+     - **静默模式全局与全标签页双重同步机制**：
+       - 新增 `updateGlobalToolbarIndicator(silentUntil, lang)`，在静默模式开启或到期时，直接更新扩展全局默认的工具栏图标（绿色/蓝色），确保扩展在任何窗口、新开标签页或关闭弹窗后均直接显示正确颜色；
+       - `syncAllTabsToolbarIndicators()` 遍历当前所有已打开的标签页（`browserApi.tabs.query({})`），逐个调用 `updateTabToolbarIndicator`，实现秒级全量刷新。
+     - **导航监听即时响应与多级直查优化**：
+       - `tabs.onUpdated` 改为优先获取 `changeInfo.url || tab?.url`，只要识别到目标 URL 即刻渲染对应防护状态（命中规则秒切绿盾，未命中保持蓝盾），无需阻塞等待全网页资源加载完毕；
+       - `tabs.onActivated` 优先通过新增适配器方法 `browserApi.tabs.get(activeInfo.tabId)` 精确秒查标签页 URL 并同步指示器；
+       - 适配器抽象契约同步补全 `tabs.get` 与 `tabs.query`。
+2. **测试与版本同步 (Version 1.0.29 Synchronization)**：
+   - 补充 `tests/adapters.test.js` 针对 `tabs.get` 与 `tabs.query` 的抽象契约测试；
+   - 补充 `tests/toolbarIndicator.test.js` 针对 `updateGlobalToolbarIndicator` 全局图标渲染的独立测试；
+   - 全套 159 项自动化单元测试全部通过（159 pass, 0 fail）；
+   - 同步升级版本至 `1.0.29`（`package.json`, `manifest.chrome.json`, `manifest.firefox.json`），并执行 `node build.js` 重新构建发布包。
+
+---
+
 ## [1.0.28] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)

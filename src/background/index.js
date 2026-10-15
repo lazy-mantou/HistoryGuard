@@ -15,7 +15,7 @@ import {
   DEFAULT_SETTINGS,
   STORAGE_KEYS
 } from '../core/storage.js';
-import { updateTabToolbarIndicator } from './toolbarIndicator.js';
+import { updateTabToolbarIndicator, updateGlobalToolbarIndicator, ICON_PATHS } from './toolbarIndicator.js';
 
 // 内存中缓存已启用的规则、静默模式与运行设置，保证在 onVisited 高频触发时毫秒级响应
 let cachedRules = [];
@@ -23,21 +23,44 @@ let cachedSilentUntil = 0;
 let cachedSettings = { ...DEFAULT_SETTINGS };
 
 /**
- * 刷新当前前台活动标签页的工具栏图标外观与角标状态
+ * 全量同步所有标签页与全局默认的工具栏状态指示器
  */
-async function refreshActiveTabIndicator() {
+async function syncAllTabsToolbarIndicators() {
+  const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+
+  // 1. 同步扩展全局默认工具栏状态（不绑定具体 tabId，设置全局兜底外观）
+  await updateGlobalToolbarIndicator(cachedSilentUntil, lang);
+
+  // 2. 遍历同步当前已打开的所有标签页具体状态
   try {
-    const activeTab = await browserApi.tabs.getCurrentActiveTab();
-    if (activeTab && typeof activeTab.id === 'number') {
-      const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
-      await updateTabToolbarIndicator(
-        activeTab.id,
-        activeTab.url,
-        activeTab.title,
-        cachedRules,
-        cachedSilentUntil,
-        lang
-      );
+    if (typeof browserApi.tabs.query === 'function') {
+      const tabs = await browserApi.tabs.query({});
+      if (Array.isArray(tabs)) {
+        for (const tab of tabs) {
+          if (tab && typeof tab.id === 'number') {
+            await updateTabToolbarIndicator(
+              tab.id,
+              tab.url || '',
+              tab.title || '',
+              cachedRules,
+              cachedSilentUntil,
+              lang
+            );
+          }
+        }
+      }
+    } else {
+      const activeTab = await browserApi.tabs.getCurrentActiveTab();
+      if (activeTab && typeof activeTab.id === 'number') {
+        await updateTabToolbarIndicator(
+          activeTab.id,
+          activeTab.url,
+          activeTab.title,
+          cachedRules,
+          cachedSilentUntil,
+          lang
+        );
+      }
     }
   } catch (err) {
     // 忽略异常
@@ -57,8 +80,8 @@ async function refreshCache() {
 
     cachedSettings = await getSettings();
 
-    // 缓存刷新后立即同步当前活动标签页的工具栏指示器
-    await refreshActiveTabIndicator();
+    // 缓存刷新后立即同步全局与各标签页的工具栏指示器
+    await syncAllTabsToolbarIndicators();
   } catch (err) {
     console.error('[HistGuard BG] 刷新缓存失败:', err);
   }
@@ -83,7 +106,7 @@ browserApi.alarms.onAlarm(async (alarm) => {
   if (alarm && alarm.name === 'silent_mode_alarm') {
     cachedSilentUntil = 0;
     await clearSilentMode();
-    await refreshActiveTabIndicator();
+    await syncAllTabsToolbarIndicators();
     console.log('[HistGuard BG] 30 分钟静默免记录模式已到期，恢复正常历史记录监控。');
   }
 });
@@ -180,14 +203,16 @@ if (browserApi.history && typeof browserApi.history.onVisited === 'function') {
   });
 }
 
-// B. 标签页实时 URL 变动事件（解决 Google 搜索、SPA 客户端无刷新路由）
+// B. 标签页实时 URL 变动事件（解决 Google 搜索、SPA 客户端无刷新路由与实时状态反馈）
 if (browserApi.tabs && typeof browserApi.tabs.onUpdated === 'function') {
   browserApi.tabs.onUpdated(async (tabId, changeInfo, tab) => {
-    const url = changeInfo.url || (changeInfo.status === 'complete' ? tab?.url : null);
-    if (url) {
-      await handleUrlInspectionAndClean(url, tab?.title || '');
+    const targetUrl = changeInfo.url || tab?.url;
+    if (targetUrl) {
+      if (changeInfo.url || changeInfo.status === 'complete') {
+        await handleUrlInspectionAndClean(targetUrl, tab?.title || '');
+      }
       const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
-      await updateTabToolbarIndicator(tabId, url, tab?.title || '', cachedRules, cachedSilentUntil, lang);
+      await updateTabToolbarIndicator(tabId, targetUrl, tab?.title || '', cachedRules, cachedSilentUntil, lang);
     }
   });
 }
@@ -196,10 +221,16 @@ if (browserApi.tabs && typeof browserApi.tabs.onUpdated === 'function') {
 if (browserApi.tabs && typeof browserApi.tabs.onActivated === 'function') {
   browserApi.tabs.onActivated(async (activeInfo) => {
     try {
-      const activeTab = await browserApi.tabs.getCurrentActiveTab();
-      if (activeTab && activeTab.id === activeInfo.tabId) {
+      let targetTab = null;
+      if (typeof browserApi.tabs.get === 'function') {
+        targetTab = await browserApi.tabs.get(activeInfo.tabId);
+      }
+      if (!targetTab) {
+        targetTab = await browserApi.tabs.getCurrentActiveTab();
+      }
+      if (targetTab && typeof targetTab.id === 'number') {
         const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
-        await updateTabToolbarIndicator(activeTab.id, activeTab.url, activeTab.title, cachedRules, cachedSilentUntil, lang);
+        await updateTabToolbarIndicator(targetTab.id, targetTab.url, targetTab.title, cachedRules, cachedSilentUntil, lang);
       }
     } catch {
       // 忽略非致命异常

@@ -138,6 +138,38 @@ export class FirefoxAdapter extends IBrowserAdapter {
         return null;
       },
 
+      get: async (tabId) => {
+        const api = getApi();
+        if (!api.tabs?.get || typeof tabId !== 'number') return null;
+        try {
+          const tab = await api.tabs.get(tabId);
+          if (!tab) return null;
+          return {
+            id: tab.id,
+            url: tab.url || '',
+            title: tab.title || ''
+          };
+        } catch {
+          return null;
+        }
+      },
+
+      query: async (queryInfo = {}) => {
+        const api = getApi();
+        if (!api.tabs?.query) return [];
+        try {
+          const tabs = await api.tabs.query(queryInfo);
+          if (!Array.isArray(tabs)) return [];
+          return tabs.map(t => ({
+            id: t.id,
+            url: t.url || '',
+            title: t.title || ''
+          }));
+        } catch {
+          return [];
+        }
+      },
+
       onUpdated: (callback) => {
         const api = getApi();
         if (api.tabs?.onUpdated) {
@@ -196,7 +228,16 @@ export class FirefoxAdapter extends IBrowserAdapter {
         const api = getApi();
         const actionApi = api.action || api.browserAction;
         if (!actionApi?.setIcon) return;
-        const details = { path };
+        let normalizedPath = path;
+        if (typeof path === 'string') {
+          normalizedPath = path.startsWith('/') ? path : `/${path}`;
+        } else if (path && typeof path === 'object') {
+          normalizedPath = {};
+          for (const [size, p] of Object.entries(path)) {
+            normalizedPath[size] = (typeof p === 'string' && !p.startsWith('/')) ? `/${p}` : p;
+          }
+        }
+        const details = { path: normalizedPath };
         if (typeof tabId === 'number') details.tabId = tabId;
         try {
           await actionApi.setIcon(details);

@@ -7,32 +7,32 @@
 import { browserApi } from '../adapters/index.js';
 import { findMatchingRule } from '../core/ruleMatcher.js';
 
-// 图标资源路径配置
+// 图标资源路径配置（统一以 / 开头，确保 Service Worker 嵌套目录下绝对从扩展根路径解析）
 export const ICON_PATHS = {
   NORMAL: {
-    16: 'icons/icon16.png',
-    32: 'icons/icon32.png',
-    48: 'icons/icon48.png',
-    128: 'icons/icon128.png'
+    16: '/icons/icon16.png',
+    32: '/icons/icon32.png',
+    48: '/icons/icon48.png',
+    128: '/icons/icon128.png'
   },
   PROTECTED: {
-    16: 'icons/icon-green16.png',
-    32: 'icons/icon-green32.png',
-    48: 'icons/icon-green48.png',
-    128: 'icons/icon-green128.png'
+    16: '/icons/icon-green16.png',
+    32: '/icons/icon-green32.png',
+    48: '/icons/icon-green48.png',
+    128: '/icons/icon-green128.png'
   },
   // 向后兼容别名
   ACTIVE: {
-    16: 'icons/icon-green16.png',
-    32: 'icons/icon-green32.png',
-    48: 'icons/icon-green48.png',
-    128: 'icons/icon-green128.png'
+    16: '/icons/icon-green16.png',
+    32: '/icons/icon-green32.png',
+    48: '/icons/icon-green48.png',
+    128: '/icons/icon-green128.png'
   },
   DIMMED: {
-    16: 'icons/icon16.png',
-    32: 'icons/icon32.png',
-    48: 'icons/icon48.png',
-    128: 'icons/icon128.png'
+    16: '/icons/icon16.png',
+    32: '/icons/icon32.png',
+    48: '/icons/icon48.png',
+    128: '/icons/icon128.png'
   }
 };
 
@@ -68,6 +68,35 @@ export function evaluatePageStatus(url, title = '', rules = [], silentUntil = 0)
   }
 
   return { status: PAGE_PROTECT_STATUS.RECORDING, rule: null };
+}
+
+/**
+ * 刷新扩展全局默认的工具栏图标与提示（不绑定具体标签页）
+ * @param {number} [silentUntil=0]
+ * @param {string} [lang='zh-CN']
+ */
+export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-CN') {
+  const isZh = !lang || lang.startsWith('zh');
+  const now = Date.now();
+  const isSilent = silentUntil > now;
+
+  try {
+    if (isSilent) {
+      await browserApi.action.setIcon({ path: ICON_PATHS.PROTECTED });
+      await browserApi.action.setBadgeText({ text: '' });
+      await browserApi.action.setTitle({
+        title: isZh ? 'HistGuard: 静默免记录模式中 (全局不记录历史)' : 'HistGuard: Silent mode active (Global history tracking paused)'
+      });
+    } else {
+      await browserApi.action.setIcon({ path: ICON_PATHS.NORMAL });
+      await browserApi.action.setBadgeText({ text: '' });
+      await browserApi.action.setTitle({
+        title: isZh ? 'HistGuard: 正常记录历史 (点击图标可开启保护)' : 'HistGuard: Recording history (Click icon to protect)'
+      });
+    }
+  } catch (err) {
+    // 忽略异常
+  }
 }
 
 /**

@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   evaluatePageStatus,
   updateTabToolbarIndicator,
+  updateGlobalToolbarIndicator,
   PAGE_PROTECT_STATUS,
   ICON_PATHS
 } from '../src/background/toolbarIndicator.js';
@@ -177,5 +178,61 @@ describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器
     await updateTabToolbarIndicator(null, 'https://example.com', '', [], 0);
     await updateTabToolbarIndicator(0, 'https://example.com', '', [], 0);
     assert.strictEqual(actionLog.length, 0);
+  });
+});
+
+describe('toolbarIndicator - updateGlobalToolbarIndicator (全局默认工具栏状态渲染)', () => {
+  let actionLog = [];
+
+  beforeEach(() => {
+    actionLog = [];
+    browserApi.action = {
+      setBadgeText: async (details) => {
+        actionLog.push({ type: 'setBadgeText', details });
+      },
+      setTitle: async (details) => {
+        actionLog.push({ type: 'setTitle', details });
+      },
+      setIcon: async (details) => {
+        actionLog.push({ type: 'setIcon', details });
+      }
+    };
+  });
+
+  it('静默模式激活时：将全局默认图标切换为翡翠绿保护图标、无角标、并设置全局提示', async () => {
+    const futureTime = Date.now() + 60000;
+    await updateGlobalToolbarIndicator(futureTime, 'zh-CN');
+
+    const iconCall = actionLog.find(c => c.type === 'setIcon');
+    const badgeCall = actionLog.find(c => c.type === 'setBadgeText');
+    const titleCall = actionLog.find(c => c.type === 'setTitle');
+
+    assert.ok(iconCall);
+    assert.strictEqual(iconCall.details.tabId, undefined);
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.PROTECTED);
+
+    assert.ok(badgeCall);
+    assert.strictEqual(badgeCall.details.text, '');
+
+    assert.ok(titleCall);
+    assert.match(titleCall.details.title, /静默免记录模式中/);
+  });
+
+  it('静默模式非激活时：将全局默认图标恢复为平时科技蓝图标、无角标、并设置常规提示', async () => {
+    await updateGlobalToolbarIndicator(0, 'zh-CN');
+
+    const iconCall = actionLog.find(c => c.type === 'setIcon');
+    const badgeCall = actionLog.find(c => c.type === 'setBadgeText');
+    const titleCall = actionLog.find(c => c.type === 'setTitle');
+
+    assert.ok(iconCall);
+    assert.strictEqual(iconCall.details.tabId, undefined);
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.NORMAL);
+
+    assert.ok(badgeCall);
+    assert.strictEqual(badgeCall.details.text, '');
+
+    assert.ok(titleCall);
+    assert.match(titleCall.details.title, /正常记录历史/);
   });
 });
