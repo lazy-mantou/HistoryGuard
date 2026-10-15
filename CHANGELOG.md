@@ -52,12 +52,6 @@
      - `storage.js` 的 `addRule` 新增域名规范化清洗通道：当规则类型为 `domain` 时，自动剥离前导协议（`https?://`）和末尾斜杠（`/`），将 `https://www.google.com/` 规范化为标准的纯域名 `www.google.com` 存储；
      - 规则查重机制无缝升级：输入带协议或斜杠的变体时，能够精准匹配并复用已存在的同名纯域名规则，杜绝冗余重复项。
 
-5. **删减 Options 控制台左侧 Tab 导航栏右侧徽章与图标**：
-   - **需求**：移除 Options 页面左侧导航栏各 Tab 右侧的数字徽章（历史条数、规则数）和设置齿轮图标，精简界面视觉元素。
-   - **变更明细**：
-     - `options.html`: 移除 `nav-tab` 内部右侧的 `tab-history-badge`、`tab-rules-badge` 以及 `tab-settings-badge` 元素；
-     - `options.js`: 同步清理 `elements` 中对已删除徽章的 DOM 查找与更新逻辑。
-
 ### 变更明细 (Detailed Changes)
 - `feat(manifest)`: `manifest.chrome.json` 与 `manifest.firefox.json` 新增 `"webNavigation"` 权限。
 - `feat(adapters)`:
@@ -69,8 +63,7 @@
 - `feat(background)`:
   - `src/background/index.js`: 重构为多通道事件侦听网，新增 `cleanResiduals` 防异步滞后出清，完美覆盖 Google 搜索及所有 SPA 动态路由。
 - `feat(options)`:
-  - `src/options/options.html`: 移除导航栏 Tab 右侧的数字徽章与齿轮图标。
-  - `src/options/options.js`: 接入 `isHistoryDirty` 与 `switchTab` 切回自动刷新，接入 `history.onVisitRemoved` 实时事件监听；支持停用拦截统计时顶部仅显示“已停用”并隐藏规则列表命中次数；清理导航栏徽章更新。
+  - `src/options/options.js`: 接入 `isHistoryDirty` 与 `switchTab` 切回自动刷新，接入 `history.onVisitRemoved` 实时事件监听，彻底消除 Batch History Delete 视图不同步问题；支持停用拦截统计时顶部仅显示“已停用”并隐藏规则列表命中次数。
   - `src/options/options.css`: 新增 `.hits-disabled` 优雅呈现样式。
   - `src/core/locales/`: 调整 `statTotalHitsDisabled` 为纯状态词“已停用” / “Disabled”。
 - `test`:
