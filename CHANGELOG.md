@@ -4,6 +4,45 @@
 
 ---
 
+## [1.0.40] - 2026-10-15
+
+### 国际化多语言矩阵扩展至 12 种主流语言 (Expand i18n Matrix to 12 Major Languages)
+1. **12 种主流语言包原生精准本地化**:
+   - **全面覆盖全球主要语系**：
+     - 英语 (`en` - English)
+     - 简体中文 (`zh-CN` - 简体中文)
+     - 繁体中文 (`zh-TW` - 繁體中文)
+     - 西班牙语 (`es` - Español)
+     - 阿拉伯语 (`ar` - العربية，原生支持 RTL 右至左排版方向)
+     - 印尼语 / 马来语 (`id` / `ms` - Bahasa Indonesia / Melayu)
+     - 葡萄牙语 (`pt` - Português)
+     - 法语 (`fr` - Français)
+     - 日语 (`ja` - 日本語)
+     - 俄语 (`ru` - Русский)
+     - 德语 (`de` - Deutsch)
+     - 韩语 (`ko` - 한국어)
+   - **地道非生硬翻译标准**：
+     - 所有语言包全面摒弃机器直译生硬语法，遵循各语言中浏览器扩展、隐私安全工具与操作系统界面的标准本土化习惯用词；
+     - 每种语言包均拥有严格 100% 对齐的 244 个叶子翻译键（0 缺失、0 多余）；
+     - 语言切换下拉选单 ([options.html](file:///e:/Workspace/HistGuard/src/options/options.html)) 同步挂载 12 种语言原生选择项。
+
+2. **核心驱动引擎升级 ([src/core/i18n.js](file:///e:/Workspace/HistGuard/src/core/i18n.js))**:
+   - **智能自动语言识别 (Auto Detection)**：
+     - 细分中文繁体变体：精确将 `zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant` 解析映射至 `zh-TW`，其余中文变体归入 `zh-CN`；
+     - 完整覆盖 `ja`, `ko`, `es`, `ar`, `id`/`ms`, `pt`, `fr`, `de`, `ru` 前缀识别；
+     - 其余未覆盖语系安全回退至通用英文 `en`。
+   - **阿拉伯语 RTL 双向文本流支持**：
+     - 当激活语言为阿拉伯语 `ar` 时，自动在 `document.documentElement` 动态注入 `dir="rtl"` 属性，切换其他语言时自动恢复为 `dir="ltr"`。
+   - **候选规则胶囊多语言映射 (`localizeCapsule`)**：
+     - 针对弹窗（Popup）中的自动识别规则胶囊，在繁体中文、日语、韩语、英语等各语言环境下提供自然本土化标签与描述映射。
+
+3. **测试套件与双端构建**:
+   - [tests/i18n.test.js](file:///e:/Workspace/HistGuard/tests/i18n.test.js) 扩展全部 12 种语言包严格等价性断言与解析算法覆盖；
+   - 212 项自动化单元测试全绿通过；
+   - 重新构建输出 Chrome / Firefox 双端 1.0.40 分发产物。
+
+---
+
 ## [1.0.39] - 2026-10-15
 
 ### 规则列表条目新增“清理匹配历史”操作按钮 (Add Rule-Level History Clean Action Button)

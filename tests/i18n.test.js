@@ -1,7 +1,7 @@
 /**
  * @file i18n.test.js
  * @description 前端模板化国际化 (i18n) 核心驱动引擎单元测试用例
- * 包括字典键值对等性校验、动态参数插值、DOM 模板属性替换与语言切换
+ * 包括 12 种主流语言字典键值对等性校验、动态参数插值、DOM 模板属性替换、RTL 适配与语言切换
  */
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
@@ -15,10 +15,36 @@ import {
   getConfiguredPreference,
   setLanguage,
   initI18n,
-  applyI18nToDOM
+  applyI18nToDOM,
+  SUPPORTED_LANGUAGES
 } from '../src/core/i18n.js';
 import zhCN from '../src/core/locales/zh-CN.js';
+import zhTW from '../src/core/locales/zh-TW.js';
 import en from '../src/core/locales/en.js';
+import es from '../src/core/locales/es.js';
+import ar from '../src/core/locales/ar.js';
+import id from '../src/core/locales/id.js';
+import pt from '../src/core/locales/pt.js';
+import fr from '../src/core/locales/fr.js';
+import ja from '../src/core/locales/ja.js';
+import ru from '../src/core/locales/ru.js';
+import de from '../src/core/locales/de.js';
+import ko from '../src/core/locales/ko.js';
+
+const ALL_LOCALES = {
+  'zh-CN': zhCN,
+  'zh-TW': zhTW,
+  'en': en,
+  'es': es,
+  'ar': ar,
+  'id': id,
+  'pt': pt,
+  'fr': fr,
+  'ja': ja,
+  'ru': ru,
+  'de': de,
+  'ko': ko
+};
 
 /**
  * 递归收集对象的所有叶子节点键路径 (如 'popup.hideAndClean')
@@ -36,35 +62,36 @@ function getAllLeafKeys(obj, prefix = '') {
   return keys;
 }
 
-describe('i18n - 语言包完整性与对等性 (Locale Parity)', () => {
-  const zhKeys = getAllLeafKeys(zhCN).sort();
-  const enKeys = getAllLeafKeys(en).sort();
+describe('i18n - 全 12 种语言包完整性与对等性 (Locale Parity)', () => {
+  const baseKeys = getAllLeafKeys(zhCN).sort();
 
-  it('zh-CN 与 en 语言包的叶子键名数量应当保持一致', () => {
-    assert.strictEqual(
-      enKeys.length,
-      zhKeys.length,
-      `en 语言包键总数 (${enKeys.length}) 与 zh-CN (${zhKeys.length}) 不一致`
-    );
+  it('支持的 12 种语言常数定义应完整且符合规范', () => {
+    assert.strictEqual(SUPPORTED_LANGUAGES.length, 12);
+    Object.keys(ALL_LOCALES).forEach(lang => {
+      assert.ok(SUPPORTED_LANGUAGES.includes(lang), `SUPPORTED_LANGUAGES 应包含 ${lang}`);
+    });
   });
 
-  it('zh-CN 中的每一个翻译键在 en 语言包中都必须存在且非空', () => {
-    const missingInEn = zhKeys.filter(k => !enKeys.includes(k));
-    assert.deepStrictEqual(
-      missingInEn,
-      [],
-      `en 语言包缺少以下翻译键: ${missingInEn.join(', ')}`
-    );
-  });
+  for (const [lang, dict] of Object.entries(ALL_LOCALES)) {
+    it(`[${lang}] 语言包的所有叶子键名数量应当与 zh-CN 基准 (${baseKeys.length}) 严格一致`, () => {
+      const keys = getAllLeafKeys(dict).sort();
+      assert.strictEqual(
+        keys.length,
+        baseKeys.length,
+        `${lang} 语言包键总数 (${keys.length}) 与 zh-CN (${baseKeys.length}) 不一致`
+      );
+    });
 
-  it('en 中的每一个翻译键在 zh-CN 语言包中都必须存在且非空', () => {
-    const missingInZh = enKeys.filter(k => !zhKeys.includes(k));
-    assert.deepStrictEqual(
-      missingInZh,
-      [],
-      `zh-CN 语言包缺少以下翻译键: ${missingInZh.join(', ')}`
-    );
-  });
+    it(`[${lang}] 中的每一个翻译键必须完全存在且非空`, () => {
+      const keys = getAllLeafKeys(dict);
+      const missing = baseKeys.filter(k => !keys.includes(k));
+      assert.deepStrictEqual(
+        missing,
+        [],
+        `${lang} 语言包缺少以下翻译键: ${missing.join(', ')}`
+      );
+    });
+  }
 });
 
 describe('i18n - resolveLanguage 语言解析算法', () => {
@@ -73,33 +100,74 @@ describe('i18n - resolveLanguage 语言解析算法', () => {
     delete globalThis.chrome;
   });
 
-  it('显式指定 zh-CN 或 en 应当直接返回', () => {
-    assert.strictEqual(resolveLanguage('zh-CN'), 'zh-CN');
-    assert.strictEqual(resolveLanguage('en'), 'en');
+  it('显式指定各支持的语言代码时应当直接返回', () => {
+    SUPPORTED_LANGUAGES.forEach(lang => {
+      assert.strictEqual(resolveLanguage(lang), lang);
+    });
+    // ms 别名应归一化为 id
+    assert.strictEqual(resolveLanguage('ms'), 'id');
   });
 
-  it('当偏好设置为 auto 时，匹配各种中文变体为 zh-CN', () => {
+  it('当偏好设置为 auto 时，精确识别中文简体与繁体变体', () => {
     globalThis.navigator = { language: 'zh-CN' };
     assert.strictEqual(resolveLanguage('auto'), 'zh-CN');
 
-    globalThis.navigator = { language: 'zh-TW' };
-    assert.strictEqual(resolveLanguage('auto'), 'zh-CN');
-
-    globalThis.navigator = { language: 'zh-HK' };
+    globalThis.navigator = { language: 'zh-SG' };
     assert.strictEqual(resolveLanguage('auto'), 'zh-CN');
 
     globalThis.navigator = { language: 'zh' };
     assert.strictEqual(resolveLanguage('auto'), 'zh-CN');
+
+    globalThis.navigator = { language: 'zh-TW' };
+    assert.strictEqual(resolveLanguage('auto'), 'zh-TW');
+
+    globalThis.navigator = { language: 'zh-HK' };
+    assert.strictEqual(resolveLanguage('auto'), 'zh-TW');
+
+    globalThis.navigator = { language: 'zh-Hant' };
+    assert.strictEqual(resolveLanguage('auto'), 'zh-TW');
   });
 
-  it('当偏好设置为 auto 且浏览器为其他非中文语言时，默认降级为 en', () => {
+  it('当偏好设置为 auto 时，精准识别各主流语系', () => {
+    globalThis.navigator = { language: 'ja-JP' };
+    assert.strictEqual(resolveLanguage('auto'), 'ja');
+
+    globalThis.navigator = { language: 'ko-KR' };
+    assert.strictEqual(resolveLanguage('auto'), 'ko');
+
+    globalThis.navigator = { language: 'es-ES' };
+    assert.strictEqual(resolveLanguage('auto'), 'es');
+
+    globalThis.navigator = { language: 'ar-SA' };
+    assert.strictEqual(resolveLanguage('auto'), 'ar');
+
+    globalThis.navigator = { language: 'id-ID' };
+    assert.strictEqual(resolveLanguage('auto'), 'id');
+
+    globalThis.navigator = { language: 'ms-MY' };
+    assert.strictEqual(resolveLanguage('auto'), 'id');
+
+    globalThis.navigator = { language: 'pt-BR' };
+    assert.strictEqual(resolveLanguage('auto'), 'pt');
+
+    globalThis.navigator = { language: 'fr-FR' };
+    assert.strictEqual(resolveLanguage('auto'), 'fr');
+
+    globalThis.navigator = { language: 'de-DE' };
+    assert.strictEqual(resolveLanguage('auto'), 'de');
+
+    globalThis.navigator = { language: 'ru-RU' };
+    assert.strictEqual(resolveLanguage('auto'), 'ru');
+  });
+
+  it('当偏好设置为 auto 且浏览器为未覆盖的小众语言时，默认安全降级为 en', () => {
     globalThis.navigator = { language: 'en-US' };
     assert.strictEqual(resolveLanguage('auto'), 'en');
 
-    globalThis.navigator = { language: 'ja-JP' };
+    globalThis.navigator = { language: 'fi' };
     assert.strictEqual(resolveLanguage('auto'), 'en');
 
-    globalThis.navigator = { language: 'de' };
+    globalThis.navigator = { language: 'pl' };
     assert.strictEqual(resolveLanguage('auto'), 'en');
   });
 });
@@ -125,16 +193,30 @@ describe('i18n - t() 文本翻译与动态参数插值', () => {
     assert.strictEqual(silent, '开启中 (25:00)');
   });
 
-  it('切换到英文后应当返回对应的英文翻译', () => {
+  it('切换到各外语后应当返回对应的本地化翻译', () => {
     setLanguage('en');
     assert.strictEqual(t('options.statActiveRules'), 'Active Rules');
     assert.strictEqual(t('popup.matchesCount', { count: 5 }), 'Matches 5 existing records');
+
+    setLanguage('ja');
+    assert.strictEqual(t('options.statActiveRules'), '有効なルール');
+
+    setLanguage('ko');
+    assert.strictEqual(t('options.statActiveRules'), '활성 규칙');
+
+    setLanguage('es');
+    assert.strictEqual(t('options.statActiveRules'), 'Reglas activas');
+
+    setLanguage('zh-TW');
+    assert.strictEqual(t('options.statActiveRules'), '啟用規則');
   });
 
   it('支持显式指定 lang 参数，无需切换全局语言状态即可按指定语言输出', () => {
     // 全局当前语言为 zh-CN
     assert.strictEqual(t('toolbar.tooltipRecording', {}, 'en'), 'HistGuard: Recording history (Click icon to protect)');
     assert.strictEqual(t('toolbar.tooltipRecording', {}, 'zh-CN'), 'HistGuard: 正常记录历史 (点击图标可开启防护)');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'ja'), 'HistGuard: 履歴を記録中（アイコンをクリックして保護）');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'ko'), 'HistGuard: 방문 기록 저장 중 (아이콘을 클릭하여 보호)');
     
     // 测试带插值的规则提示
     const ruleLabelZh = t('toolbar.tooltipProtectedRuleLabel', { pattern: 'youtube.com' }, 'zh-CN');
@@ -187,6 +269,30 @@ describe('i18n - localizeCapsule 候选规则胶囊多语言映射', () => {
     assert.strictEqual(locPath.label, 'Directory Wildcard');
     assert.strictEqual(locPath.description, 'Match current directory and subpages');
   });
+
+  it('在繁体中文语言环境下自动转换为繁体标签和说明', () => {
+    setLanguage('zh-TW');
+    const domainCandidate = {
+      rule: 'google.com',
+      label: '当前完整域名',
+      description: '仅匹配该完整域名 (google.com)'
+    };
+    const locDomain = localizeCapsule(domainCandidate);
+    assert.strictEqual(locDomain.label, '目前完整網域');
+    assert.strictEqual(locDomain.description, '僅匹配該完整網域 (google.com)');
+  });
+
+  it('在日文语言环境下自动转换为日文标签和说明', () => {
+    setLanguage('ja');
+    const domainCandidate = {
+      rule: 'google.com',
+      label: '当前完整域名',
+      description: '仅匹配该完整域名 (google.com)'
+    };
+    const locDomain = localizeCapsule(domainCandidate);
+    assert.strictEqual(locDomain.label, '完全ドメイン');
+    assert.strictEqual(locDomain.description, '完全なドメイン (google.com) のみに一致');
+  });
 });
 
 describe('i18n - formatRelativeTime 相对时间格式化', () => {
@@ -196,6 +302,9 @@ describe('i18n - formatRelativeTime 相对时间格式化', () => {
 
     setLanguage('en');
     assert.strictEqual(formatRelativeTime(Date.now() - 10000), 'Just now');
+
+    setLanguage('ja');
+    assert.strictEqual(formatRelativeTime(Date.now() - 10000), 'たった今');
   });
 
   it('1 小时内应当显示 X 分钟前', () => {
@@ -204,6 +313,9 @@ describe('i18n - formatRelativeTime 相对时间格式化', () => {
 
     setLanguage('en');
     assert.strictEqual(formatRelativeTime(Date.now() - 15 * 60 * 1000), '15m ago');
+
+    setLanguage('ko');
+    assert.strictEqual(formatRelativeTime(Date.now() - 15 * 60 * 1000), '15분 전');
   });
 
   it('24 小时内应当显示 X 小时前', () => {
@@ -221,10 +333,7 @@ describe('i18n - formatRelativeTime 相对时间格式化', () => {
   });
 });
 
-describe('i18n - applyI18nToDOM (DOM 模板属性绑定)', () => {
-  /**
-   * 模拟轻量级 DOM 元素
-   */
+describe('i18n - applyI18nToDOM (DOM 模板属性绑定与 RTL 适配)', () => {
   class MockElement {
     constructor(attrs = {}) {
       this.attributes = { ...attrs };
@@ -272,5 +381,23 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定)', () => {
     assert.strictEqual(inputEl.getAttribute('placeholder'), 'Search domain, URL path, or page title...');
     assert.strictEqual(btnEl.getAttribute('title'), 'Open Dashboard');
     assert.strictEqual(btnEl.getAttribute('aria-label'), 'Protection Rules');
+  });
+
+  it('阿拉伯语应当正确设置 RTL 页面方向属性', () => {
+    const mockDoc = {
+      documentElement: { lang: 'en', dir: 'ltr' },
+      querySelectorAll: () => []
+    };
+    globalThis.document = mockDoc;
+
+    setLanguage('ar', mockDoc);
+    assert.strictEqual(mockDoc.documentElement.dir, 'rtl');
+    assert.strictEqual(mockDoc.documentElement.lang, 'ar');
+
+    setLanguage('zh-CN', mockDoc);
+    assert.strictEqual(mockDoc.documentElement.dir, 'ltr');
+    assert.strictEqual(mockDoc.documentElement.lang, 'zh-CN');
+
+    delete globalThis.document;
   });
 });

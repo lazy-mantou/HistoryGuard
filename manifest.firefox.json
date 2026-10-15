@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "HistGuard - 历史记录管理与自动防护",
-  "version": "1.0.39",
+  "version": "1.0.40",
   "description": "轻量级跨浏览器历史记录智能管理与全自动隐私抹除插件",
   "permissions": [
     "history",
