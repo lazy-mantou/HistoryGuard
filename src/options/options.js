@@ -39,7 +39,6 @@ const elements = {
   panelRules: document.getElementById('panel-rules'),
   panelSettings: document.getElementById('panel-settings'),
   tabRulesBadge: document.getElementById('tab-rules-badge'),
-  tabHistoryBadge: document.getElementById('tab-history-badge'),
 
   // 历史批量清理
   searchInput: document.getElementById('search-input'),
@@ -469,9 +468,6 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     }
 
     elements.searchResultsSummary.textContent = t('options.loadedSummary', { count: currentHistoryResults.length });
-    if (elements.tabHistoryBadge) {
-      elements.tabHistoryBadge.textContent = currentHistoryResults.length;
-    }
 
     // 历史批量删除页面全部清空按钮：列表中有数据即可点击，无数据时禁用
     if (elements.btnDeepClean) {
