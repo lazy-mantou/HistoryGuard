@@ -812,7 +812,6 @@ async function refreshRulesList() {
           <input type="checkbox" class="rule-toggle" ${rule.enabled !== false ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
-        <button class="rule-clean-btn" title="${t('options.ruleCleanTitle')}">🧹</button>
         <button class="rule-delete-btn" title="${t('options.ruleDeleteTitle')}">🗑️</button>
       </div>
     `;
@@ -824,33 +823,6 @@ async function refreshRulesList() {
       row.classList.toggle('disabled', !toggle.checked);
       toggle.parentElement.title = toggle.checked ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
       await refreshGlobalStats();
-    });
-
-    // 绑定立即清理历史按钮
-    const cleanBtn = row.querySelector('.rule-clean-btn');
-    cleanBtn.addEventListener('click', async () => {
-      cleanBtn.disabled = true;
-      cleanBtn.style.opacity = '0.5';
-      showToast(t('options.toastCleaningRule', { pattern: rule.pattern }));
-      try {
-        const cleanResult = await cleanHistoryByRule(rule, {
-          chunkSize: getDeleteChunkSize()
-        });
-        if (cleanResult.deleted > 0) {
-          showToast(t('options.toastCleanRuleHistorySuccess', {
-            pattern: rule.pattern,
-            count: cleanResult.deleted
-          }));
-          await refreshHistoryIfVisibleOrMarkDirty();
-        } else {
-          showToast(t('options.toastCleanRuleHistoryNone', { pattern: rule.pattern }));
-        }
-      } catch (err) {
-        showToast(t('options.toastImportFailed', { error: err.message }));
-      } finally {
-        cleanBtn.disabled = false;
-        cleanBtn.style.opacity = '1';
-      }
     });
 
     // 绑定删除按钮

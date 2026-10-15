@@ -4,6 +4,32 @@
 
 ---
 
+## [1.0.23] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **精简规则列表操作项（移除“立即回溯清理匹配该规则的历史记录”按钮）**：
+   - **业务与交互优化背景**：
+     - 用户明确要求删除自动防护规则列表中单条规则右侧的“立即回溯清理匹配该规则的历史记录（`rule-clean-btn`，🧹 图标）”按钮；
+     - 规则添加时底层已自带全局回溯扫描与历史出清，规则卡片行操作进一步精炼为“启用/停用开关（Toggle）”与“删除规则（Delete）”，界面排版更紧凑，降低冗余操作维度。
+   - **技术重构与方案**：
+     - **模板与 DOM 精简**：在 `src/options/options.js` 的 `refreshRulesList()` 中移除每行渲染的 `<button class="rule-clean-btn">🧹</button>`；
+     - **解耦事件绑定**：移除针对 `rule-clean-btn` 的获取与点击清理事件监听函数；
+     - **样式表纯化**：在 `src/options/options.css` 中移除 `.rule-clean-btn` 及其 hover 样式，仅保留规则删除按钮专用样式。
+2. **全项目版本号同步与构建闭环 (Version 1.0.23 Synchronization)**：
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.23`，并通过 `build.js` 重新分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `feat(options)`:
+  - `src/options/options.js`: 移除规则列表单行中的扫帚清理按钮及其点击事件监听器。
+  - `src/options/options.css`: 清理 `.rule-clean-btn` 样式类。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.23`。
+  - `dist/`: 经 `node build.js` 重新编译更新发布包。
+- `test`:
+  - 全套 117 项自动化测试全部执行通过（117 pass, 0 fail）。
+
+---
+
 ## [1.0.22] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
