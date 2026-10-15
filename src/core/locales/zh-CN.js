@@ -67,7 +67,7 @@ export default {
     statTotalHitsDisabled: '已停用',
     statTotalHitsTitle: '所有规则累计物理拦截并抹除的访问次数',
     statTotalHitsDisabledTitle: '统计已在设置中停用，命中规则时不记录新拦截次数',
-    statSilentStatus: '静默模式',
+    statSilentStatus: '临时无痕',
     statSilentOff: '未开启',
     statSilentOn: '开启中 ({time})',
     navHistoryTitle: '历史批量删除',

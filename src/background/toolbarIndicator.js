@@ -85,7 +85,7 @@ export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-C
       await browserApi.action.setIcon({ path: ICON_PATHS.PROTECTED });
       await browserApi.action.setBadgeText({ text: '' });
       await browserApi.action.setTitle({
-        title: isZh ? 'HistGuard: 静默免记录模式中 (全局不记录历史)' : 'HistGuard: Silent mode active (Global history tracking paused)'
+        title: isZh ? 'HistGuard: 临时无痕模式中 (全局不记录历史)' : 'HistGuard: Trace-free mode active (Global history tracking paused)'
       });
     } else {
       await browserApi.action.setIcon({ path: ICON_PATHS.NORMAL });
@@ -130,8 +130,8 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
         await browserApi.action.setIcon({ tabId, path: ICON_PATHS.PROTECTED });
         await browserApi.action.setBadgeText({ tabId, text: '' });
         const tooltip = isZh
-          ? 'HistGuard: 静默免记录模式中 (全局不记录历史)'
-          : 'HistGuard: Silent mode active (Global history tracking paused)';
+          ? 'HistGuard: 临时无痕模式中 (全局不记录历史)'
+          : 'HistGuard: Trace-free mode active (Global history tracking paused)';
         await browserApi.action.setTitle({ tabId, title: tooltip });
         break;
       }

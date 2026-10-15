@@ -67,7 +67,7 @@ export default {
     statTotalHitsDisabled: 'Disabled',
     statTotalHitsTitle: 'Total visits intercepted and permanently erased by all rules',
     statTotalHitsDisabledTitle: 'Hit tracking disabled in settings; no counts incremented',
-    statSilentStatus: 'Silent Mode',
+    statSilentStatus: 'Trace-Free',
     statSilentOff: 'Off',
     statSilentOn: 'Active ({time})',
     navHistoryTitle: 'Batch History Delete',

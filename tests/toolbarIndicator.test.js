@@ -125,7 +125,7 @@ describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器
     assert.strictEqual(badgeTextCall.details.text, '');
 
     assert.ok(titleCall);
-    assert.match(titleCall.details.title, /静默免记录模式中/);
+    assert.match(titleCall.details.title, /临时无痕模式中/);
   });
 
   it('普通正常网页时：呈现平时科技蓝图标、清空文字角标、提示正常记录历史', async () => {
@@ -215,7 +215,7 @@ describe('toolbarIndicator - updateGlobalToolbarIndicator (全局默认工具栏
     assert.strictEqual(badgeCall.details.text, '');
 
     assert.ok(titleCall);
-    assert.match(titleCall.details.title, /静默免记录模式中/);
+    assert.match(titleCall.details.title, /临时无痕模式中/);
   });
 
   it('静默模式非激活时：将全局默认图标恢复为平时科技蓝图标、无角标、并设置常规提示', async () => {

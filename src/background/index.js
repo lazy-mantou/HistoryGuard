@@ -111,7 +111,7 @@ browserApi.alarms.onAlarm(async (alarm) => {
     cachedSilentUntil = 0;
     await clearSilentMode();
     await syncAllTabsToolbarIndicators();
-    console.log('[HistGuard BG] 30 分钟静默免记录模式已到期，恢复正常历史记录监控。');
+    console.log('[HistGuard BG] 30 分钟临时无痕模式已到期，恢复正常历史记录监控。');
   }
 });
 
@@ -130,13 +130,13 @@ async function handleUrlInspectionAndClean(visitUrl, title = '') {
 
   const now = Date.now();
 
-  // A. 静默免记录模式检测：若处于开启中，抹除一切新访问
+  // A. 临时无痕模式检测：若处于开启中，抹除一切新访问
   if (cachedSilentUntil > now) {
     try {
       await browserApi.history.deleteUrl(visitUrl);
-      console.log('[HistGuard BG] 静默免记录中，已抹除:', visitUrl);
+      console.log('[HistGuard BG] 临时无痕保护中，已抹除:', visitUrl);
     } catch (err) {
-      console.error('[HistGuard BG] 静默删除失败:', err);
+      console.error('[HistGuard BG] 临时无痕删除失败:', err);
     }
     return;
   } else if (cachedSilentUntil > 0 && cachedSilentUntil <= now) {
