@@ -260,7 +260,7 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定)', () => {
 
     // 应用中文
     applyI18nToDOM(mockRoot);
-    assert.strictEqual(textEl.textContent, '隐藏并清理');
+    assert.strictEqual(textEl.textContent, '防护并清理');
     assert.strictEqual(inputEl.getAttribute('placeholder'), '搜索域名、URL 路径片段或页面标题...');
     assert.strictEqual(btnEl.getAttribute('title'), '打开管理控制台');
     assert.strictEqual(btnEl.getAttribute('aria-label'), '防护规则管理');
@@ -268,7 +268,7 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定)', () => {
     // 切换为英文并更新
     setLanguage('en');
     applyI18nToDOM(mockRoot);
-    assert.strictEqual(textEl.textContent, 'Hide & Clean');
+    assert.strictEqual(textEl.textContent, 'Protect & Clean');
     assert.strictEqual(inputEl.getAttribute('placeholder'), 'Search domain, URL path, or page title...');
     assert.strictEqual(btnEl.getAttribute('title'), 'Open Dashboard');
     assert.strictEqual(btnEl.getAttribute('aria-label'), 'Protection Rules');

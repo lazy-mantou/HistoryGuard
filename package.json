@@ -1,7 +1,7 @@
 {
   "name": "histguard",
-  "version": "1.0.33",
-  "description": "轻量级跨浏览器历史记录管理与自动隐藏插件 (Chrome / Firefox)",
+  "version": "1.0.34",
+  "description": "轻量级跨浏览器历史记录智能管理与全自动隐私抹除插件 (Chrome / Firefox)",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",

@@ -15,7 +15,7 @@
           <img class="brand-logo" src="../icons/icon48.png" alt="HistGuard Logo" width="34" height="34">
           <div>
             <h1 class="brand-title" data-i18n="options.brandTitle">HistGuard 控制台</h1>
-            <p class="brand-subtitle" data-i18n="options.brandSubtitle">轻量级跨浏览器历史记录智能管理与自动隐私拦截</p>
+            <p class="brand-subtitle" data-i18n="options.brandSubtitle">轻量级跨浏览器历史记录智能管理与全自动隐私防护</p>
           </div>
         </div>
 
@@ -26,7 +26,7 @@
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <span class="stat-label" data-i18n="options.statTotalHits">累计拦截</span>
+            <span class="stat-label" data-i18n="options.statTotalHits">累计防护</span>
             <span id="stat-total-hits" class="stat-value highlight-hits">0</span>
           </div>
           <div class="stat-divider"></div>
@@ -51,8 +51,8 @@
               </svg>
             </div>
             <div class="tab-info">
-              <span class="tab-title" data-i18n="options.navHistoryTitle">历史批量删除</span>
-              <span class="tab-desc" data-i18n="options.navHistoryDesc">分批检索与流式清理</span>
+              <span class="tab-title" data-i18n="options.navHistoryTitle">历史检索与清理</span>
+              <span class="tab-desc" data-i18n="options.navHistoryDesc">多维检索与深度清理</span>
             </div>
           </button>
 
@@ -83,27 +83,15 @@
             <span class="tab-count-badge tab-settings-badge">⚙️</span>
           </button>
         </nav>
-
-        <!-- 侧边栏信息与快捷提示 -->
-        <div class="sidebar-footer">
-          <div class="sidebar-card">
-            <div class="sidebar-card-title">
-              <span data-i18n="options.sidebarTipTitle">💡 海量数据分批防护</span>
-            </div>
-            <p class="sidebar-card-text" data-i18n="options.sidebarTipText">
-              支持数十万级历史数据游标分批拉取与流式异步删除，保障系统低内存占用与 0 卡顿。
-            </p>
-          </div>
-        </div>
       </aside>
 
       <!-- 右侧主内容区域 (根据 Tab 切换显示) -->
       <main class="tab-content-area">
-        <!-- 面板 A：历史批量删除 -->
+        <!-- 面板 A：历史检索与清理 -->
         <section id="panel-history" class="tab-panel active">
           <div class="card-header">
             <div class="card-title-group">
-              <h2 class="card-title" data-i18n="options.historyTitle">历史批量删除</h2>
+              <h2 class="card-title" data-i18n="options.historyTitle">历史检索与清理</h2>
             </div>
             <div class="time-filters">
               <button class="filter-capsule active" data-time="all" data-i18n="options.filterAll">全部时间</button>
@@ -177,7 +165,7 @@
               <span class="btn-icon">🗑️</span>
               <span id="btn-delete-text">删除选中的 0 条记录</span>
             </button>
-            <button id="btn-deep-clean" class="btn btn-secondary-danger" data-i18n-title="options.btnDeepCleanTitle" title="一键清空匹配当前条件的所有历史记录 (即使超过10万条也可分批无阻塞秒级清理)" disabled>
+            <button id="btn-deep-clean" class="btn btn-secondary-danger" data-i18n-title="options.btnDeepCleanTitle" title="一键彻底清空匹配当前条件的所有历史记录 (永久抹除，不可恢复)" disabled>
               <span class="btn-icon">⚡</span>
               <span data-i18n="options.btnDeepClean">全部清空</span>
             </button>
@@ -410,15 +398,15 @@
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title" data-i18n="options.settingDefaultRuleTypeTitle">快捷搜索词转规则策略</div>
-                    <div class="setting-desc" data-i18n="options.settingDefaultRuleTypeDesc">在历史批量删除中点击“删除并将搜索词加入永久隐藏”时，缺省的规则类型识别模式。</div>
+                    <div class="setting-title" data-i18n="options.settingDefaultRuleTypeTitle">快捷转规则默认类型</div>
+                    <div class="setting-desc" data-i18n="options.settingDefaultRuleTypeDesc">在历史检索与清理中点击“删除记录并将搜索词加入防护规则”时，缺省的规则类型识别模式。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-default-rule-type" class="settings-select">
                       <option value="auto" data-i18n="options.ruleTypeAuto" selected>智能识别 (包含斜杠为路径，包含点号为域名，否则为关键词)</option>
                       <option value="domain" data-i18n="options.ruleTypeDomain">强制域名匹配 (*.domain.com)</option>
                       <option value="path" data-i18n="options.ruleTypePath">强制路径匹配 (domain.com/path/*)</option>
-                      <option value="keyword" data-i18n="options.ruleTypeKeyword">强制关键词匹配 (只要包含关键词即隐藏)</option>
+                      <option value="keyword" data-i18n="options.ruleTypeKeyword">强制关键词匹配 (只要包含关键词即防护)</option>
                     </select>
                   </div>
                 </div>
@@ -434,8 +422,8 @@
               <div class="settings-card">
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title" data-i18n="options.settingBatchSizeTitle">单批次游标拉取条数 (Batch Size)</div>
-                    <div class="setting-desc" data-i18n="options.settingBatchSizeDesc">历史批量删除单次向底层 SQLite 请求的数据量。低配设备推荐 50 条以获得极致轻量内存，常规推荐 100 条。</div>
+                    <div class="setting-title" data-i18n="options.settingBatchSizeTitle">历史记录加载步长</div>
+                    <div class="setting-desc" data-i18n="options.settingBatchSizeDesc">控制历史记录每次检索加载的条目数量。数值越小内存占用越低，数值越大翻页浏览越流畅。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-history-batch-size" class="settings-select">
@@ -448,8 +436,8 @@
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title" data-i18n="options.settingChunkSizeTitle">批量删除并发分片大小 (Chunk Size)</div>
-                    <div class="setting-desc" data-i18n="options.settingChunkSizeDesc">并发调用底层删除 API 的分片步长。每完成一分片将自动让出主线程宏任务，彻底杜绝界面卡死。</div>
+                    <div class="setting-title" data-i18n="options.settingChunkSizeTitle">大批量清理并发节流</div>
+                    <div class="setting-desc" data-i18n="options.settingChunkSizeDesc">控制重型历史清理时的执行节奏与并发度。推荐使用“智能自适应”，可根据不同浏览器内核自动调整性能并防止界面卡顿。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-delete-chunk-size" class="settings-select">

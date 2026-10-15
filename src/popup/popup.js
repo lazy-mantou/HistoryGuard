@@ -153,8 +153,11 @@ function updateActionButtons() {
     elements.btnHideAndClean.disabled = false;
     elements.btnHideAndClean.classList.remove('btn-danger-remove');
     if (elements.btnHideIcon) elements.btnHideIcon.textContent = '🛡️';
-    elements.btnHideText.textContent = t('popup.hideAndClean');
-    elements.btnHideAndClean.title = t('popup.hideAndCleanWithRule', { rule: selectedRule.rule });
+    const isRetro = elements.cbRetroactive ? elements.cbRetroactive.checked : true;
+    elements.btnHideText.textContent = isRetro ? t('popup.hideAndClean') : t('popup.addRuleOnly');
+    elements.btnHideAndClean.title = isRetro
+      ? t('popup.hideAndCleanWithRule', { rule: selectedRule.rule })
+      : t('popup.addRuleOnlyWithRule', { rule: selectedRule.rule });
     if (cbLabel) cbLabel.style.display = '';
   }
 
@@ -571,6 +574,13 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     updateActionButtons();
   }
 });
+
+// D2. 回溯清理勾选状态变化，实时联动主按钮文案
+if (elements.cbRetroactive) {
+  elements.cbRetroactive.addEventListener('change', () => {
+    updateActionButtons();
+  });
+}
 
 // E. 移除已命中保护规则快捷按钮 (顶部横幅)
 if (elements.btnRemoveMatchedRule) {

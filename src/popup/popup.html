@@ -40,11 +40,11 @@
       <div id="matched-rule-banner" class="matched-banner hidden">
         <div class="matched-info">
           <span class="matched-icon">🛡️</span>
-          <span id="matched-rule-text" class="matched-text">已处于隐藏保护中</span>
+          <span id="matched-rule-text" class="matched-text">已处于防护规则中</span>
         </div>
-        <button id="btn-remove-matched-rule" class="btn-remove-rule" data-i18n-title="popup.removeFromListTitle" title="从隐藏列表中删除该规则并恢复记录">
+        <button id="btn-remove-matched-rule" class="btn-remove-rule" data-i18n-title="popup.removeFromListTitle" title="移除此规则，恢复记录该站历史">
           <span class="remove-icon">🗑️</span>
-          <span data-i18n="popup.removeFromList">从列表中删除</span>
+          <span data-i18n="popup.removeFromList">移除此防护规则</span>
         </button>
       </div>
     </div>
@@ -54,16 +54,16 @@
       <div class="alert-icon">⚠️</div>
       <div class="alert-content">
         <div class="alert-title" data-i18n="popup.internalTitle">浏览器内部页面</div>
-        <div class="alert-desc" data-i18n="popup.internalDesc">内部系统页面不产生历史记录，无需设置隐藏规则。</div>
+        <div class="alert-desc" data-i18n="popup.internalDesc">内部系统页面不产生历史记录，无需设置防护规则。</div>
       </div>
     </div>
 
     <!-- 正常页面主交互区 -->
     <main id="main-content">
-      <!-- 区块 1：按域名层级隐藏 -->
+      <!-- 区块 1：按域名层级防护 -->
       <section class="section">
         <div class="section-title">
-          <span data-i18n="popup.domainSection">按域名层级隐藏</span>
+          <span data-i18n="popup.domainSection">按域名层级防护</span>
           <span class="section-hint" data-i18n="popup.domainHint">单选</span>
         </div>
         <div id="domain-capsules-group" class="capsule-group">
@@ -71,10 +71,10 @@
         </div>
       </section>
 
-      <!-- 区块 2：按 URL 路径层级隐藏 -->
+      <!-- 区块 2：按 URL 路径层级防护 -->
       <section class="section">
         <div class="section-title">
-          <span data-i18n="popup.pathSection">按 URL 路径层级隐藏</span>
+          <span data-i18n="popup.pathSection">按 URL 路径层级防护</span>
         </div>
         <div id="path-capsules-group" class="capsule-group">
           <!-- 动态注入路径胶囊 -->
@@ -86,13 +86,13 @@
         <label class="checkbox-label" for="cb-retroactive">
           <input type="checkbox" id="cb-retroactive" checked>
           <span class="custom-checkbox"></span>
-          <span class="checkbox-text" id="retroactive-label-text">加入隐藏规则的同时，清理已有的 0 条历史记录</span>
+          <span class="checkbox-text" id="retroactive-label-text">同时彻底清理已有的 0 条历史记录</span>
         </label>
 
         <div class="btn-group">
           <button id="btn-hide-and-clean" class="btn btn-primary">
             <span class="btn-icon">🛡️</span>
-            <span id="btn-hide-text" class="btn-text" data-i18n="popup.hideAndClean">隐藏并清理</span>
+            <span id="btn-hide-text" class="btn-text" data-i18n="popup.hideAndClean">防护并清理</span>
           </button>
           <button id="btn-clean-only" class="btn btn-danger-outline" data-i18n-title="popup.cleanOnlyTitle" title="仅清理匹配的历史记录，不增加规则">
             <span class="btn-icon">🗑️</span>
