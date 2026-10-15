@@ -4,6 +4,34 @@
 
 ---
 
+## [1.0.20] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **优化历史批量删除中全部清空按钮交互逻辑（列表中无数据时禁用而非隐藏，有数据时可点击）**：
+   - **交互痛点与问题根因**：
+     - 原先“全部清空（`btnDeepClean`）”按钮在历史记录少于一页（无分页数据）或无数据时会被直接添加 `hidden` 样式类隐藏，导致界面操作区布局抖动，且用户无法直观了解是否存在“全部清空”功能；
+     - 原逻辑中即使列表中有少量数据，也可能因 `!hasMoreHistory` 而被错误隐藏，违背“只要列表中有数据就能一键清空”的交互直觉。
+   - **技术重构与方案**：
+     - **按钮常驻占位**：从 HTML 结构中移除初始的 `hidden` 类，改为默认 `disabled` 状态；在任何数据拉取、重置与切换生命周期中，不再切换 `hidden`，保持界面按钮位置稳定不跳动；
+     - **状态精准联动**：统一通过 `updateSelectedSummary()` 及数据加载生命周期，依据 `currentHistoryResults.length === 0 || isOperatingCleaning` 精确控制 `btnDeepClean.disabled` 状态；列表中只要有任何数据即解除禁用；
+     - **无搜索词全量清空提示升级**：针对无过滤搜索词但有历史列表的场景，新增二次确认弹窗词条 `confirmDeepCleanAll`，支持对当前时间范围下的全部历史记录执行一键出清。
+2. **全项目版本号同步与发行闭环 (Version 1.0.20 Synchronization)**：
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.20`，并通过 `build.js` 重新编译分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `feat(options)`:
+  - `src/options/options.html`: 移除全部清空按钮的 `hidden` 类并添加 `disabled` 属性，保持操作占位稳定。
+  - `src/options/options.js`: 移除针对 `btnDeepClean` 的 `hidden` 控制，统一基于 `currentHistoryResults.length === 0 || isOperatingCleaning` 管理其 `disabled` 状态；并在流式全量删除中支持无搜索词全量清空确认弹窗与状态恢复。
+- `i18n(core)`:
+  - `src/core/locales/zh-CN.js` & `src/core/locales/en.js`: 新增 `confirmDeepCleanAll` 词条，支持空搜索词下对当前时间筛选范围的全量清空二次确认。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.20`。
+  - `dist/`: 经 `node build.js` 重新编译更新发布包。
+- `test`:
+  - 全套 117 项自动化测试全部执行通过（117 pass, 0 fail）。
+
+---
+
 ## [1.0.19] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
@@ -55,15 +83,6 @@
 5. **Options 页面导航栏视觉决策（保留 Tab 右侧数字徽章与功能图标）**：
    - **交互决策**：经界面实机体验与视觉效果对比评估，Tab 右侧具有动态统计数字徽章（当前已加载历史条数、已配置防护规则总数）及设置功能齿轮图标，能够为用户提供更清晰的数据概览与更直观的模块指示，决定保留徽章与图标的完整展现。
 
-6. **优化历史批量删除中全部清空按钮交互逻辑（列表中无数据时禁用而非隐藏，有数据时可点击）**：
-   - **交互痛点与问题根因**：
-     - 原先“全部清空（`btnDeepClean`）”按钮在历史记录少于一页（无分页数据）或无数据时会被直接添加 `hidden` 样式类隐藏，导致界面操作区布局抖动，且用户无法直观了解是否存在“全部清空”功能；
-     - 原逻辑中即使列表中有少量数据，也可能因 `!hasMoreHistory` 而被错误隐藏，违背“只要列表中有数据就能一键清空”的直觉。
-   - **技术重构与方案**：
-     - **按钮常驻占位**：从 HTML 结构中移除初始的 `hidden` 类，改为默认 `disabled` 状态；在任何数据拉取、重置与切换生命周期中，不再切换 `hidden`，保持界面按钮位置稳定不跳动；
-     - **状态精准联动**：统一通过 `updateSelectedSummary()` 及数据加载生命周期，依据 `currentHistoryResults.length === 0 || isOperatingCleaning` 精确控制 `btnDeepClean.disabled` 状态；列表中只要有任何数据即解除禁用；
-     - **无搜索词全量清空提示升级**：针对无过滤搜索词但有历史列表的场景，新增二次确认弹窗词条 `confirmDeepCleanAll`，支持对当前时间范围下的全部历史记录执行一键出清。
-
 ### 变更明细 (Detailed Changes)
 - `feat(manifest)`: `manifest.chrome.json` 与 `manifest.firefox.json` 新增 `"webNavigation"` 权限。
 - `feat(adapters)`:
@@ -75,10 +94,9 @@
 - `feat(background)`:
   - `src/background/index.js`: 重构为多通道事件侦听网，新增 `cleanResiduals` 防异步滞后出清，完美覆盖 Google 搜索及所有 SPA 动态路由。
 - `feat(options)`:
-  - `src/options/options.html`: 移除全部清空按钮的 `hidden` 类并添加 `disabled` 属性，保持操作占位稳定。
-  - `src/options/options.js`: 接入 `isHistoryDirty` 与 `switchTab` 切回自动刷新，接入 `history.onVisitRemoved` 实时事件监听，彻底消除 Batch History Delete 视图不同步问题；支持停用拦截统计时顶部仅显示“已停用”并隐藏规则列表命中次数；优化全部清空按钮为常驻展示并通过 `disabled` 联动列表数据存在状态，支持无搜索词全量清空弹窗。
+  - `src/options/options.js`: 接入 `isHistoryDirty` 与 `switchTab` 切回自动刷新，接入 `history.onVisitRemoved` 实时事件监听，彻底消除 Batch History Delete 视图不同步问题；支持停用拦截统计时顶部仅显示“已停用”并隐藏规则列表命中次数。
   - `src/options/options.css`: 新增 `.hits-disabled` 优雅呈现样式。
-  - `src/core/locales/`: 调整 `statTotalHitsDisabled` 为纯状态词“已停用” / “Disabled”；中英文语言包新增 `confirmDeepCleanAll` 词条。
+  - `src/core/locales/`: 调整 `statTotalHitsDisabled` 为纯状态词“已停用” / “Disabled”。
 - `test`:
   - `tests/adapters.test.js`: 增加针对 `webNavigation`、`tabs.onUpdated` 与 `history.onVisitRemoved` 接口契约的单元测试。
   - `tests/ruleMatcher.test.js`: 增加用户反馈的 Google 搜索 URL 与 `keyword:bagaga` 容错匹配单元测试，增加 `https://www.google.com/` 根 URL 识别为 domain 的单元测试。
