@@ -297,18 +297,21 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     assert.strictEqual(settings.language, DEFAULT_SETTINGS.language);
     assert.strictEqual(settings.enableHitTracking, true);
     assert.strictEqual(settings.silentModeDuration, 30);
+    assert.strictEqual(settings.cleanOnAddRule, true);
   });
 
   it('保存部分设置应与现有配置合并', async () => {
     const updated = await saveSettings({
       theme: 'dark',
       language: 'en',
-      enableHitTracking: false
+      enableHitTracking: false,
+      cleanOnAddRule: false
     });
 
     assert.strictEqual(updated.theme, 'dark');
     assert.strictEqual(updated.language, 'en');
     assert.strictEqual(updated.enableHitTracking, false);
+    assert.strictEqual(updated.cleanOnAddRule, false);
     // 未修改的属性保持默认
     assert.strictEqual(updated.silentModeDuration, 30);
 
@@ -316,6 +319,7 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     assert.strictEqual(fetched.theme, 'dark');
     assert.strictEqual(fetched.language, 'en');
     assert.strictEqual(fetched.enableHitTracking, false);
+    assert.strictEqual(fetched.cleanOnAddRule, false);
   });
 });
 

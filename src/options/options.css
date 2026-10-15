@@ -708,6 +708,36 @@ button, input, select, textarea {
   flex-shrink: 0;
 }
 
+.add-rule-clean-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0 4px;
+  transition: var(--transition);
+}
+
+.add-rule-clean-label:hover {
+  color: var(--text-main);
+}
+
+.add-rule-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.add-rule-clean-text {
+  white-space: nowrap;
+}
+
 .btn-primary-add {
   height: 40px;
   background-color: var(--primary);

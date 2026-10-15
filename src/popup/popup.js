@@ -354,6 +354,9 @@ async function initPopup() {
     const settings = await getSettings();
     initI18n(settings.language || 'auto');
     initTheme(settings.theme || 'auto');
+    if (elements.cbRetroactive) {
+      elements.cbRetroactive.checked = settings.cleanOnAddRule !== false;
+    }
   } catch (err) {
     console.warn('Failed to load settings:', err);
     initI18n('auto');

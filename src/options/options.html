@@ -203,6 +203,10 @@
                 <option value="keyword" data-i18n="options.typeKeyword">关键词匹配</option>
               </select>
             </div>
+            <label class="add-rule-clean-label" for="cb-rules-clean-existing" data-i18n-title="options.cbRulesCleanExistingTooltip" title="添加此规则时，同时彻底清理已有匹配的历史记录">
+              <input type="checkbox" id="cb-rules-clean-existing" class="add-rule-checkbox" checked>
+              <span class="add-rule-clean-text" data-i18n="options.cbRulesCleanExisting">同时清理已有历史</span>
+            </label>
             <button id="btn-add-rule" class="btn btn-primary-add">
               <span data-i18n="options.btnAddRule">+ 添加规则</span>
             </button>
@@ -408,6 +412,19 @@
                       <option value="path" data-i18n="options.ruleTypePath">强制路径匹配 (domain.com/path/*)</option>
                       <option value="keyword" data-i18n="options.ruleTypeKeyword">强制关键词匹配 (只要包含关键词即防护)</option>
                     </select>
+                  </div>
+                </div>
+
+                <div class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-title" data-i18n="options.settingCleanOnAddRuleTitle">添加规则时默认清理历史</div>
+                    <div class="setting-desc" data-i18n="options.settingCleanOnAddRuleDesc">在控制台添加规则或在弹窗快捷加入防护时，默认是否勾选“同时清理已有历史记录”。开启则默认删除，关闭则默认仅加入规则并保留历史。</div>
+                  </div>
+                  <div class="setting-control">
+                    <label class="toggle-switch" data-i18n-title="options.settingCleanOnAddRuleTitle" title="切换添加规则时是否默认清理已有历史">
+                      <input type="checkbox" id="setting-clean-on-add-rule" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
                   </div>
                 </div>
               </div>

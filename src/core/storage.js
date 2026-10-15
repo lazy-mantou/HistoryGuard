@@ -328,6 +328,7 @@ export const DEFAULT_SETTINGS = {
   deleteChunkSize: 'auto',       // 批量删除并发分片大小 ('auto' | 6 | 15 | 30 | 50)
   defaultRuleType: 'auto',       // 快捷添加规则识别模式 ('auto' | 'domain' | 'path' | 'keyword')
   confirmDeepClean: true,        // 流式全量清空前二次确认
+  cleanOnAddRule: true,          // 添加防护规则时默认勾选同时清理已有历史记录
   toastDuration: 2500            // Toast 消息停留时长 (ms)
 };
 

@@ -67,6 +67,7 @@ const elements = {
   // 防护规则管理
   newRuleInput: document.getElementById('new-rule-input'),
   newRuleType: document.getElementById('new-rule-type'),
+  cbRulesCleanExisting: document.getElementById('cb-rules-clean-existing'),
   btnAddRule: document.getElementById('btn-add-rule'),
   rulesCountSummary: document.getElementById('rules-count-summary'),
   rulesContainer: document.getElementById('rules-container'),
@@ -87,6 +88,7 @@ const elements = {
   btnClearAllRules: document.getElementById('btn-clear-all-rules'),
   settingSilentDuration: document.getElementById('setting-silent-duration'),
   settingDefaultRuleType: document.getElementById('setting-default-rule-type'),
+  settingCleanOnAddRule: document.getElementById('setting-clean-on-add-rule'),
   settingHistoryBatchSize: document.getElementById('setting-history-batch-size'),
   settingDeleteChunkSize: document.getElementById('setting-delete-chunk-size'),
   settingConfirmDeepClean: document.getElementById('setting-confirm-deep-clean'),
@@ -852,27 +854,31 @@ elements.btnAddRule.addEventListener('click', async () => {
   }
 
   const originalHtml = elements.btnAddRule.innerHTML;
+  const shouldClean = elements.cbRulesCleanExisting ? elements.cbRulesCleanExisting.checked : true;
 
   try {
     elements.btnAddRule.disabled = true;
     elements.btnAddRule.style.opacity = '0.7';
-    elements.btnAddRule.innerHTML = `<span>⏳ ${t('options.btnAddingAndCleaning')}</span>`;
+    elements.btnAddRule.innerHTML = `<span>⏳ ${shouldClean ? t('options.btnAddingAndCleaning') : t('options.btnAddingRule')}</span>`;
 
     // 1. 添加或激活规则
     const { rule, isNew } = await addRule({ pattern, type });
 
-    // 2. 自动回溯清理已有历史匹配数据
-    const chunkSize = getDeleteChunkSize();
-    const cleanResult = await cleanHistoryByRule(rule, {
-      chunkSize,
-      onProgress: ({ deleted }) => {
-        if (deleted > 0) {
-          elements.btnAddRule.innerHTML = `<span>🧹 ${t('options.btnCleaningWithCount', { count: deleted })}</span>`;
+    // 2. 若勾选了同时清理已有历史，自动回溯清理已有历史匹配数据
+    let cleanResult = { deleted: 0 };
+    if (shouldClean) {
+      const chunkSize = getDeleteChunkSize();
+      cleanResult = await cleanHistoryByRule(rule, {
+        chunkSize,
+        onProgress: ({ deleted }) => {
+          if (deleted > 0) {
+            elements.btnAddRule.innerHTML = `<span>🧹 ${t('options.btnCleaningWithCount', { count: deleted })}</span>`;
+          }
         }
-      }
-    });
+      });
+    }
 
-    if (cleanResult.deleted > 0) {
+    if (shouldClean && cleanResult.deleted > 0) {
       showToast(t('options.toastAddRuleSuccessWithCleaned', {
         pattern: rule.pattern,
         count: cleanResult.deleted
@@ -885,7 +891,9 @@ elements.btnAddRule.addEventListener('click', async () => {
     await refreshRulesList();
 
     // 3. 联动刷新历史记录列表（若当前在 history 则立即刷新，不在则标记切回时刷新）
-    await refreshHistoryIfVisibleOrMarkDirty();
+    if (shouldClean && cleanResult.deleted > 0) {
+      await refreshHistoryIfVisibleOrMarkDirty();
+    }
   } catch (err) {
     console.error('Add rule and clean history failed:', err);
     showToast(t('options.toastImportFailed', { error: err.message }));
@@ -965,6 +973,12 @@ async function loadSettingsToUI() {
   }
   if (elements.settingDefaultRuleType) {
     elements.settingDefaultRuleType.value = currentSettings.defaultRuleType || 'auto';
+  }
+  if (elements.settingCleanOnAddRule) {
+    elements.settingCleanOnAddRule.checked = currentSettings.cleanOnAddRule !== false;
+  }
+  if (elements.cbRulesCleanExisting) {
+    elements.cbRulesCleanExisting.checked = currentSettings.cleanOnAddRule !== false;
   }
   if (elements.settingHistoryBatchSize) {
     elements.settingHistoryBatchSize.value = String(currentSettings.historyBatchSize || 100);
@@ -1141,6 +1155,18 @@ if (elements.settingDefaultRuleType) {
     await saveSettings({ defaultRuleType: val });
     currentSettings.defaultRuleType = val;
     showToast(t('options.toastDefaultRuleTypeChanged'));
+  });
+}
+
+if (elements.settingCleanOnAddRule) {
+  elements.settingCleanOnAddRule.addEventListener('change', async () => {
+    const val = elements.settingCleanOnAddRule.checked;
+    await saveSettings({ cleanOnAddRule: val });
+    currentSettings.cleanOnAddRule = val;
+    if (elements.cbRulesCleanExisting) {
+      elements.cbRulesCleanExisting.checked = val;
+    }
+    showToast(t('options.toastCleanOnAddRuleChanged', { state: val ? t('options.stateEnabled') : t('options.stateDisabled') }));
   });
 }
 
