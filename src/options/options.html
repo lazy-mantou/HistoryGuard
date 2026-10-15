@@ -203,8 +203,14 @@
                 <option value="keyword" data-i18n="options.typeKeyword">关键词匹配</option>
               </select>
             </div>
-            <label class="add-rule-clean-label" for="cb-rules-clean-existing" data-i18n-title="options.cbRulesCleanExistingTooltip" title="添加此规则时，同时彻底清理已有匹配的历史记录">
+            <label class="add-rule-clean-label is-checked" for="cb-rules-clean-existing" data-i18n-title="options.cbRulesCleanExistingTooltip" title="添加此规则时，同时彻底清理已有匹配的历史记录">
               <input type="checkbox" id="cb-rules-clean-existing" class="add-rule-checkbox" checked>
+              <span class="clean-pill-indicator" aria-hidden="true">
+                <svg class="clean-pill-check-icon" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 7.5L5.5 10L11 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="clean-pill-icon" aria-hidden="true">🧹</span>
               <span class="add-rule-clean-text" data-i18n="options.cbRulesCleanExisting">同时清理已有历史</span>
             </label>
             <button id="btn-add-rule" class="btn btn-primary-add">

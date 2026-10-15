@@ -957,6 +957,18 @@ elements.newRuleInput.addEventListener('keydown', (e) => {
   }
 });
 
+// 监听“同时清理已有历史”胶囊开关状态变化，同步视觉高亮
+if (elements.cbRulesCleanExisting) {
+  const updateCleanPillState = () => {
+    const parent = elements.cbRulesCleanExisting.closest('.add-rule-clean-label');
+    if (parent) {
+      parent.classList.toggle('is-checked', elements.cbRulesCleanExisting.checked);
+    }
+  };
+  elements.cbRulesCleanExisting.addEventListener('change', updateCleanPillState);
+  updateCleanPillState();
+}
+
 // 底部操作：一键全部启用
 if (elements.btnEnableAll) {
   elements.btnEnableAll.addEventListener('click', async () => {
