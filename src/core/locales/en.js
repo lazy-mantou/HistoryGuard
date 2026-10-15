@@ -73,7 +73,7 @@ export default {
     statSilentOff: 'Off',
     statSilentOn: 'Active ({time})',
     navHistoryTitle: 'Search & Clean History',
-    navHistoryDesc: 'Multi-dimensional search & deep cleanup',
+    navHistoryDesc: 'Search & deep cleanup',
     navRulesTitle: 'Protection Rules',
     navRulesDesc: 'Auto-Block & Rule Config',
     navSettingsTitle: 'Advanced Settings',

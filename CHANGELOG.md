@@ -4,6 +4,18 @@
 
 ---
 
+## [1.0.37] - 2026-10-15
+
+### 侧边栏导航英文描述精炼与排版防穿模 (Refine Navigation Copy & Prevent Text Overflow)
+1. **侧边栏 Tab 1 英文副标题精炼与防御性截断**:
+   - **痛点分析**：
+     - 原版侧边栏 Tab 1 英文副标题为 `Multi-dimensional search & deep cleanup`（40 字符），在 260px 固定宽度的侧边栏中超出右侧边框穿模；
+   - **重构实现**：
+     - 采纳方案 2 精炼英文文案：由 `Multi-dimensional search & deep cleanup` 优化为 `Search & deep cleanup`（缩短近一半），与其余各 Tab 保持优雅均衡；
+     - 在 CSS 中为 `.tab-title` 与 `.tab-desc` 补充防御性样式 `overflow: hidden; text-overflow: ellipsis;`，彻底杜绝任何长文本或 DPI 缩放下的边缘穿模。
+
+---
+
 ## [1.0.36] - 2026-10-15
 
 ### 规则输入占位符示例规范化 (Standardize Rule Input Placeholder Examples)
