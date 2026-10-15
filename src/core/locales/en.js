@@ -125,7 +125,7 @@ export default {
     ruleToggleActive: 'Active - click to pause',
     ruleToggleDisabled: 'Paused - click to enable',
     ruleDeleteTitle: 'Delete this rule',
-    ruleCleanTitle: 'Delete existing history matching this rule',
+    ruleCleanTitle: 'Clean existing history matching this rule',
     btnEnableAll: 'Enable All',
     btnClearDisabled: 'Clear Disabled Rules',
     settingsTitle: 'Advanced Preferences',

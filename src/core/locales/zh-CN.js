@@ -125,7 +125,7 @@ export default {
     ruleToggleActive: '已启用，点击暂停',
     ruleToggleDisabled: '已暂停，点击启用',
     ruleDeleteTitle: '删除该规则',
-    ruleCleanTitle: '一并彻底清理匹配该规则的已有历史记录',
+    ruleCleanTitle: '立即清理匹配该规则的已有历史记录',
     btnEnableAll: '全部启用',
     btnClearDisabled: '清理已停用规则',
     settingsTitle: '高级偏好设置',

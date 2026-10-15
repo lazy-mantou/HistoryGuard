@@ -814,12 +814,16 @@ async function refreshRulesList() {
           <input type="checkbox" class="rule-toggle" ${rule.enabled !== false ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
+        <button class="rule-clean-btn" title="${t('options.ruleCleanTitle')}">🧹</button>
         <button class="rule-delete-btn" title="${t('options.ruleDeleteTitle')}">🗑️</button>
       </div>
     `;
 
     // 绑定 Toggle 开关
     const toggle = row.querySelector('.rule-toggle');
+    const cleanBtn = row.querySelector('.rule-clean-btn');
+    const delBtn = row.querySelector('.rule-delete-btn');
+
     toggle.addEventListener('change', async () => {
       await toggleRule(rule.id, toggle.checked);
       row.classList.toggle('disabled', !toggle.checked);
@@ -827,8 +831,50 @@ async function refreshRulesList() {
       await refreshGlobalStats();
     });
 
+    // 绑定清理匹配历史按钮
+    cleanBtn.addEventListener('click', async () => {
+      if (cleanBtn.disabled) return;
+      const originalCleanHtml = cleanBtn.innerHTML;
+      try {
+        cleanBtn.disabled = true;
+        delBtn.disabled = true;
+        cleanBtn.innerHTML = '⏳';
+        cleanBtn.style.opacity = '0.7';
+        showToast(t('options.toastCleaningRule', { pattern: rule.pattern }));
+
+        const chunkSize = getDeleteChunkSize();
+        const result = await cleanHistoryByRule(rule, {
+          chunkSize,
+          onProgress: ({ deleted }) => {
+            if (deleted > 0) {
+              cleanBtn.title = `${t('options.ruleCleanTitle')} (${deleted})`;
+            }
+          }
+        });
+
+        if (result.deleted > 0) {
+          showToast(t('options.toastCleanRuleHistorySuccess', {
+            pattern: rule.pattern,
+            count: result.deleted
+          }));
+          await refreshHistoryIfVisibleOrMarkDirty();
+          await refreshGlobalStats();
+        } else {
+          showToast(t('options.toastCleanRuleHistoryNone', { pattern: rule.pattern }));
+        }
+      } catch (err) {
+        console.error('Clean history by rule failed:', err);
+        showToast(t('options.toastFailed', { error: err.message }));
+      } finally {
+        cleanBtn.disabled = false;
+        delBtn.disabled = false;
+        cleanBtn.innerHTML = originalCleanHtml;
+        cleanBtn.style.opacity = '1';
+        cleanBtn.title = t('options.ruleCleanTitle');
+      }
+    });
+
     // 绑定删除按钮
-    const delBtn = row.querySelector('.rule-delete-btn');
     delBtn.addEventListener('click', async () => {
       await deleteRule(rule.id);
       showToast(t('options.toastDeleteRuleSuccess', { pattern: rule.pattern }));
