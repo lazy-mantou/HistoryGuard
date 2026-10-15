@@ -57,7 +57,6 @@ const elements = {
   noMoreHint: document.getElementById('no-more-hint'),
   btnDeleteSelected: document.getElementById('btn-delete-selected'),
   btnDeleteText: document.getElementById('btn-delete-text'),
-  btnDeleteAndAddRule: document.getElementById('btn-delete-and-add-rule'),
   btnDeepClean: document.getElementById('btn-deep-clean'),
 
   // 异步执行进度条
@@ -328,29 +327,16 @@ async function refreshGlobalStats() {
  */
 function updateSelectedSummary() {
   const selectedCount = checkedUrls.size;
-  const searchTerm = (elements.searchInput.value || '').trim();
   const hasSelected = selectedCount > 0;
-  const hasKeyword = searchTerm.length > 0;
 
   elements.selectedSummary.textContent = t('options.selectedSummary', { count: selectedCount });
   elements.btnDeleteText.textContent = t('options.btnDeleteSelected', { count: selectedCount });
 
   elements.btnDeleteSelected.disabled = !hasSelected || isOperatingCleaning;
-  // 必须同时满足：1. 已勾选待删除记录；2. 已输入搜索关键词（用于提取生成永久隐藏规则）；3. 当前未在执行清理任务
-  elements.btnDeleteAndAddRule.disabled = !hasSelected || !hasKeyword || isOperatingCleaning;
 
-  // 全部清空按钮逻辑优化：列表中没数据时不要隐藏，设置为 disabled；只要列表中有数据，就能点击
+  // 全部清空按钮：列表中无数据时禁用，有数据时可点击
   if (elements.btnDeepClean) {
     elements.btnDeepClean.disabled = currentHistoryResults.length === 0 || isOperatingCleaning;
-  }
-
-  // 动态更新悬浮提示，为用户提供清晰的交互指引
-  if (!hasKeyword) {
-    elements.btnDeleteAndAddRule.title = t('options.btnDeleteAndAddRuleNoKeyword');
-  } else if (!hasSelected) {
-    elements.btnDeleteAndAddRule.title = t('options.btnDeleteAndAddRuleNoSelected');
-  } else {
-    elements.btnDeleteAndAddRule.title = `${t('options.btnDeleteSelected', { count: selectedCount })} & "${searchTerm}"`;
   }
 }
 
@@ -544,7 +530,6 @@ async function deleteUrlsWithProgress(urls, title = '正在批量清理历史...
   elements.progressFillBar.style.width = '0%';
 
   elements.btnDeleteSelected.disabled = true;
-  elements.btnDeleteAndAddRule.disabled = true;
   if (elements.btnDeepClean) elements.btnDeepClean.disabled = true;
 
   const total = urls.length;
@@ -602,7 +587,6 @@ async function streamCleanAllMatches() {
 
   isOperatingCleaning = true;
   elements.btnDeleteSelected.disabled = true;
-  elements.btnDeleteAndAddRule.disabled = true;
   if (elements.btnDeepClean) elements.btnDeepClean.disabled = true;
 
   elements.progressContainer.classList.remove('hidden');
@@ -765,56 +749,6 @@ elements.btnDeleteSelected.addEventListener('click', async () => {
   }
 });
 
-// 删除记录并将搜索词加入永久隐藏规则
-elements.btnDeleteAndAddRule.addEventListener('click', async () => {
-  const targets = Array.from(checkedUrls);
-  const searchTerm = (elements.searchInput.value || '').trim();
-
-  if (!searchTerm) {
-    showToast(t('options.emptyHistoryStart'));
-    return;
-  }
-
-  const preferredType = currentSettings.defaultRuleType === 'auto' ? undefined : currentSettings.defaultRuleType;
-  let pattern, detectedType;
-  if (preferredType === 'keyword') {
-    pattern = searchTerm;
-    detectedType = 'keyword';
-  } else {
-    const converted = convertSearchTermToRule(searchTerm);
-    pattern = converted.pattern;
-    detectedType = converted.type;
-  }
-  const actualType = preferredType || detectedType;
-  if (!pattern) {
-    showToast(t('options.toastImportFailed', { error: 'Invalid pattern' }));
-    return;
-  }
-
-  try {
-    // 1. 添加为永久规则
-    const { rule, isNew } = await addRule({ pattern, type: actualType, enabled: true });
-
-    // 2. 分块删除记录
-    let deletedCount = 0;
-    if (targets.length > 0) {
-      deletedCount = await deleteUrlsWithProgress(targets, t('options.progressDeletingAndAdding'));
-    }
-
-    // 3. 全局彻底扫描并清空剩余可能存在的匹配历史
-    const remainingClean = await cleanHistoryByRule(rule, {
-      chunkSize: getDeleteChunkSize()
-    });
-    const totalDeleted = deletedCount + remainingClean.deleted;
-
-    const actionText = isNew ? t('popup.actionAdd') : t('popup.actionUpdate');
-    showToast(t('options.toastDeleteAndAddSuccess', { action: actionText, pattern, count: totalDeleted }));
-    await refreshRulesList();
-    await refreshHistoryIfVisibleOrMarkDirty();
-  } catch (err) {
-    showToast(t('options.toastImportFailed', { error: err.message }));
-  }
-});
 
 // 流式全量清空
 if (elements.btnDeepClean) {

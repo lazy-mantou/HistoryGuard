@@ -4,6 +4,32 @@
 
 ---
 
+## [1.0.21] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **精简历史批量删除底部操作栏（移除“删除记录并将搜索词加入永久隐藏”按钮）**：
+   - **业务与交互优化背景**：
+     - 用户明确要求去掉 Options 页面历史批量删除面板底部的“删除记录并将搜索词加入永久隐藏（`btnDeleteAndAddRule`）”按钮；
+     - 底部操作栏精简聚焦于核心操作：“删除选中的 x 条记录”（批量常规删除）与“全部清空”（流式全量清空），去除复合混合操作，降低界面认知负担与误触风险。
+   - **技术重构与方案**：
+     - **模板精简**：从 `src/options/options.html` 的卡片底部操作栏（`.card-footer`）中彻底移除 `#btn-delete-and-add-rule` 按钮元素；
+     - **脚本逻辑解耦与清理**：在 `src/options/options.js` 中移除 `btnDeleteAndAddRule` DOM 节点引用及其对应的高频状态维护（`disabled`、动态 tooltip 提示、清理过程锁），彻底移除绑定的点击事件监听器；
+     - **样式自适应流式排版**：底部 `.card-footer` 保留常规删除与全部清空两枚高频主按钮，布局更为对称清爽。
+2. **全项目版本号同步与构建闭环 (Version 1.0.21 Synchronization)**：
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.21`，并通过 `build.js` 重新分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `feat(options)`:
+  - `src/options/options.html`: 移除 `#btn-delete-and-add-rule` 按钮 DOM 结构。
+  - `src/options/options.js`: 移除针对 `btnDeleteAndAddRule` 的节点获取、`updateSelectedSummary` 状态联动以及其点击绑定处理函数。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.21`。
+  - `dist/`: 经 `node build.js` 重新编译更新发布包。
+- `test`:
+  - 全套 117 项自动化测试全部执行通过（117 pass, 0 fail）。
+
+---
+
 ## [1.0.20] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
