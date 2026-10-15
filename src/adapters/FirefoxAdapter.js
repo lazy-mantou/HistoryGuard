@@ -289,6 +289,32 @@ export class FirefoxAdapter extends IBrowserAdapter {
         } else {
           throw new Error('Neither browser.runtime.openOptionsPage nor browser.tabs.create is available');
         }
+      },
+
+      sendMessage: async (message) => {
+        const api = getApi();
+        if (api.runtime?.sendMessage) {
+          try {
+            return await api.runtime.sendMessage(message);
+          } catch {
+            return null;
+          }
+        }
+        return null;
+      },
+
+      onMessage: (callback) => {
+        const api = getApi();
+        if (api.runtime?.onMessage) {
+          api.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            const res = callback(message, sender, sendResponse);
+            if (res instanceof Promise) {
+              res.then(sendResponse).catch(err => sendResponse({ error: err.message }));
+              return true;
+            }
+            return res;
+          });
+        }
       }
     };
 

@@ -62,16 +62,16 @@ export function getQueryTextForRule(rule) {
  * @param {string|{pattern: string, type?: string}} rule - 规则对象或规则字符串
  * @param {Object} [options={}] - 配置选项
  * @param {Function} [options.onProgress] - 进度回调函数 ({ deleted, scanned }) => void
- * @param {number} [options.chunkSize=30] - 单批次并发删除条数
- * @param {number} [options.batchSize=200] - 历史检索游标单次拉取条数
+ * @param {number} [options.chunkSize=6] - 单批次并发删除条数 (避免 SQLite 锁争用)
+ * @param {number} [options.batchSize=500] - 历史检索游标单次拉取条数
  * @param {Object} [options.api=browserApi] - 底层浏览器适配器实例（支持依赖注入测试）
  * @returns {Promise<{ deleted: number, scanned: number }>} 清理结果统计
  */
 export async function cleanHistoryByRule(rule, options = {}) {
   const {
     onProgress,
-    chunkSize = 30,
-    batchSize = 200,
+    chunkSize = 6,
+    batchSize = 500,
     api = browserApi
   } = options;
 
@@ -82,7 +82,8 @@ export async function cleanHistoryByRule(rule, options = {}) {
   const queryText = getQueryTextForRule(rule);
   let totalDeleted = 0;
   let cursorEndTime = 0;
-  const seenUrls = new Set();
+  const deletedUrls = new Set();
+  const seenItemKeys = new Set();
 
   while (true) {
     const searchParams = {
@@ -106,45 +107,56 @@ export async function cleanHistoryByRule(rule, options = {}) {
       break;
     }
 
-    // 过滤出本轮尚未考察过的条目
-    const unseen = batch.filter(item => item && item.url && !seenUrls.has(item.url));
+    // 过滤出本轮尚未考察过的历史条目（以 url + lastVisitTime 作为唯一特征，避免跨批次边界重复处理）
+    const unseen = [];
+    for (const item of batch) {
+      if (!item || !item.url) continue;
+      const key = `${item.url}|${item.lastVisitTime || 0}`;
+      if (!seenItemKeys.has(key)) {
+        seenItemKeys.add(key);
+        unseen.push(item);
+      }
+    }
+
     const oldestItem = batch[batch.length - 1];
     const oldestTime = (oldestItem && typeof oldestItem.lastVisitTime === 'number')
       ? oldestItem.lastVisitTime
       : 0;
 
-    if (unseen.length === 0) {
-      // 本批次获取的所有记录此前都已考察过（未命中规则或删除受限）
-      // 强行推进游标，跳出重复窗口
-      if (!oldestTime || oldestTime <= 1 || (cursorEndTime > 0 && oldestTime >= cursorEndTime)) {
-        break;
-      }
-      cursorEndTime = oldestTime - 1;
-      continue;
-    }
-
-    // 标记已考察
-    unseen.forEach(item => seenUrls.add(item.url));
-
-    // 使用 matchesRule 进行精确二次匹配，严禁子串误杀
+    // 从未考察过的条目中筛选出精确命中规则的项
     const toDelete = unseen.filter(item => matchesRule(rule, item));
 
     if (toDelete.length > 0) {
-      for (let i = 0; i < toDelete.length; i += chunkSize) {
-        const chunk = toDelete.slice(i, i + chunkSize);
-        const results = await Promise.allSettled(chunk.map(item => api.history.deleteUrl(item.url)));
+      // 核心优化 1：去重物理 URL。在历史库中同一 URL（如网站首页、视频播放页）往往有几十上百条重复访问。
+      // browser.history.deleteUrl 会自动一次性抹除该 URL 的全部访问，严禁并发重复调用导致 Firefox Places SQLite 锁死
+      const uniqueUrlsToDelete = [];
+      for (const item of toDelete) {
+        if (!deletedUrls.has(item.url)) {
+          deletedUrls.add(item.url);
+          uniqueUrlsToDelete.push(item.url);
+        }
+      }
+
+      // 核心优化 2：安全小并发分片 (默认 6)，每批让出事件循环，杜绝阻塞主线程与数据库死锁
+      for (let i = 0; i < uniqueUrlsToDelete.length; i += chunkSize) {
+        const chunk = uniqueUrlsToDelete.slice(i, i + chunkSize);
+        const results = await Promise.allSettled(chunk.map(url => api.history.deleteUrl(url)));
         const successCount = results.filter(r => r.status === 'fulfilled').length;
         totalDeleted += successCount;
 
         if (typeof onProgress === 'function') {
           onProgress({
             deleted: totalDeleted,
-            scanned: seenUrls.size
+            scanned: seenItemKeys.size
           });
         }
-        // 宏任务让出主线程控制权，保障 UI 流畅重绘
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise(r => setTimeout(r, 2));
       }
+    } else if (typeof onProgress === 'function' && unseen.length > 0) {
+      onProgress({
+        deleted: totalDeleted,
+        scanned: seenItemKeys.size
+      });
     }
 
     // 如果底层返回的条数小于请求的批次大小，说明历史库已经全部遍历完毕
@@ -152,22 +164,26 @@ export async function cleanHistoryByRule(rule, options = {}) {
       break;
     }
 
-    // 如果批次中有未被删除的记录（如不匹配规则而保留），为了防止下一次请求完全重复返回这些条目：
-    // 将 cursorEndTime 推进到 oldestTime
-    if (toDelete.length < batch.length && oldestTime > 0) {
-      if (cursorEndTime === oldestTime) {
-        cursorEndTime = oldestTime - 1;
-      } else {
-        cursorEndTime = oldestTime;
-      }
-      if (cursorEndTime <= 1) {
-        break;
-      }
+    // 核心优化 3：严格单调递减的历史时间游标推进
+    // 保证每一批次严格向过去的时间窗口推进，杜绝死循环与提前跳出
+    if (!oldestTime || oldestTime <= 1) {
+      break;
+    }
+
+    if (cursorEndTime === oldestTime) {
+      // 连续两次最老时间戳相同（同 1 毫秒存在海量访问记录），推进 1 毫秒跳出
+      cursorEndTime = oldestTime - 1;
+    } else {
+      cursorEndTime = oldestTime;
+    }
+
+    if (cursorEndTime <= 1) {
+      break;
     }
   }
 
   return {
     deleted: totalDeleted,
-    scanned: seenUrls.size
+    scanned: seenItemKeys.size
   };
 }

@@ -350,6 +350,37 @@ export class ChromiumAdapter extends IBrowserAdapter {
             reject(new Error('Neither openOptionsPage nor tabs.create is available'));
           }
         });
+      },
+
+      sendMessage: (message) => {
+        return new Promise((resolve) => {
+          if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+            return resolve(null);
+          }
+          try {
+            chrome.runtime.sendMessage(message, (response) => {
+              if (chrome.runtime?.lastError) {
+                return resolve(null);
+              }
+              resolve(response);
+            });
+          } catch {
+            resolve(null);
+          }
+        });
+      },
+
+      onMessage: (callback) => {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+          chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            const res = callback(message, sender, sendResponse);
+            if (res instanceof Promise) {
+              res.then(sendResponse).catch(err => sendResponse({ error: err.message }));
+              return true;
+            }
+            return res;
+          });
+        }
       }
     };
 

@@ -41,6 +41,8 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
     assert.throws(() => adapter.action.setTitle(), /must be implemented/);
     assert.throws(() => adapter.action.setIcon(), /must be implemented/);
     await assert.rejects(async () => adapter.runtime.openOptionsPage(), /must be implemented/);
+    await assert.rejects(async () => adapter.runtime.sendMessage({}), /must be implemented/);
+    assert.throws(() => adapter.runtime.onMessage(() => {}), /must be implemented/);
     await assert.rejects(async () => adapter.alarms.create(), /must be implemented/);
     assert.throws(() => adapter.i18n.getUILanguage(), /must be implemented/);
   });
@@ -68,6 +70,8 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.action.setTitle, 'function');
     assert.strictEqual(typeof adapter.action.setIcon, 'function');
     assert.strictEqual(typeof adapter.runtime.openOptionsPage, 'function');
+    assert.strictEqual(typeof adapter.runtime.sendMessage, 'function');
+    assert.strictEqual(typeof adapter.runtime.onMessage, 'function');
     assert.strictEqual(typeof adapter.alarms.create, 'function');
     assert.strictEqual(typeof adapter.alarms.clear, 'function');
     assert.strictEqual(typeof adapter.alarms.onAlarm, 'function');
@@ -167,6 +171,8 @@ describe('adapters - FirefoxAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.action.setTitle, 'function');
     assert.strictEqual(typeof adapter.action.setIcon, 'function');
     assert.strictEqual(typeof adapter.runtime.openOptionsPage, 'function');
+    assert.strictEqual(typeof adapter.runtime.sendMessage, 'function');
+    assert.strictEqual(typeof adapter.runtime.onMessage, 'function');
     assert.strictEqual(typeof adapter.alarms.create, 'function');
     assert.strictEqual(typeof adapter.alarms.clear, 'function');
     assert.strictEqual(typeof adapter.alarms.onAlarm, 'function');

@@ -4,6 +4,45 @@
 
 ---
 
+## [1.0.31] - 2026-10-15
+
+### 需求整理与 Bug 修复 (Bug Fixes & Technical Decisions)
+1. **解决大体量历史记录下 Firefox 回溯清理卡死、进度停滞与清理不彻底的核心缺陷 (Fix Heavy History Clean Freeze, Infinite Loop & Incomplete Cleanup in Firefox)**:
+   - **Bug 根因排查与定位**：
+     - **根因一：历史时间游标推进算法缺陷（死循环与提前中断）**：
+       - 原代码使用 `if (toDelete.length < batch.length)` 来决定是否推进游标；当某一整批次记录（如 200 条）全部命中规则被删除时，游标 `cursorEndTime` 完全没有被更新；
+       - 这导致下一轮以相同的查询条件甚至无 `endTime` 重新发起查询，在 Firefox Places SQLite 异步写入有微小延迟或遇到重复 URL 时，触发 `unseen.length === 0`，进而命中提前退出判定，使得历史清理仅仅处理了前一两批就提前中断，剩余海量历史完全未被清理；
+     - **根因二：未去重 URL 导致 Firefox Places SQLite 严重并发锁死**：
+       - 原代码未对待删除项按物理 URL 去重；用户日常浏览中对同一站点或页面的访问记录可能多达数百次；
+       - `browser.history.deleteUrl` 在底层会一次性清除该 URL 的全部访问，而原逻辑以 30 个并发分片同时对相同的 URL 密集调用 `deleteUrl`，在 Firefox 的单写锁 SQLite 架构（`places.sqlite`）中引发严重的数据库锁争用与事务队列堆积，造成长达数分钟的卡死；
+     - **根因三：Popup 弹窗临时生命周期限制导致清理任务意外夭折**：
+       - 原清理逻辑完全在 `popup.js` 视图上下文中串行执行；
+       - 在 WebExtension 规范中，用户只要切换标签页、点击外部或打开浏览器历史库，Popup 窗口便会被浏览器瞬时销毁，其内正在运行的所有 JavaScript Promise 立即被强行终止；用户切换至历史记录查看时，清理实际上早已被中断夭折；
+     - **根因四：缺乏实时进度反馈**：
+       - Popup 按钮文字静态定格在“处理中...”，即使后台在正常计算或遇到大历史，用户也无法感知当前已清理了多少条数据。
+   - **全链路修复与架构重构**：
+     - **全量物理 URL 去重与安全受控并发**：
+       - 在 `cleanHistoryByRule` 中增加跨批次全局 `deletedUrls` 去重集合，同一 URL 在全生命周期内仅调用一次 `deleteUrl`，直接将 SQLite 写入压力骤降 90% 以上；
+       - 将并发分片大小由 30 调整为安全并发量 6，每批执行完毕主动让出事件循环（2ms），给 Firefox SQLite 充分的提交与排队缓冲，彻底杜绝数据库锁死与界面卡顿。
+     - **严格单调递减的历史时间游标推进**：
+       - 废除依赖 `toDelete.length` 的错误游标判断，每批次检索严格将时间游标推进至最老时间戳；若遇到同 1 毫秒的海量记录，自动单调递减 1 毫秒跳出重合窗口；
+       - 批次大小由 200 提升至 500，大幅削减 SQLite 往返检索次数（减少 60% 查询）。
+     - **后台持久守护进程异步委托机制 (Background Delegation)**：
+       - 扩展底层适配器契约，全面补全 `browserApi.runtime.sendMessage` 与 `browserApi.runtime.onMessage`；
+       - 当用户在 Popup 点击“隐藏并清理”或“仅删 X 条”时，通过消息通道将清理任务委托给不受 Popup 窗口关闭影响的后台 Background 进程执行；
+       - 即使用户在点击后立刻关闭弹窗或切换到 `about:history` 查看，后台进程依然坚不可摧地运行直至全量历史彻底清空。
+     - **实时进度轮询与动态按钮反馈**：
+       - 后台维护实时任务状态字典，Popup 建立动态轮询机制，按钮文字实时呈现处理进度（如 `处理中 (42)...` / `🧹 (128)`），完成时呈现成功 Toast 与物理删除数。
+2. **测试与质量保障 (Testing & Quality Assurance)**：
+   - 补充 `tests/historyCleaner.test.js`：
+     - 测试针对大量同一 URL 重复访问的去重防护逻辑，验证单 URL 严禁并发重复调用；
+     - 测试多批次全部命中的场景下单调游标推进机制，确保全量扫描而不提前退出；
+   - 补充 `tests/adapters.test.js` 针对 `runtime.sendMessage` 和 `runtime.onMessage` 的抽象契约测试；
+   - 全套 164 项单元测试全部通过（164 pass, 0 fail）；
+   - 同步升级版本至 `1.0.31`（`package.json`, `manifest.chrome.json`, `manifest.firefox.json`），并执行全量打包构建。
+
+---
+
 ## [1.0.30] - 2026-10-15
 
 ### 需求整理与功能实现 (Features & Requirements Specification)

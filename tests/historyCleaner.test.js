@@ -165,6 +165,72 @@ describe('historyCleaner - cleanHistoryByRule (历史回溯扫描与精准出清
     assert.strictEqual(callCount, 2);
   });
 
+  it('URL去重保护：当历史记录中存在大量针对同一页面的重复访问时，严格去重并只调用一次 deleteUrl，杜绝 SQLite 锁死', async () => {
+    const deletedCalls = [];
+    const mockHistory = [
+      { url: 'https://www.bilibili.com/video/BV1', lastVisitTime: 10000 },
+      { url: 'https://www.bilibili.com/video/BV1', lastVisitTime: 9000 },
+      { url: 'https://www.bilibili.com/video/BV1', lastVisitTime: 8000 },
+      { url: 'https://www.bilibili.com/video/BV2', lastVisitTime: 7000 },
+      { url: 'https://www.bilibili.com/video/BV2', lastVisitTime: 6000 }
+    ];
+
+    const mockApi = {
+      history: {
+        search: async () => mockHistory,
+        deleteUrl: async (url) => {
+          deletedCalls.push(url);
+        }
+      }
+    };
+
+    const result = await cleanHistoryByRule(
+      { pattern: 'bilibili.com', type: 'domain' },
+      { api: mockApi, batchSize: 10 }
+    );
+
+    // 5 条重复记录中只有 2 个唯一 URL
+    assert.strictEqual(deletedCalls.length, 2, '严禁对同一 URL 重复并发调用 deleteUrl');
+    assert.strictEqual(result.deleted, 2);
+    assert.strictEqual(result.scanned, 5);
+  });
+
+  it('多批次单调推进游标：当每批次记录全部命中时，游标严格向过去推进，杜绝死循环与提前中断', async () => {
+    let queries = [];
+    const mockApi = {
+      history: {
+        search: async (params) => {
+          queries.push(params.endTime || 'latest');
+          if (!params.endTime) {
+            // Batch 1: 返回 2 条，最老时间戳为 5000
+            return [
+              { url: 'https://example.com/a', lastVisitTime: 6000 },
+              { url: 'https://example.com/b', lastVisitTime: 5000 }
+            ];
+          } else if (params.endTime === 5000) {
+            // Batch 2: 返回 2 条，最老时间戳为 2000
+            return [
+              { url: 'https://example.com/c', lastVisitTime: 4000 },
+              { url: 'https://example.com/d', lastVisitTime: 2000 }
+            ];
+          } else {
+            // Batch 3: 无更多记录
+            return [];
+          }
+        },
+        deleteUrl: async () => {}
+      }
+    };
+
+    const result = await cleanHistoryByRule(
+      { pattern: 'example.com', type: 'domain' },
+      { api: mockApi, batchSize: 2 }
+    );
+
+    assert.strictEqual(result.deleted, 4, '必须跨所有批次全部删除，不能在 batch 1 结束');
+    assert.strictEqual(queries.length, 3);
+  });
+
   it('传入 null 或空规则时安全返回 0 条', async () => {
     const result = await cleanHistoryByRule(null);
     assert.strictEqual(result.deleted, 0);

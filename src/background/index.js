@@ -6,6 +6,7 @@
 
 import { browserApi } from '../adapters/index.js';
 import { findMatchingRule, matchesRule } from '../core/ruleMatcher.js';
+import { cleanHistoryByRule } from '../core/historyCleaner.js';
 import {
   getRules,
   getSilentMode,
@@ -264,4 +265,63 @@ if (browserApi.webNavigation && typeof browserApi.webNavigation.onCommitted === 
   });
 }
 
-console.log('[HistGuard BG] 后台拦截守护服务已启动就绪 (多通道拦截与工具栏状态指示引擎)');
+// F. 监听来自 Popup 或 Options 的消息（支持将繁重的历史回溯清理委托给持久后台进程执行）
+let backgroundCleaningState = {
+  isCleaning: false,
+  rulePattern: '',
+  deleted: 0,
+  scanned: 0,
+  lastUpdated: 0
+};
+
+if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
+  browserApi.runtime.onMessage(async (message) => {
+    if (message?.action === 'CLEAN_HISTORY_BY_RULE') {
+      const { rule, currentUrl } = message;
+      if (!rule) return { success: false, error: 'Rule is required' };
+
+      backgroundCleaningState.isCleaning = true;
+      backgroundCleaningState.rulePattern = typeof rule === 'string' ? rule : (rule.pattern || '');
+      backgroundCleaningState.deleted = 0;
+      backgroundCleaningState.scanned = 0;
+      backgroundCleaningState.lastUpdated = Date.now();
+
+      try {
+        console.log(`[HistGuard BG] 开始在后台执行历史记录全量出清: [${backgroundCleaningState.rulePattern}]`);
+        const result = await cleanHistoryByRule(rule, {
+          chunkSize: 6,
+          batchSize: 500,
+          onProgress: ({ deleted, scanned }) => {
+            backgroundCleaningState.deleted = deleted;
+            backgroundCleaningState.scanned = scanned;
+            backgroundCleaningState.lastUpdated = Date.now();
+          }
+        });
+
+        if (currentUrl) {
+          try {
+            await browserApi.history.deleteUrl(currentUrl);
+          } catch {
+            // ignore
+          }
+        }
+
+        backgroundCleaningState.isCleaning = false;
+        console.log(`[HistGuard BG] 后台历史出清完成: 删除 ${result.deleted} 条, 扫描 ${result.scanned} 条`);
+        return { success: true, deleted: result.deleted, scanned: result.scanned };
+      } catch (err) {
+        backgroundCleaningState.isCleaning = false;
+        console.error('[HistGuard BG] 后台历史出清失败:', err);
+        return { success: false, error: err.message, deleted: backgroundCleaningState.deleted, scanned: backgroundCleaningState.scanned };
+      }
+    }
+
+    if (message?.action === 'GET_CLEANING_STATUS') {
+      return { success: true, ...backgroundCleaningState };
+    }
+
+    return null;
+  });
+}
+
+console.log('[HistGuard BG] 后台拦截守护服务已启动就绪 (多通道拦截、工具栏状态指示与后台出清引擎)');

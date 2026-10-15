@@ -415,6 +415,51 @@ const openOptions = () => {
 };
 elements.btnOpenOptions.addEventListener('click', openOptions);
 
+/**
+ * 调度历史清理任务：优先委托给后台 Background 守护进程（不受 Popup 窗口关闭影响），若环境不支持则本地回退执行
+ * @param {Object} rule - { pattern, type }
+ * @param {string} [currentUrl]
+ * @param {Function} [onProgress]
+ * @returns {Promise<{ deleted: number, scanned: number }>}
+ */
+async function executeHistoryCleaning(rule, currentUrl, onProgress) {
+  // 1. 尝试通过 runtime.sendMessage 委托给后台 Service Worker 执行，确保持久不中断
+  try {
+    if (browserApi.runtime && typeof browserApi.runtime.sendMessage === 'function') {
+      const resp = await browserApi.runtime.sendMessage({
+        action: 'CLEAN_HISTORY_BY_RULE',
+        rule,
+        currentUrl
+      });
+      if (resp && typeof resp === 'object' && resp.success !== undefined) {
+        if (!resp.success) {
+          throw new Error(resp.error || 'Background clean failed');
+        }
+        return { deleted: resp.deleted || 0, scanned: resp.scanned || 0 };
+      }
+    }
+  } catch (msgErr) {
+    console.warn('[Popup] Background messaging fallback:', msgErr);
+  }
+
+  // 2. 本地回退执行
+  const cleanResult = await cleanHistoryByRule(rule, {
+    chunkSize: 6,
+    batchSize: 500,
+    onProgress
+  });
+
+  if (currentUrl) {
+    try {
+      await browserApi.history.deleteUrl(currentUrl);
+    } catch {
+      // ignore
+    }
+  }
+
+  return cleanResult;
+}
+
 // C. 主按钮：隐藏并清理 (当前选中规则)
 elements.btnHideAndClean.addEventListener('click', async () => {
   // 兜底：若未显式选择，自动回退到第一个候选规则
@@ -466,15 +511,31 @@ elements.btnHideAndClean.addEventListener('click', async () => {
     let deletedCount = 0;
     // 2. 若勾选了回溯清理，全量回溯清理已有历史
     if (elements.cbRetroactive.checked) {
-      const cleanResult = await cleanHistoryByRule(rule);
-      deletedCount = cleanResult.deleted;
-
-      if (currentTab?.url) {
+      // 启动状态轮询计时器（在后台异步执行期间保持按钮计数同步）
+      const pollTimer = setInterval(async () => {
         try {
-          await browserApi.history.deleteUrl(currentTab.url);
-        } catch (e) {
-          // ignore
-        }
+          if (browserApi.runtime?.sendMessage) {
+            const status = await browserApi.runtime.sendMessage({ action: 'GET_CLEANING_STATUS' });
+            if (status && status.isCleaning && status.deleted > 0) {
+              elements.btnHideText.textContent = `${t('popup.toastProcessing')} (${status.deleted})`;
+            }
+          }
+        } catch { /* ignore */ }
+      }, 300);
+
+      try {
+        const cleanResult = await executeHistoryCleaning(
+          rule,
+          currentTab?.url,
+          ({ deleted }) => {
+            if (deleted > 0) {
+              elements.btnHideText.textContent = `${t('popup.toastProcessing')} (${deleted})`;
+            }
+          }
+        );
+        deletedCount = cleanResult.deleted;
+      } finally {
+        clearInterval(pollTimer);
       }
     }
 
@@ -511,19 +572,31 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     elements.btnCleanOnly.disabled = true;
     elements.btnCleanOnly.style.opacity = '0.7';
 
-    // 全量回溯清理匹配该候选规则的所有已有历史
-    const cleanResult = await cleanHistoryByRule({
-      pattern: selectedRule.rule,
-      type: selectedRule.type
-    });
-    let deletedCount = cleanResult.deleted;
-
-    if (currentTab?.url) {
+    const pollTimer = setInterval(async () => {
       try {
-        await browserApi.history.deleteUrl(currentTab.url);
-      } catch (e) {
-        // ignore
-      }
+        if (browserApi.runtime?.sendMessage) {
+          const status = await browserApi.runtime.sendMessage({ action: 'GET_CLEANING_STATUS' });
+          if (status && status.isCleaning && status.deleted > 0) {
+            elements.btnCleanText.textContent = `🧹 (${status.deleted})`;
+          }
+        }
+      } catch { /* ignore */ }
+    }, 300);
+
+    let deletedCount = 0;
+    try {
+      const cleanResult = await executeHistoryCleaning(
+        { pattern: selectedRule.rule, type: selectedRule.type },
+        currentTab?.url,
+        ({ deleted }) => {
+          if (deleted > 0) {
+            elements.btnCleanText.textContent = `🧹 (${deleted})`;
+          }
+        }
+      );
+      deletedCount = cleanResult.deleted;
+    } finally {
+      clearInterval(pollTimer);
     }
 
     showToast(t('popup.toastCleanOnlyDone', { count: deletedCount }));

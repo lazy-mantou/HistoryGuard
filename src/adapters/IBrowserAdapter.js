@@ -177,6 +177,23 @@ export class IBrowserAdapter {
        */
       openOptionsPage: () => {
         throw new Error('runtime.openOptionsPage must be implemented by adapter');
+      },
+
+      /**
+       * 向扩展后台或其他上下文发送消息
+       * @param {any} message
+       * @returns {Promise<any>}
+       */
+      sendMessage: (message) => {
+        throw new Error('runtime.sendMessage must be implemented by adapter');
+      },
+
+      /**
+       * 监听来自扩展其他上下文的消息
+       * @param {function(any, Object, function): any} callback
+       */
+      onMessage: (callback) => {
+        throw new Error('runtime.onMessage must be implemented by adapter');
       }
     };
 
