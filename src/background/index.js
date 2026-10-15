@@ -15,11 +15,34 @@ import {
   DEFAULT_SETTINGS,
   STORAGE_KEYS
 } from '../core/storage.js';
+import { updateTabToolbarIndicator } from './toolbarIndicator.js';
 
 // 内存中缓存已启用的规则、静默模式与运行设置，保证在 onVisited 高频触发时毫秒级响应
 let cachedRules = [];
 let cachedSilentUntil = 0;
 let cachedSettings = { ...DEFAULT_SETTINGS };
+
+/**
+ * 刷新当前前台活动标签页的工具栏图标外观与角标状态
+ */
+async function refreshActiveTabIndicator() {
+  try {
+    const activeTab = await browserApi.tabs.getCurrentActiveTab();
+    if (activeTab && typeof activeTab.id === 'number') {
+      const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+      await updateTabToolbarIndicator(
+        activeTab.id,
+        activeTab.url,
+        activeTab.title,
+        cachedRules,
+        cachedSilentUntil,
+        lang
+      );
+    }
+  } catch (err) {
+    // 忽略异常
+  }
+}
 
 /**
  * 刷新后台内存缓存
@@ -33,6 +56,9 @@ async function refreshCache() {
     cachedSilentUntil = silent.active ? silent.until : 0;
 
     cachedSettings = await getSettings();
+
+    // 缓存刷新后立即同步当前活动标签页的工具栏指示器
+    await refreshActiveTabIndicator();
   } catch (err) {
     console.error('[HistGuard BG] 刷新缓存失败:', err);
   }
@@ -57,6 +83,7 @@ browserApi.alarms.onAlarm(async (alarm) => {
   if (alarm && alarm.name === 'silent_mode_alarm') {
     cachedSilentUntil = 0;
     await clearSilentMode();
+    await refreshActiveTabIndicator();
     console.log('[HistGuard BG] 30 分钟静默免记录模式已到期，恢复正常历史记录监控。');
   }
 });
@@ -159,26 +186,51 @@ if (browserApi.tabs && typeof browserApi.tabs.onUpdated === 'function') {
     const url = changeInfo.url || (changeInfo.status === 'complete' ? tab?.url : null);
     if (url) {
       await handleUrlInspectionAndClean(url, tab?.title || '');
+      const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+      await updateTabToolbarIndicator(tabId, url, tab?.title || '', cachedRules, cachedSilentUntil, lang);
     }
   });
 }
 
-// C. WebNavigation 历史栈更新事件（专门捕获 history.pushState / history.replaceState）
+// C. 活动标签页切换事件（用户点击切换到不同标签页时，瞬时同步该标签页的工具栏图标与角标）
+if (browserApi.tabs && typeof browserApi.tabs.onActivated === 'function') {
+  browserApi.tabs.onActivated(async (activeInfo) => {
+    try {
+      const activeTab = await browserApi.tabs.getCurrentActiveTab();
+      if (activeTab && activeTab.id === activeInfo.tabId) {
+        const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+        await updateTabToolbarIndicator(activeTab.id, activeTab.url, activeTab.title, cachedRules, cachedSilentUntil, lang);
+      }
+    } catch {
+      // 忽略非致命异常
+    }
+  });
+}
+
+// D. WebNavigation 历史栈更新事件（专门捕获 history.pushState / history.replaceState）
 if (browserApi.webNavigation && typeof browserApi.webNavigation.onHistoryStateUpdated === 'function') {
   browserApi.webNavigation.onHistoryStateUpdated(async (details) => {
     if (details && details.url && (details.frameId === 0 || details.frameId === undefined)) {
       await handleUrlInspectionAndClean(details.url);
+      if (typeof details.tabId === 'number') {
+        const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+        await updateTabToolbarIndicator(details.tabId, details.url, '', cachedRules, cachedSilentUntil, lang);
+      }
     }
   });
 }
 
-// D. WebNavigation 主框架导航提交事件
+// E. WebNavigation 主框架导航提交事件
 if (browserApi.webNavigation && typeof browserApi.webNavigation.onCommitted === 'function') {
   browserApi.webNavigation.onCommitted(async (details) => {
     if (details && details.url && (details.frameId === 0 || details.frameId === undefined)) {
       await handleUrlInspectionAndClean(details.url);
+      if (typeof details.tabId === 'number') {
+        const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+        await updateTabToolbarIndicator(details.tabId, details.url, '', cachedRules, cachedSilentUntil, lang);
+      }
     }
   });
 }
 
-console.log('[HistGuard BG] 后台拦截守护服务已启动就绪 (多通道拦截引擎)');
+console.log('[HistGuard BG] 后台拦截守护服务已启动就绪 (多通道拦截与工具栏状态指示引擎)');

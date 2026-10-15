@@ -4,6 +4,47 @@
 
 ---
 
+## [1.0.24] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **直观工具栏图标与角标动态状态指示体系 (Real-time Toolbar Protection Status Indicator)**:
+   - **业务与体验诉求**：
+     - 用户在浏览网页时，希望无需主动点击插件弹出层，仅通过直观观察浏览器工具栏（Action Toolbar）的插件图标外观与动态角标（Badge），即可一眼获知当前页面是否受保护（即当前页面会不会被记录历史）。
+   - **三维立体感知模型**：
+     - **双态图标色调切换 (Adaptive Icon Saturation)**：
+       - 当页面命中防记录规则或处于全局静默免记录时：展示高饱和、明亮青绿色的 Chrono-Shield 盾牌守护图标（`icons/icon-16.png`, `32`, `48` 等），传递坚固防护意象；
+       - 当页面处于普通记录历史状态时：自动切换为低饱和度暗色灰度图标（`icons/icon-dim16.png`, `dim32`, `dim48` 等），减少视觉噪点；
+       - 浏览器内置管理页（如 `chrome://`, `about:` 等）：自动切换为暗色灰度图标并清空角标。
+     - **动态状态角标 (Dynamic Action Badge)**：
+       - **规则命中（不记录历史）**：渲染翡翠绿背景（`#10b981`），角标文案标明 `无痕`（英文系统下自适应展示 `HIDE`）；
+       - **静默模式激活（全局不记录历史）**：渲染极光紫背景（`#8b5cf6`），角标文案标明 `静默`（英文系统下自适应展示 `MUTE`）；
+       - **普通网页（正常记录历史）**：彻底清空角标文案与背景色，保持浏览器工具栏整洁干净。
+     - **鼠标悬浮详述 (Intelligent Tooltip)**：
+       - 鼠标悬停在工具栏图标上时提供即时提示（Action Title），命中规则时清晰展示具体命中规则表达式（例如 `HistGuard: 🛡️ 已拦截历史记录 (命中规则: github.com)`）或静默免记录剩余倒计时说明。
+   - **全方位事件监听与无缝联动网络**：
+     - 深度联动标签页切换 (`tabs.onActivated`)、页面导航 (`tabs.onUpdated`)、单页应用 (SPA) 历史状态更替 (`webNavigation.onHistoryStateUpdated`, `onCommitted`)；
+     - 深度联动规则持久化变更 (`storage.onChanged`)、规则内存缓存刷新 (`refreshCache`) 与静默模式到期闹钟 (`alarms.onAlarm`)，实时无缝调度指示器刷新。
+   - **跨浏览器内核 Action 适配层演进**：
+     - `IBrowserAdapter`、`ChromiumAdapter` 与 `FirefoxAdapter` 统一扩充 `action` 命名空间，对 `setBadgeText`、`setBadgeBackgroundColor`、`setTitle`、`setIcon` 实现跨内核抹平并内建标签页关闭瞬间的瞬态异常防御。
+2. **全项目版本号同步与构建闭环 (Version 1.0.24 Synchronization)**：
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.24`，并通过 `build.js` 重新分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `feat(background)`:
+  - 新增 `src/background/toolbarIndicator.js`：实现纯函数 `evaluatePageStatus` 算法（解析 4 种页面防护状态），以及 `updateTabToolbarIndicator` 跨浏览器工具栏外观驱动。
+  - 修改 `src/background/index.js`：全量打通 `tabs.onActivated`、`tabs.onUpdated`、`storage.onChanged`、`alarms.onAlarm` 及 `webNavigation` 监听，确保前后台状态始终毫秒级一致。
+- `feat(adapters)`:
+  - 修改 `src/adapters/IBrowserAdapter.js`、`src/adapters/ChromiumAdapter.js`、`src/adapters/FirefoxAdapter.js`：扩充 `action` 命名空间及 `tabs.onActivated` 跨浏览器封装。
+- `assets`:
+  - 补充设计低饱和暗色灰度图标：`icons/icon-dim16.png`, `icon-dim32.png`, `icon-dim48.png`, `icon-dim128.png`, `icon-dim512.png`。
+- `test`:
+  - 新增 `tests/toolbarIndicator.test.js`（12 项高覆盖率测试），扩充 `tests/adapters.test.js`，全套 129 项自动化测试全部执行通过（129 pass, 0 fail）。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.24`。
+  - `dist/`: 经 `node build.js` 重新编译更新发布包。
+
+---
+
 ## [1.0.23] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)

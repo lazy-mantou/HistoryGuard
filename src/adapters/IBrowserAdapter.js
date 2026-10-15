@@ -85,6 +85,52 @@ export class IBrowserAdapter {
        */
       onUpdated: (callback) => {
         throw new Error('tabs.onUpdated must be implemented by adapter');
+      },
+
+      /**
+       * 监听活动标签页切换事件
+       * @param {function({tabId: number, windowId: number}): void} callback
+       */
+      onActivated: (callback) => {
+        throw new Error('tabs.onActivated must be implemented by adapter');
+      }
+    };
+
+    this.action = {
+      /**
+       * 设置扩展工具栏图标角标文本 (如 '无痕', '静默', '')
+       * @param {Object} details - { text: string, tabId?: number }
+       * @returns {Promise<void>}
+       */
+      setBadgeText: (details) => {
+        throw new Error('action.setBadgeText must be implemented by adapter');
+      },
+
+      /**
+       * 设置扩展工具栏图标角标背景颜色
+       * @param {Object} details - { color: string, tabId?: number }
+       * @returns {Promise<void>}
+       */
+      setBadgeBackgroundColor: (details) => {
+        throw new Error('action.setBadgeBackgroundColor must be implemented by adapter');
+      },
+
+      /**
+       * 设置鼠标悬停在工具栏图标上的提示文字
+       * @param {Object} details - { title: string, tabId?: number }
+       * @returns {Promise<void>}
+       */
+      setTitle: (details) => {
+        throw new Error('action.setTitle must be implemented by adapter');
+      },
+
+      /**
+       * 动态切换工具栏图标 (如正常彩色/灰度变暗)
+       * @param {Object} details - { path: string|Object, tabId?: number }
+       * @returns {Promise<void>}
+       */
+      setIcon: (details) => {
+        throw new Error('action.setIcon must be implemented by adapter');
       }
     };
 

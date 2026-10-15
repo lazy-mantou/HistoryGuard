@@ -145,6 +145,62 @@ export class FirefoxAdapter extends IBrowserAdapter {
             callback(tabId, changeInfo, tab);
           });
         }
+      },
+
+      onActivated: (callback) => {
+        const api = getApi();
+        if (api.tabs?.onActivated) {
+          api.tabs.onActivated.addListener((activeInfo) => {
+            callback(activeInfo);
+          });
+        }
+      }
+    };
+
+    // Action API (工具栏图标、角标 Badge 与 Tooltip 动态状态提示)
+    this.action = {
+      setBadgeText: async ({ text = '', tabId } = {}) => {
+        const api = getApi();
+        const actionApi = api.action || api.browserAction;
+        if (!actionApi?.setBadgeText) return;
+        const details = { text: String(text || '') };
+        if (typeof tabId === 'number') details.tabId = tabId;
+        try {
+          await actionApi.setBadgeText(details);
+        } catch { /* ignore */ }
+      },
+
+      setBadgeBackgroundColor: async ({ color = '#10b981', tabId } = {}) => {
+        const api = getApi();
+        const actionApi = api.action || api.browserAction;
+        if (!actionApi?.setBadgeBackgroundColor) return;
+        const details = { color };
+        if (typeof tabId === 'number') details.tabId = tabId;
+        try {
+          await actionApi.setBadgeBackgroundColor(details);
+        } catch { /* ignore */ }
+      },
+
+      setTitle: async ({ title = '', tabId } = {}) => {
+        const api = getApi();
+        const actionApi = api.action || api.browserAction;
+        if (!actionApi?.setTitle) return;
+        const details = { title: String(title || '') };
+        if (typeof tabId === 'number') details.tabId = tabId;
+        try {
+          await actionApi.setTitle(details);
+        } catch { /* ignore */ }
+      },
+
+      setIcon: async ({ path, tabId } = {}) => {
+        const api = getApi();
+        const actionApi = api.action || api.browserAction;
+        if (!actionApi?.setIcon) return;
+        const details = { path };
+        if (typeof tabId === 'number') details.tabId = tabId;
+        try {
+          await actionApi.setIcon(details);
+        } catch { /* ignore */ }
       }
     };
 

@@ -20,6 +20,7 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
     assert.ok(adapter.runtime, '应当包含 runtime 命名空间');
     assert.ok(adapter.alarms, '应当包含 alarms 命名空间');
     assert.ok(adapter.i18n, '应当包含 i18n 命名空间');
+    assert.ok(adapter.action, '应当包含 action 命名空间');
   });
 
   it('基类抽象方法未实现时应当抛出异常提示', async () => {
@@ -30,8 +31,13 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
     await assert.rejects(async () => adapter.storage.get(), /must be implemented/);
     await assert.rejects(async () => adapter.tabs.getCurrentActiveTab(), /must be implemented/);
     assert.throws(() => adapter.tabs.onUpdated(), /must be implemented/);
+    assert.throws(() => adapter.tabs.onActivated(), /must be implemented/);
     assert.throws(() => adapter.webNavigation.onHistoryStateUpdated(), /must be implemented/);
     assert.throws(() => adapter.webNavigation.onCommitted(), /must be implemented/);
+    assert.throws(() => adapter.action.setBadgeText(), /must be implemented/);
+    assert.throws(() => adapter.action.setBadgeBackgroundColor(), /must be implemented/);
+    assert.throws(() => adapter.action.setTitle(), /must be implemented/);
+    assert.throws(() => adapter.action.setIcon(), /must be implemented/);
     await assert.rejects(async () => adapter.runtime.openOptionsPage(), /must be implemented/);
     await assert.rejects(async () => adapter.alarms.create(), /must be implemented/);
     assert.throws(() => adapter.i18n.getUILanguage(), /must be implemented/);
@@ -50,8 +56,13 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.storage.onChanged, 'function');
     assert.strictEqual(typeof adapter.tabs.getCurrentActiveTab, 'function');
     assert.strictEqual(typeof adapter.tabs.onUpdated, 'function');
+    assert.strictEqual(typeof adapter.tabs.onActivated, 'function');
     assert.strictEqual(typeof adapter.webNavigation.onHistoryStateUpdated, 'function');
     assert.strictEqual(typeof adapter.webNavigation.onCommitted, 'function');
+    assert.strictEqual(typeof adapter.action.setBadgeText, 'function');
+    assert.strictEqual(typeof adapter.action.setBadgeBackgroundColor, 'function');
+    assert.strictEqual(typeof adapter.action.setTitle, 'function');
+    assert.strictEqual(typeof adapter.action.setIcon, 'function');
     assert.strictEqual(typeof adapter.runtime.openOptionsPage, 'function');
     assert.strictEqual(typeof adapter.alarms.create, 'function');
     assert.strictEqual(typeof adapter.alarms.clear, 'function');
@@ -142,8 +153,13 @@ describe('adapters - FirefoxAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.storage.onChanged, 'function');
     assert.strictEqual(typeof adapter.tabs.getCurrentActiveTab, 'function');
     assert.strictEqual(typeof adapter.tabs.onUpdated, 'function');
+    assert.strictEqual(typeof adapter.tabs.onActivated, 'function');
     assert.strictEqual(typeof adapter.webNavigation.onHistoryStateUpdated, 'function');
     assert.strictEqual(typeof adapter.webNavigation.onCommitted, 'function');
+    assert.strictEqual(typeof adapter.action.setBadgeText, 'function');
+    assert.strictEqual(typeof adapter.action.setBadgeBackgroundColor, 'function');
+    assert.strictEqual(typeof adapter.action.setTitle, 'function');
+    assert.strictEqual(typeof adapter.action.setIcon, 'function');
     assert.strictEqual(typeof adapter.runtime.openOptionsPage, 'function');
     assert.strictEqual(typeof adapter.alarms.create, 'function');
     assert.strictEqual(typeof adapter.alarms.clear, 'function');
@@ -220,5 +236,6 @@ describe('adapters - 统一导出单例 browserApi', () => {
     assert.ok(browserApi.runtime);
     assert.ok(browserApi.alarms);
     assert.ok(browserApi.i18n);
+    assert.ok(browserApi.action);
   });
 });

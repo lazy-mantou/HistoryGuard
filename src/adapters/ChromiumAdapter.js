@@ -170,6 +170,89 @@ export class ChromiumAdapter extends IBrowserAdapter {
             callback(tabId, changeInfo, tab);
           });
         }
+      },
+
+      onActivated: (callback) => {
+        if (typeof chrome !== 'undefined' && chrome.tabs?.onActivated) {
+          chrome.tabs.onActivated.addListener((activeInfo) => {
+            callback(activeInfo);
+          });
+        }
+      }
+    };
+
+    // Action API (工具栏图标、角标 Badge 与 Tooltip 动态状态提示)
+    this.action = {
+      setBadgeText: ({ text = '', tabId } = {}) => {
+        return new Promise((resolve) => {
+          if (typeof chrome === 'undefined' || !chrome.action?.setBadgeText) {
+            return resolve();
+          }
+          const details = { text: String(text || '') };
+          if (typeof tabId === 'number') details.tabId = tabId;
+          try {
+            chrome.action.setBadgeText(details, () => {
+              if (chrome.runtime?.lastError) { /* ignore closed tab */ }
+              resolve();
+            });
+          } catch {
+            resolve();
+          }
+        });
+      },
+
+      setBadgeBackgroundColor: ({ color = '#10b981', tabId } = {}) => {
+        return new Promise((resolve) => {
+          if (typeof chrome === 'undefined' || !chrome.action?.setBadgeBackgroundColor) {
+            return resolve();
+          }
+          const details = { color };
+          if (typeof tabId === 'number') details.tabId = tabId;
+          try {
+            chrome.action.setBadgeBackgroundColor(details, () => {
+              if (chrome.runtime?.lastError) { /* ignore */ }
+              resolve();
+            });
+          } catch {
+            resolve();
+          }
+        });
+      },
+
+      setTitle: ({ title = '', tabId } = {}) => {
+        return new Promise((resolve) => {
+          if (typeof chrome === 'undefined' || !chrome.action?.setTitle) {
+            return resolve();
+          }
+          const details = { title: String(title || '') };
+          if (typeof tabId === 'number') details.tabId = tabId;
+          try {
+            chrome.action.setTitle(details, () => {
+              if (chrome.runtime?.lastError) { /* ignore */ }
+              resolve();
+            });
+          } catch {
+            resolve();
+          }
+        });
+      },
+
+      setIcon: ({ path, tabId } = {}) => {
+        return new Promise((resolve) => {
+          if (typeof chrome === 'undefined' || !chrome.action?.setIcon) {
+            return resolve();
+          }
+          const details = { path };
+          if (typeof tabId === 'number') details.tabId = tabId;
+          try {
+            chrome.action.setIcon(details, () => {
+              if (chrome.runtime?.lastError) { /* ignore */ }
+              resolve();
+            });
+          } catch {
+            resolve();
+          }
+        });
       }
     };
 
