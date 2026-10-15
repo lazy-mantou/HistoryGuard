@@ -24,20 +24,35 @@
      - **抗竞态两段式补偿出清 (Deferred Residual Clean)**：命中规则后，不仅立即调用 `deleteUrl` 物理删除，还在 200ms 和 800ms 两次微延时调度历史深度搜索，精准出清最近 30 秒内因 Chrome 异步落盘滞后而写入的残留项；
      - **规则引擎前缀容错兼容**：`ruleMatcher.js` 的 `detectRuleType`、`keywordRuleToRegex` 与 `matchesRule`，以及 `storage.js` 的 `addRule` 中全面防御性剥离 `keyword:` / `kw:` / `domain:` / `path:` 前缀，老规则与新规则均可 100% 自动容错。
 
+2. **修复规则添加/清理后 Batch History Delete 面板未实时同步刷新问题**：
+   - **问题现象**：用户在规则列表中添加关键词规则（或点击扫帚清理）后，匹配记录已被底层自动删除，但切换到或停留在“历史批量删除（Batch History Delete）”面板时，界面未同步刷新已删除的条目。
+   - **根因分析**：
+     - `switchTab('history')` 切换回历史视图时仅切换了 CSS class，未做数据刷新；
+     - 规则添加与清理回调此前通过 `!panelHistory.classList.contains('hidden')` 判断，若在 rules 面板操作会被直接跳过且未打标记；
+     - 适配器层缺失原生 `history.onVisitRemoved` 事件监听支持。
+   - **解决方案**：
+     - 在 `options.js` 引入 `isHistoryDirty` 脏标记状态与 `refreshHistoryIfVisibleOrMarkDirty` 统一调度；
+     - 用户从其他面板切回“Batch History Delete”时，检测脏标记自动无感拉取最新历史；
+     - 在 `IBrowserAdapter`、`ChromiumAdapter` 与 `FirefoxAdapter` 完整实现 `history.onVisitRemoved`，全自动监听底层历史移除并防抖同步 Options 视图；
+     - 页面切回前台（visibilitychange）时自动感知脏数据并静默刷新。
+
 ### 变更明细 (Detailed Changes)
 - `feat(manifest)`: `manifest.chrome.json` 与 `manifest.firefox.json` 新增 `"webNavigation"` 权限。
 - `feat(adapters)`:
-  - `src/adapters/IBrowserAdapter.js`: 抽象基类新增 `tabs.onUpdated`，新增 `webNavigation` 命名空间及 `onHistoryStateUpdated`、`onCommitted` 规范。
-  - `src/adapters/ChromiumAdapter.js` & `src/adapters/FirefoxAdapter.js`: 完整实现 `tabs.onUpdated`、`webNavigation.onHistoryStateUpdated` 与 `webNavigation.onCommitted`。
+  - `src/adapters/IBrowserAdapter.js`: 抽象基类新增 `tabs.onUpdated`，新增 `webNavigation` 命名空间及 `onHistoryStateUpdated`、`onCommitted` 规范；新增 `history.onVisitRemoved` 事件契约。
+  - `src/adapters/ChromiumAdapter.js` & `src/adapters/FirefoxAdapter.js`: 完整实现 `tabs.onUpdated`、`webNavigation.onHistoryStateUpdated`、`webNavigation.onCommitted` 与 `history.onVisitRemoved`。
 - `feat(core)`:
   - `src/core/ruleMatcher.js`: 防御性剥离 `keyword:` / `kw:` / `domain:` / `path:` 等语法前缀，支持直接包含前缀规则的自动纯化匹配。
   - `src/core/storage.js`: 在 `addRule` 入库时自动推断前缀语法并剥离前缀存储纯 pattern。
 - `feat(background)`:
   - `src/background/index.js`: 重构为多通道事件侦听网，新增 `cleanResiduals` 防异步滞后出清，完美覆盖 Google 搜索及所有 SPA 动态路由。
+- `feat(options)`:
+  - `src/options/options.js`: 接入 `isHistoryDirty` 与 `switchTab` 切回自动刷新，接入 `history.onVisitRemoved` 实时事件监听，彻底消除 Batch History Delete 视图不同步问题。
 - `test`:
-  - `tests/adapters.test.js`: 增加针对 `webNavigation` 与 `tabs.onUpdated` 接口契约的单元测试。
+  - `tests/adapters.test.js`: 增加针对 `webNavigation`、`tabs.onUpdated` 与 `history.onVisitRemoved` 接口契约的单元测试。
   - `tests/ruleMatcher.test.js`: 增加用户反馈的 Google 搜索 URL 与 `keyword:bagaga` 容错匹配单元测试。
-  - `tests/storage.test.js`: 增加 `addRule` 前缀自动清洗单元测试。全套 107 项测试用例全部通过。
+  - `tests/storage.test.js`: 增加 `addRule` 前缀自动清洗单元测试。
+  - `tests/historyCleaner.test.js`: 全套回溯扫描与精准出清测试。全部测试用例均通过。
 
 ---
 

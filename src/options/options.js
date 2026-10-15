@@ -122,6 +122,8 @@ let cursorEndTime = 0; // 当前批次最旧访问时间游标
 let hasMoreHistory = true;
 let isLoadingBatch = false;
 let isOperatingCleaning = false;
+let isHistoryDirty = false;
+let historyRemovedDebounceTimer = null;
 
 /**
  * 弹出提示 Toast
@@ -151,8 +153,9 @@ function switchTab(tabKey) {
     tab.classList.toggle('active', tab.dataset.tab === tabKey);
   });
 
-  elements.panelHistory.classList.toggle('hidden', tabKey !== 'history');
-  elements.panelHistory.classList.toggle('active', tabKey === 'history');
+  const isSwitchingToHistory = tabKey === 'history';
+  elements.panelHistory.classList.toggle('hidden', !isSwitchingToHistory);
+  elements.panelHistory.classList.toggle('active', isSwitchingToHistory);
 
   elements.panelRules.classList.toggle('hidden', tabKey !== 'rules');
   elements.panelRules.classList.toggle('active', tabKey === 'rules');
@@ -166,6 +169,13 @@ function switchTab(tabKey) {
     localStorage.setItem('histguard_active_options_tab', tabKey);
   } catch (err) {
     console.warn('Cannot persist active tab:', err);
+  }
+
+  // 当用户切换回“历史批量删除 (Batch History Delete)”面板时，
+  // 若先前添加规则或执行清理导致历史数据变更，立即重新拉取历史记录
+  if (isSwitchingToHistory && isHistoryDirty) {
+    isHistoryDirty = false;
+    fetchHistoryBatch({ isReset: true });
   }
 }
 
@@ -483,6 +493,19 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
 }
 
 /**
+ * 历史列表联动刷新策略：
+ * 若当前处于 Batch History Delete 视图，则立即全新拉取刷新；
+ * 若当前处于规则/设置等非激活面板，则打上 isHistoryDirty 标记，用户切回该面板时自动重新拉取。
+ */
+async function refreshHistoryIfVisibleOrMarkDirty() {
+  isHistoryDirty = true;
+  if (elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
+    isHistoryDirty = false;
+    await fetchHistoryBatch({ isReset: true });
+  }
+}
+
+/**
  * 防抖执行全新检索
  */
 function debouncedSearch() {
@@ -773,7 +796,7 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
     const actionText = isNew ? t('popup.actionAdd') : t('popup.actionUpdate');
     showToast(t('options.toastDeleteAndAddSuccess', { action: actionText, pattern, count: totalDeleted }));
     await refreshRulesList();
-    await fetchHistoryBatch({ isReset: true });
+    await refreshHistoryIfVisibleOrMarkDirty();
   } catch (err) {
     showToast(t('options.toastImportFailed', { error: err.message }));
   }
@@ -866,9 +889,7 @@ async function refreshRulesList() {
             pattern: rule.pattern,
             count: cleanResult.deleted
           }));
-          if (elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
-            await fetchHistoryBatch({ isReset: true });
-          }
+          await refreshHistoryIfVisibleOrMarkDirty();
         } else {
           showToast(t('options.toastCleanRuleHistoryNone', { pattern: rule.pattern }));
         }
@@ -939,10 +960,8 @@ elements.btnAddRule.addEventListener('click', async () => {
     elements.newRuleInput.value = '';
     await refreshRulesList();
 
-    // 3. 联动刷新可能打开的历史记录列表
-    if (elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
-      await fetchHistoryBatch({ isReset: true });
-    }
+    // 3. 联动刷新历史记录列表（若当前在 history 则立即刷新，不在则标记切回时刷新）
+    await refreshHistoryIfVisibleOrMarkDirty();
   } catch (err) {
     console.error('Add rule and clean history failed:', err);
     showToast(t('options.toastImportFailed', { error: err.message }));
@@ -1243,6 +1262,7 @@ browserApi.storage.onChanged(async (changes) => {
   }
   if (changes[STORAGE_KEYS.RULES]) {
     await refreshRulesList();
+    await refreshHistoryIfVisibleOrMarkDirty();
   }
   if (changes[STORAGE_KEYS.SETTINGS]) {
     const newSettings = changes[STORAGE_KEYS.SETTINGS].newValue;
@@ -1258,8 +1278,32 @@ browserApi.storage.onChanged(async (changes) => {
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     refreshSilentModeStatus();
+    // 切回前台标签时，若期间有历史变更则静默刷新当前视图
+    if (isHistoryDirty && elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
+      isHistoryDirty = false;
+      fetchHistoryBatch({ isReset: true });
+    }
   }
 });
+
+// 监听浏览器底层历史记录物理移除事件，实现全自动化实时同步
+if (browserApi.history && typeof browserApi.history.onVisitRemoved === 'function') {
+  browserApi.history.onVisitRemoved(() => {
+    // 若当前正在由本页面执行主动批量清理，则由清理自身流程统一刷新，避免高频并发重绘
+    if (isOperatingCleaning) return;
+
+    isHistoryDirty = true;
+    if (elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
+      if (historyRemovedDebounceTimer) {
+        clearTimeout(historyRemovedDebounceTimer);
+      }
+      historyRemovedDebounceTimer = setTimeout(() => {
+        isHistoryDirty = false;
+        fetchHistoryBatch({ isReset: true });
+      }, 250);
+    }
+  });
+}
 
 /* ==========================================================================
    页面初始化启动

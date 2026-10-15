@@ -25,6 +25,7 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
   it('基类抽象方法未实现时应当抛出异常提示', async () => {
     const adapter = new IBrowserAdapter();
     assert.throws(() => adapter.history.onVisited(), /must be implemented/);
+    assert.throws(() => adapter.history.onVisitRemoved(), /must be implemented/);
     await assert.rejects(async () => adapter.history.search(), /must be implemented/);
     await assert.rejects(async () => adapter.storage.get(), /must be implemented/);
     await assert.rejects(async () => adapter.tabs.getCurrentActiveTab(), /must be implemented/);
@@ -41,6 +42,7 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
   it('ChromiumAdapter 应当完整实现所有必须的 API 契约', () => {
     const adapter = new ChromiumAdapter();
     assert.strictEqual(typeof adapter.history.onVisited, 'function');
+    assert.strictEqual(typeof adapter.history.onVisitRemoved, 'function');
     assert.strictEqual(typeof adapter.history.search, 'function');
     assert.strictEqual(typeof adapter.history.deleteUrl, 'function');
     assert.strictEqual(typeof adapter.storage.get, 'function');
@@ -132,6 +134,7 @@ describe('adapters - FirefoxAdapter 实现验证', () => {
   it('FirefoxAdapter 应当完整实现所有必须的 API 契约', () => {
     const adapter = new FirefoxAdapter();
     assert.strictEqual(typeof adapter.history.onVisited, 'function');
+    assert.strictEqual(typeof adapter.history.onVisitRemoved, 'function');
     assert.strictEqual(typeof adapter.history.search, 'function');
     assert.strictEqual(typeof adapter.history.deleteUrl, 'function');
     assert.strictEqual(typeof adapter.storage.get, 'function');

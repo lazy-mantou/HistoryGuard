@@ -18,6 +18,14 @@ export class ChromiumAdapter extends IBrowserAdapter {
         }
       },
 
+      onVisitRemoved: (callback) => {
+        if (typeof chrome !== 'undefined' && chrome.history?.onVisitRemoved) {
+          chrome.history.onVisitRemoved.addListener((removed) => {
+            callback(removed);
+          });
+        }
+      },
+
       search: ({ text = '', startTime = 0, endTime = 0, maxResults = 100 } = {}) => {
         return new Promise((resolve, reject) => {
           if (typeof chrome === 'undefined' || !chrome.history) {

@@ -26,6 +26,15 @@ export class FirefoxAdapter extends IBrowserAdapter {
         }
       },
 
+      onVisitRemoved: (callback) => {
+        const api = getApi();
+        if (api.history?.onVisitRemoved) {
+          api.history.onVisitRemoved.addListener((removed) => {
+            callback(removed);
+          });
+        }
+      },
+
       search: async ({ text = '', startTime = 0, endTime = 0, maxResults = 100 } = {}) => {
         const api = getApi();
         if (!api.history?.search) {

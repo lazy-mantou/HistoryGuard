@@ -16,6 +16,14 @@ export class IBrowserAdapter {
       },
 
       /**
+       * 监听历史记录物理删除事件（单条、多条或全量清空）
+       * @param {function(Object): void} callback - (removed: { allHistory: boolean, urls?: string[] })
+       */
+      onVisitRemoved: (callback) => {
+        throw new Error('history.onVisitRemoved must be implemented by adapter');
+      },
+
+      /**
        * 搜索历史记录 (支持 startTime, endTime 游标分页与海量数据分批拉取)
        * @param {Object} query - { text: string, startTime?: number, endTime?: number, maxResults?: number }
        * @returns {Promise<Array<HistoryItem>>}
