@@ -301,11 +301,13 @@ async function refreshGlobalStats() {
   elements.statActiveRules.textContent = activeCount;
 
   if (currentSettings.enableHitTracking === false) {
-    elements.statTotalHits.textContent = t('options.statTotalHitsDisabled', { count: totalHits });
+    elements.statTotalHits.textContent = t('options.statTotalHitsDisabled');
     elements.statTotalHits.title = t('options.statTotalHitsDisabledTitle');
+    elements.statTotalHits.className = 'stat-value hits-disabled';
   } else {
     elements.statTotalHits.textContent = totalHits;
     elements.statTotalHits.title = t('options.statTotalHitsTitle');
+    elements.statTotalHits.className = 'stat-value highlight-hits';
   }
 
   if (elements.tabRulesBadge) {
@@ -846,7 +848,11 @@ async function refreshRulesList() {
       typeLabel = t('options.tagDomain');
       typeClass = 'type-domain';
     }
+    const isHitTrackingEnabled = currentSettings.enableHitTracking !== false;
     const hitsText = t('options.ruleHitsCount', { count: rule.hits || 0 });
+    const hitsBadgeHtml = isHitTrackingEnabled
+      ? `<span class="hits-badge" title="${t('options.statTotalHitsTitle')}">${hitsText}</span>`
+      : '';
     const toggleTitle = rule.enabled !== false ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
 
     row.innerHTML = `
@@ -855,7 +861,7 @@ async function refreshRulesList() {
         <span class="rule-pattern" title="${escapeHtml(rule.pattern)}">${escapeHtml(rule.pattern)}</span>
       </div>
       <div class="rule-right">
-        <span class="hits-badge" title="${t('options.statTotalHitsTitle')}">${hitsText}</span>
+        ${hitsBadgeHtml}
         <label class="toggle-switch" title="${toggleTitle}">
           <input type="checkbox" class="rule-toggle" ${rule.enabled !== false ? 'checked' : ''}>
           <span class="toggle-slider"></span>
@@ -1107,6 +1113,7 @@ if (elements.settingEnableHitTracking) {
     currentSettings.enableHitTracking = val;
     showToast(val ? t('options.toastHitTrackingOn') : t('options.toastHitTrackingOff'));
     await refreshGlobalStats();
+    await refreshRulesList();
   });
 }
 
@@ -1271,6 +1278,7 @@ browserApi.storage.onChanged(async (changes) => {
     }
     await loadSettingsToUI();
     await refreshGlobalStats();
+    await refreshRulesList();
   }
 });
 

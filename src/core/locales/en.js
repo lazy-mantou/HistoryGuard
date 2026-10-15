@@ -60,7 +60,7 @@ export default {
     brandSubtitle: 'Lightweight smart history management & automatic privacy protection',
     statActiveRules: 'Active Rules',
     statTotalHits: 'Total Blocked',
-    statTotalHitsDisabled: '{count} (Disabled)',
+    statTotalHitsDisabled: 'Disabled',
     statTotalHitsTitle: 'Total visits intercepted and permanently erased by all rules',
     statTotalHitsDisabledTitle: 'Hit tracking disabled in settings; no counts incremented',
     statSilentStatus: 'Silent Mode',

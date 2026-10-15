@@ -36,6 +36,14 @@
      - 在 `IBrowserAdapter`、`ChromiumAdapter` 与 `FirefoxAdapter` 完整实现 `history.onVisitRemoved`，全自动监听底层历史移除并防抖同步 Options 视图；
      - 页面切回前台（visibilitychange）时自动感知脏数据并静默刷新。
 
+3. **优化停用拦截命中统计时的界面隐私与纯净化呈现**：
+   - **需求**：当用户在设置中停用“统计规则拦截命中次数（`enableHitTracking: false`）”时，顶部“累计拦截”状态卡片不再显示任何历史次数，仅显示“已停用”；同时在规则列表中完全隐藏“拦截xx次”徽章。
+   - **变更与优化**：
+     - 中英文语言包中将 `statTotalHitsDisabled` 文案纯化为“已停用”与“Disabled”（剥离 `{count}`）；
+     - `options.css` 新增 `.hits-disabled` 专属沉浸样式；
+     - `refreshRulesList()` 根据 `enableHitTracking` 动态判断，停用时完全不渲染 `.hits-badge` DOM 节点；
+     - 设置开关变更与 `storage.onChanged` 实时重新渲染规则列表与顶部统计，实现无刷新即时响应。
+
 ### 变更明细 (Detailed Changes)
 - `feat(manifest)`: `manifest.chrome.json` 与 `manifest.firefox.json` 新增 `"webNavigation"` 权限。
 - `feat(adapters)`:
@@ -47,7 +55,9 @@
 - `feat(background)`:
   - `src/background/index.js`: 重构为多通道事件侦听网，新增 `cleanResiduals` 防异步滞后出清，完美覆盖 Google 搜索及所有 SPA 动态路由。
 - `feat(options)`:
-  - `src/options/options.js`: 接入 `isHistoryDirty` 与 `switchTab` 切回自动刷新，接入 `history.onVisitRemoved` 实时事件监听，彻底消除 Batch History Delete 视图不同步问题。
+  - `src/options/options.js`: 接入 `isHistoryDirty` 与 `switchTab` 切回自动刷新，接入 `history.onVisitRemoved` 实时事件监听，彻底消除 Batch History Delete 视图不同步问题；支持停用拦截统计时顶部仅显示“已停用”并隐藏规则列表命中次数。
+  - `src/options/options.css`: 新增 `.hits-disabled` 优雅呈现样式。
+  - `src/core/locales/`: 调整 `statTotalHitsDisabled` 为纯状态词“已停用” / “Disabled”。
 - `test`:
   - `tests/adapters.test.js`: 增加针对 `webNavigation`、`tabs.onUpdated` 与 `history.onVisitRemoved` 接口契约的单元测试。
   - `tests/ruleMatcher.test.js`: 增加用户反馈的 Google 搜索 URL 与 `keyword:bagaga` 容错匹配单元测试。

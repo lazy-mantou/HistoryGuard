@@ -60,7 +60,7 @@ export default {
     brandSubtitle: '轻量级跨浏览器历史记录智能管理与自动隐私拦截',
     statActiveRules: '启用规则',
     statTotalHits: '累计拦截',
-    statTotalHitsDisabled: '{count} (已停用)',
+    statTotalHitsDisabled: '已停用',
     statTotalHitsTitle: '所有规则累计物理拦截并抹除的访问次数',
     statTotalHitsDisabledTitle: '统计已在设置中停用，命中规则时不记录新拦截次数',
     statSilentStatus: '静默模式',
