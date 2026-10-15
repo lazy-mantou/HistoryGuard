@@ -4,6 +4,40 @@
 
 ---
 
+## [1.0.26] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **重构工具栏与全套品牌图标：极简轻量化与高亮浅色背景设计 (Light-Themed Minimalist Icon Redesign)**:
+   - **业务与视觉反馈背景**：
+     - 用户明确指出浏览器工具栏上的插件图标“黑漆漆一坨太丑了”，在标准浏览器浅色或暗色工具栏中因原深黑蓝底座（`#0e1726`、`#040711`）缩小至 16px/32px 后模糊成团、对比度低且辨识度差；
+     - 用户要求“改成简单点的，浅色背景”。
+   - **极简浅色视觉重构方案**：
+     - **浅色高亮圆角矩阵底座 (Light Squircle Porcelain Canvas)**：
+       - 彻底废除暗黑深空底座，改用清新通透的纯白至高雅微灰渐变底座（`#ffffff` 至 `#f1f5f9`），外加纤细柔和的立体微投影与 `#cbd5e1` 边界描边；
+       - 确保图标无论在 Chrome、Edge、Firefox 的浅色主题还是深色/夜间主题工具栏中，均呈现清爽、通透、分明的高端视觉品质。
+     - **极简明晰的翡翠青绿盾牌主体 (Simplified Emerald-Cyan Shield)**：
+       - 摒弃以往复杂的 12 时钟刻度、多重暗金折面与细碎线条，回归纯粹极简图腾：
+       - 采用现代渐变绿（`#10b981` 翡翠绿至 `#06b6d4` 电光青），在浅色底座上具备极高对比度（Contrast Ratio > 4.5:1）；
+       - 盾牌中心采用加粗纯白极简守护勾勒（Checkmark），线条饱满、圆润，在 16×16、32×32 极限尺寸下依旧清晰锐利、一眼可辨。
+     - **未激活/普通网页暗色状态同步升级 (Dim State Refinement)**：
+       - `icon-dim*.png` 同步重塑为浅色白底微卡底座，中心盾牌采用中性素雅的石板灰（`#94a3b8` 至 `#64748b`），清爽呈现静默待机状态，彻底告别“黑成一坨”。
+     - **全套资源与矢量母本交付**：
+       - 生成并全面替换全套资源：`icon16.png`, `icon32.png`, `icon48.png`, `icon128.png`, `icon512.png`、`icon-dim16.png`, `icon-dim32.png`, `icon-dim48.png`, `icon-dim128.png`, `icon-dim512.png` 以及原生纯矢量 `icon.svg`。
+2. **全项目版本号同步与构建闭环 (Version 1.0.26 Synchronization)**：
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.26`，并通过 `build.js` 重新分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `style(branding)`:
+  - 重构 `icons/icon.svg`：采用 `#ffffff` / `#f1f5f9` 浅色卡片底座，绘制极简翡翠青绿盾牌与粗线纯白勾玉。
+  - 重塑并替换全量多尺寸图标：`icons/icon*.png`（高亮彩版）与 `icons/icon-dim*.png`（静默待机版）。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.26`。
+  - `dist/`: 经 `node build.js` 重新打包更新 Chrome 与 Firefox 发布包。
+- `test`:
+  - 全项目自动化测试 156 项全部通过（156 pass, 0 fail）。
+
+---
+
 ## [1.0.25] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
