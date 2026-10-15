@@ -107,7 +107,7 @@ export default {
     btnDeepCleanTitle: 'Completely clear all history matching current filters (permanently erased, cannot be undone)',
     rulesTitle: 'Auto Protection Rules',
     btnGotoSettings: '⚙️ Backup & Settings',
-    newRulePlaceholder: 'Enter domain (*.domain.com), path (domain.com/path/*), or keyword (e.g. xxx)',
+    newRulePlaceholder: 'Enter domain (*.example.com), path (example.com/path/*), or keyword (e.g. keyword)',
     typeAuto: 'Auto Type',
     typeDomain: 'Domain Match',
     typePath: 'Path Match',

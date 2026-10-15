@@ -4,6 +4,20 @@
 
 ---
 
+## [1.0.36] - 2026-10-15
+
+### 规则输入占位符示例规范化 (Standardize Rule Input Placeholder Examples)
+1. **输入框 Placeholder 示例用词与域名规范化**:
+   - **痛点分析**：
+     - 原版规则输入框占位符使用了 `如 xxx` 与 `domain.com`，既带有成人内容等不适宜联想，又使用了商业注册商域名，缺乏严谨性与专业度；
+   - **重构实现**：
+     - 采纳方案 B 中立标准示例；
+     - 中文占位符规范为：`输入域名 (*.example.com)、路径 (example.com/path/*) 或关键词 (如 keyword)`；
+     - 英文占位符规范为：`Enter domain (*.example.com), path (example.com/path/*), or keyword (e.g. keyword)`；
+     - 同步更新 HTML 初始模板与中英国际化字典，全面遵循 RFC 2606 官方文档保留域标准。
+
+---
+
 ## [1.0.35] - 2026-10-15
 
 ### 规则添加回溯清理控制与默认偏好配置 (Rule Creation Clean Option & Default Preference Setting)

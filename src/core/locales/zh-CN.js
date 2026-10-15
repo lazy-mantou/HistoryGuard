@@ -107,7 +107,7 @@ export default {
     btnDeepCleanTitle: '一键彻底清空匹配当前条件的所有历史记录 (永久抹除，不可恢复)',
     rulesTitle: '自动防护规则管理',
     btnGotoSettings: '⚙️ 备份与高级设置',
-    newRulePlaceholder: '输入域名 (*.domain.com)、路径 (domain.com/path/*) 或关键词 (如 xxx)',
+    newRulePlaceholder: '输入域名 (*.example.com)、路径 (example.com/path/*) 或关键词 (如 keyword)',
     typeAuto: '自动类型',
     typeDomain: '域名匹配',
     typePath: '路径匹配',
