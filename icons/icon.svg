@@ -1,41 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <!-- 浅色背景高雅渐变 -->
-    <linearGradient id="hg-light-bg" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#f1f5f9" />
-    </linearGradient>
-
-    <!-- 翡翠青绿防护渐变 (Emerald Cyan) -->
+    <!-- 翡翠青绿高光渐变 (Emerald to Electric Cyan) -->
     <linearGradient id="hg-shield-grad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#10b981" />
       <stop offset="100%" stop-color="#06b6d4" />
     </linearGradient>
 
-    <!-- 柔和轻投影 -->
-    <filter id="hg-soft-shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity="0.12" />
+    <!-- 柔和立体轻微投影 -->
+    <filter id="hg-shield-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.18" />
     </filter>
   </defs>
 
-  <!-- 浅色圆角矩阵底座 (Light Squircle) -->
-  <rect x="18" y="18" width="476" height="476" rx="105" fill="url(#hg-light-bg)" stroke="#cbd5e1" stroke-width="7" filter="url(#hg-soft-shadow)" />
-
-  <!-- 简约盾牌主体 (Simple Shield) -->
-  <path d="M 256 98 
-           C 328 98, 392 112, 400 134 
-           C 406 272, 340 382, 256 428 
-           C 172 382, 106 272, 112 134 
-           C 120 112, 184 98, 256 98 Z" 
+  <!-- 无外部方框，全透明背景的高精盾形 (Frameless Shield Body) -->
+  <path d="M 256 21 
+           C 364 21, 472 45, 472 77 
+           C 472 280, 384 428, 256 485 
+           C 128 428, 40 280, 40 77 
+           C 40 45, 148 21, 256 21 Z" 
         fill="url(#hg-shield-grad)" 
         stroke="#059669" 
-        stroke-width="1.5" />
+        stroke-width="3" 
+        filter="url(#hg-shield-shadow)" />
 
-  <!-- 纯白极简守护勾勒 (Checkmark) -->
-  <path d="M 195 263 L 240 308 L 323 198" 
-        fill="none" 
-        stroke="#ffffff" 
-        stroke-width="40" 
-        stroke-linecap="round" 
-        stroke-linejoin="round" />
+  <!-- 盾牌中心经典 Chrome 历史记录官方图标 (Chrome Material History Icon) -->
+  <g transform="translate(256, 240) scale(13.25) translate(-13, -12)">
+    <path fill="#ffffff" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+  </g>
 </svg>

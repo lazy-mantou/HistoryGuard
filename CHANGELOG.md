@@ -4,6 +4,41 @@
 
 ---
 
+## [1.0.27] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **去外框纯粹化与 Chrome 官方历史记录符号融合 (Frameless Pure Shield with Chrome History Emblem)**:
+   - **业务与视觉反馈背景**：
+     - 用户明确要求“图标不要外面的框，里面的盾形不错，保持，盾中间换成chrome历史记录的图标形状，大小比例要协调”；
+     - 彻底去除外围方形底座，使图标背景 100% 透明，完全以经典盾牌轮廓作为主体，极致通透轻盈；
+     - 保留用户认可的翡翠青绿渐变盾形轮廓，将盾牌中心符号替换为 Chrome 官方经典的“逆时针历史回溯圆弧带时钟指针（Chrome Material History Icon）”。
+   - **视觉设计与工程落地**：
+     - **纯粹无框透明设计 (Pure Frameless Design)**：
+       - 彻底移除外围圆角矩阵（Squircle）方框，图标背景 100% 镂空透明；
+       - 将经典盾牌轮廓等比例放大充盈至满画布（外置极细柔和微投影），充分利用 16×16、32×32、48×48 等工具栏各级像素空间；
+     - **嵌入 Chrome 经典官方历史记录图腾**：
+       - 采用 Google Material Design 官方 History 图腾（包含逆时针回溯圆环、左侧回溯箭头以及 12 点与 3 点方向的时钟指针）；
+       - 采用纯白（`#ffffff`）矢量填充，大小控制在盾牌宽度黄金比例（~54%），居于盾牌视觉重心，留白协调，线条饱满，即使在 16px 工具栏下也清晰可辨；
+     - **双态同步升级 (Active & Dim States)**：
+       - 高亮彩版（`icon*.png`）：经典翡翠青绿渐变（`#10b981` 至 `#06b6d4`）；
+       - 静默待机版（`icon-dim*.png`）：采用素雅石板灰渐变（`#94a3b8` 至 `#64748b`）；
+     - **全套矢量与像素级生成**：
+       - 重新生成全规格资源：`icons/icon16.png`, `icon32.png`, `icon48.png`, `icon128.png`, `icon512.png`、`icons/icon-dim16.png`, `icon-dim32.png`, `icon-dim48.png`, `icon-dim128.png`, `icon-dim512.png`，及母本 `icons/icon.svg`。
+2. **全项目版本号同步与构建闭环 (Version 1.0.27 Synchronization)**：
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.27`，并通过 `build.js` 重新分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `style(branding)`:
+  - 重塑 `icons/icon.svg`：去除外部方框，保持盾形主体，中心精准融合 Chrome 官方 Material History 图腾。
+  - 全量生成并替换 `icons/icon*.png` 与 `icons/icon-dim*.png` 各尺寸镂空图标。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.27`。
+  - `dist/`: 经 `node build.js` 重新打包更新 Chrome 与 Firefox 发布包。
+- `test`:
+  - 全项目自动化测试 156 项全部通过（156 pass, 0 fail）。
+
+---
+
 ## [1.0.26] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
