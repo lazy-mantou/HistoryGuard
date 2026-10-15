@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 const testFiles = [
   'urlParser.test.js',
   'ruleMatcher.test.js',
+  'historyCleaner.test.js',
   'storage.test.js',
   'i18n.test.js',
   'theme.test.js',
@@ -34,7 +35,7 @@ const child = spawn(process.execPath, testArgs, {
 child.on('close', (code) => {
   console.log('\n========================================================');
   if (code === 0) {
-    console.log('   🎉 全部单元测试通过 (All 106 tests passed)!');
+    console.log('   🎉 全部单元测试通过 (All tests passed)!');
   } else {
     console.error(`   ❌ 存在测试未通过，退出码: ${code}`);
   }

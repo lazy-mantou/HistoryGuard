@@ -5,7 +5,7 @@
  */
 
 import { browserApi } from '../adapters/index.js';
-import { findMatchingRule } from '../core/ruleMatcher.js';
+import { findMatchingRule, matchesRule } from '../core/ruleMatcher.js';
 import {
   getRules,
   getSilentMode,
@@ -61,10 +61,13 @@ browserApi.alarms.onAlarm(async (alarm) => {
   }
 });
 
-// 4. 监听历史记录新增访问事件 (核心拦截逻辑)
-browserApi.history.onVisited(async (historyItem) => {
-  if (!historyItem || !historyItem.url) return;
-  const visitUrl = historyItem.url;
+/**
+ * 执行 URL 规则比对与隐私抹除处理
+ * @param {string} visitUrl
+ * @param {string} [title='']
+ */
+async function handleUrlInspectionAndClean(visitUrl, title = '') {
+  if (!visitUrl || typeof visitUrl !== 'string') return;
 
   // 内部或特殊协议页面不处理
   if (!visitUrl.startsWith('http://') && !visitUrl.startsWith('https://')) {
@@ -95,11 +98,11 @@ browserApi.history.onVisited(async (historyItem) => {
     cachedRules = allRules.filter(r => r.enabled !== false);
   }
 
-  const { matched, rule } = findMatchingRule(cachedRules, historyItem);
+  const { matched, rule } = findMatchingRule(cachedRules, { url: visitUrl, title });
 
   if (matched && rule) {
     try {
-      // 立即物理删除
+      // 1. 立即物理删除
       await browserApi.history.deleteUrl(visitUrl);
       // 累加拦截命中计数（根据用户偏好设置控制是否记录，支持极致无痕）
       if (cachedSettings.enableHitTracking !== false) {
@@ -109,7 +112,73 @@ browserApi.history.onVisited(async (historyItem) => {
     } catch (err) {
       console.error('[HistGuard BG] 执行删除或命中统计失败:', err);
     }
-  }
-});
 
-console.log('[HistGuard BG] 后台拦截守护服务已启动就绪');
+    // 2. 防 Chrome 异步写入延迟与 Google 搜索等多级跳转/SPA pushState 残留：
+    // 双重延迟重试，并在短时间历史中扫描清除可能被浏览器滞后写入的匹配条目
+    const cleanResiduals = async () => {
+      try {
+        await browserApi.history.deleteUrl(visitUrl);
+
+        // 如果是关键词规则，检索最近 30 秒内的匹配条目彻底抹除
+        const searchKeyword = rule.type === 'keyword' ? rule.pattern.replace(/^(?:keyword|kw):\s*/i, '') : '';
+        if (searchKeyword) {
+          const recent = await browserApi.history.search({
+            text: searchKeyword,
+            startTime: Date.now() - 30000,
+            maxResults: 30
+          });
+          for (const item of recent) {
+            if (item && item.url && matchesRule(rule, item)) {
+              await browserApi.history.deleteUrl(item.url);
+            }
+          }
+        }
+      } catch (e) {
+        // 忽略非致命异常
+      }
+    };
+
+    setTimeout(cleanResiduals, 200);
+    setTimeout(cleanResiduals, 800);
+  }
+}
+
+// 4. 多通道监听机制（全面覆盖标准导航、地址栏回车、单页 SPA pushState/replaceState）
+// A. 标准历史新增访问事件
+if (browserApi.history && typeof browserApi.history.onVisited === 'function') {
+  browserApi.history.onVisited(async (historyItem) => {
+    const visitUrl = typeof historyItem === 'string' ? historyItem : historyItem?.url;
+    const title = typeof historyItem === 'object' ? (historyItem.title || '') : '';
+    await handleUrlInspectionAndClean(visitUrl, title);
+  });
+}
+
+// B. 标签页实时 URL 变动事件（解决 Google 搜索、SPA 客户端无刷新路由）
+if (browserApi.tabs && typeof browserApi.tabs.onUpdated === 'function') {
+  browserApi.tabs.onUpdated(async (tabId, changeInfo, tab) => {
+    const url = changeInfo.url || (changeInfo.status === 'complete' ? tab?.url : null);
+    if (url) {
+      await handleUrlInspectionAndClean(url, tab?.title || '');
+    }
+  });
+}
+
+// C. WebNavigation 历史栈更新事件（专门捕获 history.pushState / history.replaceState）
+if (browserApi.webNavigation && typeof browserApi.webNavigation.onHistoryStateUpdated === 'function') {
+  browserApi.webNavigation.onHistoryStateUpdated(async (details) => {
+    if (details && details.url && (details.frameId === 0 || details.frameId === undefined)) {
+      await handleUrlInspectionAndClean(details.url);
+    }
+  });
+}
+
+// D. WebNavigation 主框架导航提交事件
+if (browserApi.webNavigation && typeof browserApi.webNavigation.onCommitted === 'function') {
+  browserApi.webNavigation.onCommitted(async (details) => {
+    if (details && details.url && (details.frameId === 0 || details.frameId === undefined)) {
+      await handleUrlInspectionAndClean(details.url);
+    }
+  });
+}
+
+console.log('[HistGuard BG] 后台拦截守护服务已启动就绪 (多通道拦截引擎)');

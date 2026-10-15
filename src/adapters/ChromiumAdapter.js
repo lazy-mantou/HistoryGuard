@@ -154,6 +154,32 @@ export class ChromiumAdapter extends IBrowserAdapter {
             }
           });
         });
+      },
+
+      onUpdated: (callback) => {
+        if (typeof chrome !== 'undefined' && chrome.tabs?.onUpdated) {
+          chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+            callback(tabId, changeInfo, tab);
+          });
+        }
+      }
+    };
+
+    // WebNavigation API (专为 SPA / pushState / replaceState 历史追踪设计)
+    this.webNavigation = {
+      onHistoryStateUpdated: (callback) => {
+        if (typeof chrome !== 'undefined' && chrome.webNavigation?.onHistoryStateUpdated) {
+          chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+            callback(details);
+          });
+        }
+      },
+      onCommitted: (callback) => {
+        if (typeof chrome !== 'undefined' && chrome.webNavigation?.onCommitted) {
+          chrome.webNavigation.onCommitted.addListener((details) => {
+            callback(details);
+          });
+        }
       }
     };
 

@@ -69,6 +69,32 @@ export class IBrowserAdapter {
        */
       getCurrentActiveTab: () => {
         throw new Error('tabs.getCurrentActiveTab must be implemented by adapter');
+      },
+
+      /**
+       * 监听标签页更新（支持捕获 URL 变化、pushState、replaceState 等）
+       * @param {function(number, Object, Object): void} callback - (tabId, changeInfo, tab)
+       */
+      onUpdated: (callback) => {
+        throw new Error('tabs.onUpdated must be implemented by adapter');
+      }
+    };
+
+    this.webNavigation = {
+      /**
+       * 监听 SPA 单页应用通过 pushState / replaceState 变更历史记录事件
+       * @param {function(Object): void} callback - (details: { tabId, url, processId, frameId, timeStamp })
+       */
+      onHistoryStateUpdated: (callback) => {
+        throw new Error('webNavigation.onHistoryStateUpdated must be implemented by adapter');
+      },
+
+      /**
+       * 监听页面主框架或子框架导航提交事件
+       * @param {function(Object): void} callback - (details)
+       */
+      onCommitted: (callback) => {
+        throw new Error('webNavigation.onCommitted must be implemented by adapter');
       }
     };
 

@@ -7,6 +7,7 @@
 import { browserApi } from '../adapters/index.js';
 import { parseUrl } from '../core/urlParser.js';
 import { filterHistoryByRule, findMatchingRule, computeCandidateStatus, normalizeDomain } from '../core/ruleMatcher.js';
+import { cleanHistoryByRule } from '../core/historyCleaner.js';
 import { t, initI18n, localizeCapsule } from '../core/i18n.js';
 import { initTheme } from '../core/theme.js';
 import {
@@ -412,20 +413,16 @@ elements.btnHideAndClean.addEventListener('click', async () => {
     });
 
     let deletedCount = 0;
-    // 2. 若勾选了回溯清理，批量删除已有历史
+    // 2. 若勾选了回溯清理，全量回溯清理已有历史
     if (elements.cbRetroactive.checked) {
-      const itemsToDelete = (selectedRule.matchingHistory && selectedRule.matchingHistory.length > 0)
-        ? selectedRule.matchingHistory
-        : (currentTab?.url ? [{ url: currentTab.url }] : []);
+      const cleanResult = await cleanHistoryByRule(rule);
+      deletedCount = cleanResult.deleted;
 
-      for (const item of itemsToDelete) {
-        if (item && item.url) {
-          try {
-            await browserApi.history.deleteUrl(item.url);
-            deletedCount++;
-          } catch (e) {
-            console.error('Delete item failed:', item.url, e);
-          }
+      if (currentTab?.url) {
+        try {
+          await browserApi.history.deleteUrl(currentTab.url);
+        } catch (e) {
+          // ignore
         }
       }
     }
@@ -459,28 +456,22 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     return;
   }
 
-  const itemsToDelete = (selectedRule.matchingHistory && selectedRule.matchingHistory.length > 0)
-    ? selectedRule.matchingHistory
-    : (currentTab?.url ? [{ url: currentTab.url }] : []);
-
-  if (itemsToDelete.length === 0) {
-    showToast(t('popup.toastCleanOnlyEmpty'));
-    return;
-  }
-
   try {
     elements.btnCleanOnly.disabled = true;
     elements.btnCleanOnly.style.opacity = '0.7';
 
-    let deletedCount = 0;
-    for (const item of itemsToDelete) {
-      if (item && item.url) {
-        try {
-          await browserApi.history.deleteUrl(item.url);
-          deletedCount++;
-        } catch (e) {
-          console.error('Delete item failed:', item.url, e);
-        }
+    // 全量回溯清理匹配该候选规则的所有已有历史
+    const cleanResult = await cleanHistoryByRule({
+      pattern: selectedRule.rule,
+      type: selectedRule.type
+    });
+    let deletedCount = cleanResult.deleted;
+
+    if (currentTab?.url) {
+      try {
+        await browserApi.history.deleteUrl(currentTab.url);
+      } catch (e) {
+        // ignore
       }
     }
 

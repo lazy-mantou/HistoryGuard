@@ -93,7 +93,7 @@ describe('storage - 规则增删改查与计数', () => {
     assert.strictEqual(list[0].pattern, 'twitter.com');
   });
 
-  it('应当能正常添加关键词规则 (type: keyword) 并支持纯词自动识别', async () => {
+  it('应当能正常添加关键词规则 (type: keyword) 并支持纯词自动识别与前缀清洗', async () => {
     const res = await addRule({ pattern: 'xxx', type: 'keyword' });
     assert.strictEqual(res.isNew, true);
     assert.strictEqual(res.rule.pattern, 'xxx');
@@ -103,8 +103,13 @@ describe('storage - 规则增删改查与计数', () => {
     const autoRes = await addRule({ pattern: 'secret_token' });
     assert.strictEqual(autoRes.rule.type, 'keyword');
 
+    // 前缀智能清洗测试：输入 keyword:bagaga 自动剥离前缀并设置为 keyword
+    const prefixRes = await addRule({ pattern: 'keyword:bagaga' });
+    assert.strictEqual(prefixRes.rule.type, 'keyword');
+    assert.strictEqual(prefixRes.rule.pattern, 'bagaga');
+
     const list = await getRules();
-    assert.strictEqual(list.length, 2);
+    assert.strictEqual(list.length, 3);
   });
 
   it('添加重复规则时应当更新并重新激活，不产生重复条目', async () => {

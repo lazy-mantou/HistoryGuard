@@ -372,6 +372,45 @@ describe('ruleMatcher - keywordRuleToRegex & 关键词匹配 (跨域无条件拦
     assert.strictEqual(filtered[0].url, 'https://a.com/xxx');
     assert.strictEqual(filtered[1].url, 'https://b.com/post');
   });
+
+  it('用户真实场景：keyword:bagaga 能够无缝兼容前缀并成功匹配 Google 搜索 URL', () => {
+    const userGoogleUrl = 'https://www.google.com/search?q=bagaga&num=10&newwindow=1&sca_esv=bcdf9297374b6ca0&biw=1536&bih=747&sxsrf=APpeQnuAOeZ4ft_ZsxRwhGd7vRtjWpgwlA%3A1791989442020&ei=wpbPatpe1vfQ8Q-7vIuhBw&uact=5&oq=bagaga&gs_lp=Egxnd3Mtd2l6LXNlcnAiBmJhZ2FnYTIFEAAYgAQyCBAuGPIGGI8HMgUQABiABDIFEAAYgAQyBRAAGIAEMggQABiABBi0BzIHEC4YgAQYCjIHEAAYgAQYCjIFEAAYgAQyBRAAGIAESLYJUABYtgdwAHgBkAEAmAH7BKABlw-qAQkyLTIuMS4xLjG4AQPIAQD4AQGYAgWgAo4QwgIEECMYJ8ICChAAGIAEGIoFGEPCAg4QABiABBiKBRixAxiDAcICChAuGIAEGIoFGEPCAgsQLhiABBiKBRiRAsICCxAAGIAEGIoFGJECwgIIEAAYgAQYsQPCAggQLhiABBixA8ICGhAuGIAEGIoFGJECGJcFGNwEGN4EGN8E2AEBwgILEC4YgAQYxwEYrwHCAg4QLhiABBixAxjHARivAZgDALoGBggBEAEYFJIHCTItMS4yLjEuMaAHxTuyBwkyLTEuMi4xLjG4B44QwgcFMy0zLjLIB1uACAE&sclient=gws-wiz-serp';
+
+    // 1. detectRuleType 自动识别前缀语法
+    assert.strictEqual(detectRuleType('keyword:bagaga'), 'keyword');
+    assert.strictEqual(detectRuleType('kw:bagaga'), 'keyword');
+    assert.strictEqual(detectRuleType('domain:google.com'), 'domain');
+    assert.strictEqual(detectRuleType('path:google.com/search'), 'path');
+
+    // 2. matchesRule 支持带有 keyword: 前缀的规则对象
+    const ruleObjWithPrefix = { id: 'test_prefix', pattern: 'keyword:bagaga', type: 'keyword', enabled: true };
+    assert.strictEqual(matchesRule(ruleObjWithPrefix, userGoogleUrl), true);
+
+    // 3. matchesRule 支持纯字符串传参 'keyword:bagaga'
+    assert.strictEqual(matchesRule('keyword:bagaga', userGoogleUrl), true);
+    assert.strictEqual(matchesRule('kw:bagaga', userGoogleUrl), true);
+
+    // 4. 清洗后的纯 pattern 亦完美匹配
+    const ruleClean = { id: 'test_clean', pattern: 'bagaga', type: 'keyword', enabled: true };
+    assert.strictEqual(matchesRule(ruleClean, userGoogleUrl), true);
+  });
+
+  it('用户真实场景：keyword:bagaga 能够成功匹配百度搜索真实 URL', () => {
+    const userBaiduUrl = 'https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&rsv_idx=1&tn=baidu&wd=bagaga&fenlei=256&rsv_pq=0xbd387bd902862d39&rsv_t=778csNnHJCZhARc64FZ4SMKyCxhKEb2RNpqla23qPP%2BEcLAYb3kjL6kfpFrm&rqlang=en&rsv_enter=1&rsv_dl=tb_enter&rsv_sug3=7&rsv_sug1=4&rsv_sug7=100&rsv_btype=i&inputT=2819&rsv_sug4=2819';
+
+    // 1. 纯关键词对象匹配
+    assert.strictEqual(matchesRule({ pattern: 'bagaga', type: 'keyword' }, userBaiduUrl), true);
+
+    // 2. 带有 keyword: 前缀对象匹配
+    assert.strictEqual(matchesRule({ pattern: 'keyword:bagaga', type: 'keyword' }, userBaiduUrl), true);
+
+    // 3. 带有 domain: 或错误 type 自动纠偏匹配
+    assert.strictEqual(matchesRule({ pattern: 'keyword:bagaga', type: 'domain' }, userBaiduUrl), true);
+
+    // 4. 带页面标题匹配
+    const baiduTargetWithTitle = { url: userBaiduUrl, title: 'bagaga_百度搜索' };
+    assert.strictEqual(matchesRule({ pattern: 'bagaga', type: 'keyword' }, baiduTargetWithTitle), true);
+  });
 });
 
 

@@ -1,6 +1,7 @@
 # Build artifacts
 dist/
 *.zip
+build-temp.ps1
 
 # Dependencies
 node_modules/

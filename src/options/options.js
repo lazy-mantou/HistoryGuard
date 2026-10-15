@@ -6,6 +6,7 @@
 
 import { browserApi } from '../adapters/index.js';
 import { convertSearchTermToRule } from '../core/ruleMatcher.js';
+import { cleanHistoryByRule } from '../core/historyCleaner.js';
 import { t, initI18n, setLanguage, formatRelativeTime } from '../core/i18n.js';
 import { initTheme } from '../core/theme.js';
 import {
@@ -763,8 +764,14 @@ elements.btnDeleteAndAddRule.addEventListener('click', async () => {
       deletedCount = await deleteUrlsWithProgress(targets, t('options.progressDeletingAndAdding'));
     }
 
+    // 3. 全局彻底扫描并清空剩余可能存在的匹配历史
+    const remainingClean = await cleanHistoryByRule(rule, {
+      chunkSize: getDeleteChunkSize()
+    });
+    const totalDeleted = deletedCount + remainingClean.deleted;
+
     const actionText = isNew ? t('popup.actionAdd') : t('popup.actionUpdate');
-    showToast(t('options.toastDeleteAndAddSuccess', { action: actionText, pattern, count: deletedCount }));
+    showToast(t('options.toastDeleteAndAddSuccess', { action: actionText, pattern, count: totalDeleted }));
     await refreshRulesList();
     await fetchHistoryBatch({ isReset: true });
   } catch (err) {
@@ -830,6 +837,7 @@ async function refreshRulesList() {
           <input type="checkbox" class="rule-toggle" ${rule.enabled !== false ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
+        <button class="rule-clean-btn" title="${t('options.ruleCleanTitle')}">🧹</button>
         <button class="rule-delete-btn" title="${t('options.ruleDeleteTitle')}">🗑️</button>
       </div>
     `;
@@ -841,6 +849,35 @@ async function refreshRulesList() {
       row.classList.toggle('disabled', !toggle.checked);
       toggle.parentElement.title = toggle.checked ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
       await refreshGlobalStats();
+    });
+
+    // 绑定立即清理历史按钮
+    const cleanBtn = row.querySelector('.rule-clean-btn');
+    cleanBtn.addEventListener('click', async () => {
+      cleanBtn.disabled = true;
+      cleanBtn.style.opacity = '0.5';
+      showToast(t('options.toastCleaningRule', { pattern: rule.pattern }));
+      try {
+        const cleanResult = await cleanHistoryByRule(rule, {
+          chunkSize: getDeleteChunkSize()
+        });
+        if (cleanResult.deleted > 0) {
+          showToast(t('options.toastCleanRuleHistorySuccess', {
+            pattern: rule.pattern,
+            count: cleanResult.deleted
+          }));
+          if (elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
+            await fetchHistoryBatch({ isReset: true });
+          }
+        } else {
+          showToast(t('options.toastCleanRuleHistoryNone', { pattern: rule.pattern }));
+        }
+      } catch (err) {
+        showToast(t('options.toastImportFailed', { error: err.message }));
+      } finally {
+        cleanBtn.disabled = false;
+        cleanBtn.style.opacity = '1';
+      }
     });
 
     // 绑定删除按钮
@@ -869,13 +906,50 @@ elements.btnAddRule.addEventListener('click', async () => {
     return;
   }
 
+  const originalHtml = elements.btnAddRule.innerHTML;
+
   try {
+    elements.btnAddRule.disabled = true;
+    elements.btnAddRule.style.opacity = '0.7';
+    elements.btnAddRule.innerHTML = `<span>⏳ ${t('options.btnAddingAndCleaning')}</span>`;
+
+    // 1. 添加或激活规则
     const { rule, isNew } = await addRule({ pattern, type });
-    showToast(isNew ? t('options.toastAddRuleSuccess', { pattern: rule.pattern }) : t('options.toastRuleAlreadyExists'));
+
+    // 2. 自动回溯清理已有历史匹配数据
+    const chunkSize = getDeleteChunkSize();
+    const cleanResult = await cleanHistoryByRule(rule, {
+      chunkSize,
+      onProgress: ({ deleted }) => {
+        if (deleted > 0) {
+          elements.btnAddRule.innerHTML = `<span>🧹 ${t('options.btnCleaningWithCount', { count: deleted })}</span>`;
+        }
+      }
+    });
+
+    if (cleanResult.deleted > 0) {
+      showToast(t('options.toastAddRuleSuccessWithCleaned', {
+        pattern: rule.pattern,
+        count: cleanResult.deleted
+      }));
+    } else {
+      showToast(isNew ? t('options.toastAddRuleSuccess', { pattern: rule.pattern }) : t('options.toastRuleAlreadyExists'));
+    }
+
     elements.newRuleInput.value = '';
     await refreshRulesList();
+
+    // 3. 联动刷新可能打开的历史记录列表
+    if (elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
+      await fetchHistoryBatch({ isReset: true });
+    }
   } catch (err) {
+    console.error('Add rule and clean history failed:', err);
     showToast(t('options.toastImportFailed', { error: err.message }));
+  } finally {
+    elements.btnAddRule.disabled = false;
+    elements.btnAddRule.style.opacity = '1';
+    elements.btnAddRule.innerHTML = originalHtml;
   }
 });
 

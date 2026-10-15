@@ -1120,6 +1120,7 @@ button, input, select, textarea {
   transform: translateX(16px);
 }
 
+.rule-clean-btn,
 .rule-delete-btn {
   background: transparent;
   border: none;
@@ -1130,6 +1131,11 @@ button, input, select, textarea {
   font-size: 14px;
   transition: var(--transition);
   line-height: 1;
+}
+
+.rule-clean-btn:hover {
+  color: var(--primary);
+  background-color: var(--primary-light, rgba(79, 70, 229, 0.1));
 }
 
 .rule-delete-btn:hover {

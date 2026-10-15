@@ -40,12 +40,33 @@ export async function saveRules(rules) {
  * @returns {Promise<{ rule: Object, isNew: boolean }>}
  */
 export async function addRule({ pattern, type, enabled = true }) {
-  const cleanPattern = (pattern || '').trim();
+  let cleanPattern = (pattern || '').trim();
   if (!cleanPattern) {
     throw new Error('规则表达式不能为空');
   }
 
-  const actualType = type || detectRuleType(cleanPattern);
+  let actualType = type;
+
+  // 智能解析用户输入中可能包含的前缀修饰符 (如 keyword:xxx, kw:xxx, domain:xxx, path:xxx)
+  if (/^keyword:\s*/i.test(cleanPattern)) {
+    actualType = 'keyword';
+    cleanPattern = cleanPattern.replace(/^keyword:\s*/i, '').trim();
+  } else if (/^kw:\s*/i.test(cleanPattern)) {
+    actualType = 'keyword';
+    cleanPattern = cleanPattern.replace(/^kw:\s*/i, '').trim();
+  } else if (/^domain:\s*/i.test(cleanPattern)) {
+    actualType = 'domain';
+    cleanPattern = cleanPattern.replace(/^domain:\s*/i, '').trim();
+  } else if (/^path:\s*/i.test(cleanPattern)) {
+    actualType = 'path';
+    cleanPattern = cleanPattern.replace(/^path:\s*/i, '').trim();
+  }
+
+  if (!cleanPattern) {
+    throw new Error('规则表达式不能为空');
+  }
+
+  actualType = actualType || detectRuleType(cleanPattern);
   const currentRules = await getRules();
 
   // 检查是否已有完全相同的规则表达式

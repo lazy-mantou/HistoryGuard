@@ -19,7 +19,11 @@ function escapeRegexExceptWildcard(str) {
  * @returns {'domain'|'path'|'keyword'}
  */
 export function detectRuleType(pattern) {
-  const cleaned = (pattern || '').trim().replace(/^https?:\/\//i, '');
+  let cleaned = (pattern || '').trim().replace(/^https?:\/\//i, '');
+  if (/^(?:keyword|kw):\s*/i.test(cleaned)) return 'keyword';
+  if (/^path:\s*/i.test(cleaned)) return 'path';
+  if (/^domain:\s*/i.test(cleaned)) return 'domain';
+
   if (cleaned.includes('/')) return 'path';
   if (cleaned.includes('.') || cleaned.startsWith('*') || cleaned === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(cleaned)) {
     return 'domain';
@@ -35,6 +39,8 @@ export function detectRuleType(pattern) {
  */
 export function keywordRuleToRegex(pattern) {
   let cleaned = (pattern || '').trim();
+  // 容错：剥离可能存在的 keyword: 或 kw: 前缀
+  cleaned = cleaned.replace(/^(?:keyword|kw):\s*/i, '');
   const regexStr = escapeRegexExceptWildcard(cleaned);
   return new RegExp(regexStr, 'i');
 }
@@ -107,10 +113,24 @@ export function matchesRule(rule, target) {
 
   const urlString = typeof target === 'string' ? target : target.url;
   const titleString = typeof target === 'object' ? (target.title || '') : '';
-  const pattern = typeof rule === 'string' ? rule : rule?.pattern;
-  const type = typeof rule === 'object' ? rule?.type : detectRuleType(pattern);
+  let pattern = typeof rule === 'string' ? rule : rule?.pattern;
+  let type = typeof rule === 'object' ? rule?.type : undefined;
 
   if (!pattern) return false;
+
+  // 容错处理前缀修饰符 (如 keyword:xxx, kw:xxx, domain:xxx, path:xxx)
+  if (/^(?:keyword|kw):\s*/i.test(pattern)) {
+    type = 'keyword';
+    pattern = pattern.replace(/^(?:keyword|kw):\s*/i, '');
+  } else if (/^domain:\s*/i.test(pattern)) {
+    type = 'domain';
+    pattern = pattern.replace(/^domain:\s*/i, '');
+  } else if (/^path:\s*/i.test(pattern)) {
+    type = 'path';
+    pattern = pattern.replace(/^path:\s*/i, '');
+  }
+
+  type = type || detectRuleType(pattern);
 
   try {
     const regex = ruleToRegex(pattern, type);

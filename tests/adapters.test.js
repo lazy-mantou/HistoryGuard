@@ -16,6 +16,7 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
     assert.ok(adapter.history, '应当包含 history 命名空间');
     assert.ok(adapter.storage, '应当包含 storage 命名空间');
     assert.ok(adapter.tabs, '应当包含 tabs 命名空间');
+    assert.ok(adapter.webNavigation, '应当包含 webNavigation 命名空间');
     assert.ok(adapter.runtime, '应当包含 runtime 命名空间');
     assert.ok(adapter.alarms, '应当包含 alarms 命名空间');
     assert.ok(adapter.i18n, '应当包含 i18n 命名空间');
@@ -27,6 +28,9 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
     await assert.rejects(async () => adapter.history.search(), /must be implemented/);
     await assert.rejects(async () => adapter.storage.get(), /must be implemented/);
     await assert.rejects(async () => adapter.tabs.getCurrentActiveTab(), /must be implemented/);
+    assert.throws(() => adapter.tabs.onUpdated(), /must be implemented/);
+    assert.throws(() => adapter.webNavigation.onHistoryStateUpdated(), /must be implemented/);
+    assert.throws(() => adapter.webNavigation.onCommitted(), /must be implemented/);
     await assert.rejects(async () => adapter.runtime.openOptionsPage(), /must be implemented/);
     await assert.rejects(async () => adapter.alarms.create(), /must be implemented/);
     assert.throws(() => adapter.i18n.getUILanguage(), /must be implemented/);
@@ -43,6 +47,9 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.storage.set, 'function');
     assert.strictEqual(typeof adapter.storage.onChanged, 'function');
     assert.strictEqual(typeof adapter.tabs.getCurrentActiveTab, 'function');
+    assert.strictEqual(typeof adapter.tabs.onUpdated, 'function');
+    assert.strictEqual(typeof adapter.webNavigation.onHistoryStateUpdated, 'function');
+    assert.strictEqual(typeof adapter.webNavigation.onCommitted, 'function');
     assert.strictEqual(typeof adapter.runtime.openOptionsPage, 'function');
     assert.strictEqual(typeof adapter.alarms.create, 'function');
     assert.strictEqual(typeof adapter.alarms.clear, 'function');
@@ -131,6 +138,9 @@ describe('adapters - FirefoxAdapter 实现验证', () => {
     assert.strictEqual(typeof adapter.storage.set, 'function');
     assert.strictEqual(typeof adapter.storage.onChanged, 'function');
     assert.strictEqual(typeof adapter.tabs.getCurrentActiveTab, 'function');
+    assert.strictEqual(typeof adapter.tabs.onUpdated, 'function');
+    assert.strictEqual(typeof adapter.webNavigation.onHistoryStateUpdated, 'function');
+    assert.strictEqual(typeof adapter.webNavigation.onCommitted, 'function');
     assert.strictEqual(typeof adapter.runtime.openOptionsPage, 'function');
     assert.strictEqual(typeof adapter.alarms.create, 'function');
     assert.strictEqual(typeof adapter.alarms.clear, 'function');
@@ -203,6 +213,7 @@ describe('adapters - 统一导出单例 browserApi', () => {
     assert.ok(browserApi.history);
     assert.ok(browserApi.storage);
     assert.ok(browserApi.tabs);
+    assert.ok(browserApi.webNavigation);
     assert.ok(browserApi.runtime);
     assert.ok(browserApi.alarms);
     assert.ok(browserApi.i18n);

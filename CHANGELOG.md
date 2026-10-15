@@ -4,6 +4,43 @@
 
 ---
 
+## [1.0.19] - 2026-10-14
+
+### 需求整理 (Requirements Overview)
+1. **彻底修复关键词规则未生效问题（Google 搜索及 SPA 动态路由无痕拦截）**：
+   - **问题现象**：
+     - 用户添加规则 `keyword:bagaga`，但在 Google 搜索 `bagaga` 时，搜索历史记录依然残留在浏览器中（如 `https://www.google.com/search?q=bagaga&...`）。
+   - **双重根因彻底定位 (Root Cause Analysis)**：
+     - **根因一（浏览器内核 SPA 路由机制差异）**：Google 搜索等现代 Web 应用在搜索框输入或页面交互时，通过 HTML5 `history.pushState` / `replaceState` 动态变更历史记录。根据 W3C 与 Chrome 官方规范，`chrome.history.onVisited` **仅对整页完全重新加载生效，完全不会捕获单页应用 SPA / pushState 产生的历史写入**！此前后台仅监听 `onVisited`，导致 Google 搜索的 URL 变更被完全漏过。
+     - **根因二（语法前缀输入习惯未做容错清洗）**：用户在规则输入框中习惯性输入 `keyword:bagaga`，系统若原样将 `keyword:bagaga` 作为正则比对目标，将导致无法命中普通的 Google 搜索 URL `?q=bagaga`。
+     - **根因三（浏览器内核 SQLite 异步写入微延迟）**：即使事件触发，Chrome 写入历史记录有时存在数十毫秒的异步提交滞后，单次瞬时 `deleteUrl` 极易与底层磁盘写入发生竞态冲突（删除指令早于写入完成）。
+   - **技术重构与攻坚方案**：
+     - **权限与适配器升级**：在 Chrome 与 Firefox 清单文件中新增 `webNavigation` 权限；在 `IBrowserAdapter` 及具体适配器中新增 `tabs.onUpdated` 与 `webNavigation.onHistoryStateUpdated`、`webNavigation.onCommitted` 监听契约；
+     - **后台多通道全方位实时拦截**：后台重构为“四通道联动守护网”：
+       1. `history.onVisited`：常规页面完全导航；
+       2. `tabs.onUpdated`：标签页实时 URL 变动（捕获地址栏回车与直接变更）；
+       3. `webNavigation.onHistoryStateUpdated`：专职捕获 SPA `pushState` / `replaceState`（覆盖 Google 搜索）；
+       4. `webNavigation.onCommitted`：页面加载提交点捕获；
+     - **抗竞态两段式补偿出清 (Deferred Residual Clean)**：命中规则后，不仅立即调用 `deleteUrl` 物理删除，还在 200ms 和 800ms 两次微延时调度历史深度搜索，精准出清最近 30 秒内因 Chrome 异步落盘滞后而写入的残留项；
+     - **规则引擎前缀容错兼容**：`ruleMatcher.js` 的 `detectRuleType`、`keywordRuleToRegex` 与 `matchesRule`，以及 `storage.js` 的 `addRule` 中全面防御性剥离 `keyword:` / `kw:` / `domain:` / `path:` 前缀，老规则与新规则均可 100% 自动容错。
+
+### 变更明细 (Detailed Changes)
+- `feat(manifest)`: `manifest.chrome.json` 与 `manifest.firefox.json` 新增 `"webNavigation"` 权限。
+- `feat(adapters)`:
+  - `src/adapters/IBrowserAdapter.js`: 抽象基类新增 `tabs.onUpdated`，新增 `webNavigation` 命名空间及 `onHistoryStateUpdated`、`onCommitted` 规范。
+  - `src/adapters/ChromiumAdapter.js` & `src/adapters/FirefoxAdapter.js`: 完整实现 `tabs.onUpdated`、`webNavigation.onHistoryStateUpdated` 与 `webNavigation.onCommitted`。
+- `feat(core)`:
+  - `src/core/ruleMatcher.js`: 防御性剥离 `keyword:` / `kw:` / `domain:` / `path:` 等语法前缀，支持直接包含前缀规则的自动纯化匹配。
+  - `src/core/storage.js`: 在 `addRule` 入库时自动推断前缀语法并剥离前缀存储纯 pattern。
+- `feat(background)`:
+  - `src/background/index.js`: 重构为多通道事件侦听网，新增 `cleanResiduals` 防异步滞后出清，完美覆盖 Google 搜索及所有 SPA 动态路由。
+- `test`:
+  - `tests/adapters.test.js`: 增加针对 `webNavigation` 与 `tabs.onUpdated` 接口契约的单元测试。
+  - `tests/ruleMatcher.test.js`: 增加用户反馈的 Google 搜索 URL 与 `keyword:bagaga` 容错匹配单元测试。
+  - `tests/storage.test.js`: 增加 `addRule` 前缀自动清洗单元测试。全套 107 项测试用例全部通过。
+
+---
+
 ## [1.0.18] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)

@@ -127,6 +127,35 @@ export class FirefoxAdapter extends IBrowserAdapter {
           };
         }
         return null;
+      },
+
+      onUpdated: (callback) => {
+        const api = getApi();
+        if (api.tabs?.onUpdated) {
+          api.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+            callback(tabId, changeInfo, tab);
+          });
+        }
+      }
+    };
+
+    // WebNavigation API
+    this.webNavigation = {
+      onHistoryStateUpdated: (callback) => {
+        const api = getApi();
+        if (api.webNavigation?.onHistoryStateUpdated) {
+          api.webNavigation.onHistoryStateUpdated.addListener((details) => {
+            callback(details);
+          });
+        }
+      },
+      onCommitted: (callback) => {
+        const api = getApi();
+        if (api.webNavigation?.onCommitted) {
+          api.webNavigation.onCommitted.addListener((details) => {
+            callback(details);
+          });
+        }
       }
     };
 
