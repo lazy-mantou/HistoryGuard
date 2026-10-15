@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <!-- 翡翠青绿高光渐变 (Emerald to Electric Cyan) -->
-    <linearGradient id="hg-shield-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#06b6d4" />
+    <!-- 科技蓝高光渐变 (Tech Blue to Cyan Blue - 平时正常状态) -->
+    <linearGradient id="hg-shield-blue-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#0284c7" />
     </linearGradient>
 
     <!-- 柔和立体轻微投影 -->
@@ -18,8 +18,8 @@
            C 472 280, 384 428, 256 485 
            C 128 428, 40 280, 40 77 
            C 40 45, 148 21, 256 21 Z" 
-        fill="url(#hg-shield-grad)" 
-        stroke="#059669" 
+        fill="url(#hg-shield-blue-grad)" 
+        stroke="#1d4ed8" 
         stroke-width="3" 
         filter="url(#hg-shield-shadow)" />
 

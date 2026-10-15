@@ -4,6 +4,46 @@
 
 ---
 
+## [1.0.28] - 2026-10-15
+
+### 需求整理 (Requirements Overview)
+1. **工具栏图标蓝绿双态动态切换与角标纯净化 (Blue/Green Dual-State Icon & Clean Toolbar UX)**:
+   - **用户需求背景**：
+     - 用户明确要求：“图标平时蓝色，在浏览处于保护列表的页面时，图标换成绿色，不要用文字来区别保护状态”；
+     - 工具栏原本采用绿色角标“无痕”与紫色角标“静默”来指示保护状态，文字角标在极小工具栏中容易产生视觉噪音与拥挤感；
+     - 改为通过扩展图标本身的显式色彩状态进行直观沟通（蓝色 = 平时正常记录模式，绿色 = 命中保护规则或静默免记录模式），彻底移除所有文字角标，实现极简纯净的交互体验。
+   - **视觉设计与色彩方案**：
+     - **平时科技蓝盾牌 (Normal / Recording State - Blue Shield)**：
+       - 当用户浏览普通网页、未受保护页面或内置页面时，扩展图标呈现高饱和科技蓝渐变盾牌（`#3b82f6` 至 `#0284c7`），中心内嵌 Chrome 官方经典纯白历史记录符号；
+       - 默认图标（`action.default_icon` 及扩展清单 `icons`）直接指向全套蓝色盾牌 (`icons/icon*.png`)。
+     - **保护状态翡翠绿盾牌 (Protected State - Green Shield)**：
+       - 当页面命中已启用的域名/路径/关键词保护规则，或处于全局 30 分钟静默免记录模式时，动态切换为翡翠青绿渐变盾牌（`#10b981` 至 `#059669`），中心同样内嵌纯白历史符号；
+       - 新增保护状态全套高精图标资源 (`icons/icon-green*.png`：16px, 32px, 48px, 128px, 512px) 及母本 `icons/icon-green.svg`。
+     - **彻底移除角标文字提示 (Zero-Badge Interference)**：
+       - 全部分支统一将 `browserApi.action.setBadgeText({ tabId, text: '' })` 置为空，彻底废除“无痕”、“HIDE”、“静默”、“MUTE”等文字角标，完全依赖图标蓝/绿色彩变化进行区分；
+       - 保留细腻的 Tooltip 鼠标悬停提示，用户悬停时仍可清晰获悉是否保护、命中的具体规则或静默模式倒计时。
+2. **全流程单元测试完善与版本同步 (Version 1.0.28 Synchronization)**：
+   - 更新 `tests/toolbarIndicator.test.js`：覆盖保护状态（绿盾）、正常状态（蓝盾）、内部页面（蓝盾）以及角标文字恒为空字符串的核心断言；
+   - 同步将 `package.json`、`manifest.chrome.json`、`manifest.firefox.json` 的版本号提升至 `1.0.28`，并通过 `build.js` 重新分发双内核包至 `dist/`。
+
+### 变更明细 (Detailed Changes)
+- `feat(branding)`:
+  - 生成平时科技蓝全套图标：`icons/icon16.png`, `icon32.png`, `icon48.png`, `icon128.png`, `icon512.png` 与 `icons/icon.svg`。
+  - 生成保护状态翡翠绿全套图标：`icons/icon-green16.png`, `icon-green32.png`, `icon-green48.png`, `icon-green128.png`, `icon-green512.png` 与 `icons/icon-green.svg`。
+- `feat(toolbar)`:
+  - 重构 `src/background/toolbarIndicator.js`：
+    - `ICON_PATHS` 新增 `NORMAL`（蓝色）与 `PROTECTED`（绿色），同时保留 `ACTIVE` / `DIMMED` 兼容别名；
+    - 命中保护规则与静默模式时切换为 `ICON_PATHS.PROTECTED`；
+    - 普通网页与内部页面呈现 `ICON_PATHS.NORMAL`；
+    - 移除所有角标文字输出，全状态清空 `setBadgeText`。
+- `test`:
+  - 更新 `tests/toolbarIndicator.test.js`，验证绿盾/蓝盾状态切换与文字角标恒为空，157 项单元测试全部通过。
+- `build`:
+  - `package.json`、`manifest.chrome.json`、`manifest.firefox.json`: 版本号统一步进至 `1.0.28`。
+  - `dist/`: 经 `node build.js` 重新打包更新 Chrome 与 Firefox 发布包。
+
+---
+
 ## [1.0.27] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)

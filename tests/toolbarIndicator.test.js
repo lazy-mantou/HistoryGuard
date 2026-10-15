@@ -89,53 +89,45 @@ describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器
     };
   });
 
-  it('命中防护规则时：渲染高亮彩色图标、翡翠绿背景、无痕角标与详细 Tooltip', async () => {
+  it('命中防护规则时：切换为翡翠绿保护图标、不显示文字角标、显示详细 Tooltip', async () => {
     const rules = [{ id: '1', pattern: 'google.com', type: 'domain', enabled: true }];
     await updateTabToolbarIndicator(101, 'https://www.google.com', 'Google', rules, 0, 'zh-CN');
 
     const iconCall = actionLog.find(c => c.type === 'setIcon');
-    const badgeColorCall = actionLog.find(c => c.type === 'setBadgeBackgroundColor');
     const badgeTextCall = actionLog.find(c => c.type === 'setBadgeText');
     const titleCall = actionLog.find(c => c.type === 'setTitle');
 
     assert.ok(iconCall);
     assert.strictEqual(iconCall.details.tabId, 101);
-    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.ACTIVE);
-
-    assert.ok(badgeColorCall);
-    assert.strictEqual(badgeColorCall.details.color, '#10b981');
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.PROTECTED);
 
     assert.ok(badgeTextCall);
-    assert.strictEqual(badgeTextCall.details.text, '无痕');
+    assert.strictEqual(badgeTextCall.details.text, '');
 
     assert.ok(titleCall);
     assert.match(titleCall.details.title, /当前页面处于保护中/);
     assert.match(titleCall.details.title, /google\.com/);
   });
 
-  it('静默免记录模式时：渲染高亮彩色图标、极光紫背景、静默角标与全局提示', async () => {
+  it('静默免记录模式时：切换为翡翠绿保护图标、不显示文字角标、显示全局提示', async () => {
     const futureTime = Date.now() + 1800000;
     await updateTabToolbarIndicator(102, 'https://example.com', 'Example', [], futureTime, 'zh-CN');
 
     const iconCall = actionLog.find(c => c.type === 'setIcon');
-    const badgeColorCall = actionLog.find(c => c.type === 'setBadgeBackgroundColor');
     const badgeTextCall = actionLog.find(c => c.type === 'setBadgeText');
     const titleCall = actionLog.find(c => c.type === 'setTitle');
 
     assert.ok(iconCall);
-    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.ACTIVE);
-
-    assert.ok(badgeColorCall);
-    assert.strictEqual(badgeColorCall.details.color, '#8b5cf6');
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.PROTECTED);
 
     assert.ok(badgeTextCall);
-    assert.strictEqual(badgeTextCall.details.text, '静默');
+    assert.strictEqual(badgeTextCall.details.text, '');
 
     assert.ok(titleCall);
     assert.match(titleCall.details.title, /静默免记录模式中/);
   });
 
-  it('普通正常网页时：渲染灰度变暗图标、清空角标、提示正常记录历史', async () => {
+  it('普通正常网页时：呈现平时科技蓝图标、清空文字角标、提示正常记录历史', async () => {
     await updateTabToolbarIndicator(103, 'https://wikipedia.org', 'Wikipedia', [], 0, 'zh-CN');
 
     const iconCall = actionLog.find(c => c.type === 'setIcon');
@@ -143,7 +135,7 @@ describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器
     const titleCall = actionLog.find(c => c.type === 'setTitle');
 
     assert.ok(iconCall);
-    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.DIMMED);
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.NORMAL);
 
     assert.ok(badgeTextCall);
     assert.strictEqual(badgeTextCall.details.text, '');
@@ -152,16 +144,33 @@ describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器
     assert.match(titleCall.details.title, /正常记录历史/);
   });
 
-  it('英语环境下角标文本自适应切换为 HIDE 和 MUTE', async () => {
+  it('浏览器内部页面时：呈现平时科技蓝图标、清空文字角标、提示浏览器内部页面', async () => {
+    await updateTabToolbarIndicator(104, 'chrome://settings', 'Settings', [], 0, 'zh-CN');
+
+    const iconCall = actionLog.find(c => c.type === 'setIcon');
+    const badgeTextCall = actionLog.find(c => c.type === 'setBadgeText');
+    const titleCall = actionLog.find(c => c.type === 'setTitle');
+
+    assert.ok(iconCall);
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.NORMAL);
+
+    assert.ok(badgeTextCall);
+    assert.strictEqual(badgeTextCall.details.text, '');
+
+    assert.ok(titleCall);
+    assert.match(titleCall.details.title, /浏览器内部页面/);
+  });
+
+  it('严禁使用文字角标来区别保护状态（全语言环境下文字角标恒为空）', async () => {
     const rules = [{ id: '1', pattern: 'google.com', type: 'domain', enabled: true }];
-    await updateTabToolbarIndicator(104, 'https://www.google.com', 'Google', rules, 0, 'en-US');
+    await updateTabToolbarIndicator(105, 'https://www.google.com', 'Google', rules, 0, 'en-US');
     const badgeCall = actionLog.find(c => c.type === 'setBadgeText');
-    assert.strictEqual(badgeCall.details.text, 'HIDE');
+    assert.strictEqual(badgeCall.details.text, '');
 
     actionLog = [];
-    await updateTabToolbarIndicator(105, 'https://example.com', '', [], Date.now() + 60000, 'en-US');
+    await updateTabToolbarIndicator(106, 'https://example.com', '', [], Date.now() + 60000, 'en-US');
     const muteBadgeCall = actionLog.find(c => c.type === 'setBadgeText');
-    assert.strictEqual(muteBadgeCall.details.text, 'MUTE');
+    assert.strictEqual(muteBadgeCall.details.text, '');
   });
 
   it('非法或空 tabId 应当被安全静默忽略，不抛出异常', async () => {

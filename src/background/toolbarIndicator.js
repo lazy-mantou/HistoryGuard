@@ -9,17 +9,30 @@ import { findMatchingRule } from '../core/ruleMatcher.js';
 
 // 图标资源路径配置
 export const ICON_PATHS = {
-  ACTIVE: {
+  NORMAL: {
     16: 'icons/icon16.png',
     32: 'icons/icon32.png',
     48: 'icons/icon48.png',
     128: 'icons/icon128.png'
   },
+  PROTECTED: {
+    16: 'icons/icon-green16.png',
+    32: 'icons/icon-green32.png',
+    48: 'icons/icon-green48.png',
+    128: 'icons/icon-green128.png'
+  },
+  // 向后兼容别名
+  ACTIVE: {
+    16: 'icons/icon-green16.png',
+    32: 'icons/icon-green32.png',
+    48: 'icons/icon-green48.png',
+    128: 'icons/icon-green128.png'
+  },
   DIMMED: {
-    16: 'icons/icon-dim16.png',
-    32: 'icons/icon-dim32.png',
-    48: 'icons/icon-dim48.png',
-    128: 'icons/icon-dim128.png'
+    16: 'icons/icon16.png',
+    32: 'icons/icon32.png',
+    48: 'icons/icon48.png',
+    128: 'icons/icon128.png'
   }
 };
 
@@ -75,9 +88,8 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
   try {
     switch (status) {
       case PAGE_PROTECT_STATUS.PROTECTED_RULE: {
-        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.ACTIVE });
-        await browserApi.action.setBadgeBackgroundColor({ tabId, color: '#10b981' }); // 翡翠绿
-        await browserApi.action.setBadgeText({ tabId, text: isZh ? '无痕' : 'HIDE' });
+        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.PROTECTED });
+        await browserApi.action.setBadgeText({ tabId, text: '' });
         const tooltip = isZh
           ? `HistGuard: 当前页面处于保护中 (不记录历史${rule?.pattern ? ` - 规则: ${rule.pattern}` : ''})`
           : `HistGuard: Protected (History recording disabled${rule?.pattern ? ` - rule: ${rule.pattern}` : ''})`;
@@ -86,9 +98,8 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
       }
 
       case PAGE_PROTECT_STATUS.PROTECTED_SILENT: {
-        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.ACTIVE });
-        await browserApi.action.setBadgeBackgroundColor({ tabId, color: '#8b5cf6' }); // 极光紫
-        await browserApi.action.setBadgeText({ tabId, text: isZh ? '静默' : 'MUTE' });
+        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.PROTECTED });
+        await browserApi.action.setBadgeText({ tabId, text: '' });
         const tooltip = isZh
           ? 'HistGuard: 静默免记录模式中 (全局不记录历史)'
           : 'HistGuard: Silent mode active (Global history tracking paused)';
@@ -97,7 +108,7 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
       }
 
       case PAGE_PROTECT_STATUS.RECORDING: {
-        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.DIMMED });
+        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.NORMAL });
         await browserApi.action.setBadgeText({ tabId, text: '' });
         const tooltip = isZh
           ? 'HistGuard: 正常记录历史 (点击图标可开启保护)'
@@ -108,7 +119,7 @@ export async function updateTabToolbarIndicator(tabId, url, title, rules, silent
 
       case PAGE_PROTECT_STATUS.INTERNAL:
       default: {
-        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.DIMMED });
+        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.NORMAL });
         await browserApi.action.setBadgeText({ tabId, text: '' });
         const tooltip = isZh
           ? 'HistGuard: 浏览器内部页面 (不可记录)'
