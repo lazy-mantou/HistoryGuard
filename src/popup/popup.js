@@ -13,6 +13,7 @@ import { initTheme } from '../core/theme.js';
 import {
   getRules,
   addRule,
+  deleteRule,
   getSilentMode,
   setSilentMode,
   clearSilentMode,
@@ -26,6 +27,9 @@ const elements = {
   btnOpenOptions: document.getElementById('btn-open-options'),
   tabStatusBadge: document.getElementById('tab-status-badge'),
   tabUrlText: document.getElementById('tab-url-text'),
+  matchedRuleBanner: document.getElementById('matched-rule-banner'),
+  matchedRuleText: document.getElementById('matched-rule-text'),
+  btnRemoveMatchedRule: document.getElementById('btn-remove-matched-rule'),
   internalPageTip: document.getElementById('internal-page-tip'),
   mainContent: document.getElementById('main-content'),
   domainCapsulesGroup: document.getElementById('domain-capsules-group'),
@@ -33,6 +37,7 @@ const elements = {
   cbRetroactive: document.getElementById('cb-retroactive'),
   retroactiveLabelText: document.getElementById('retroactive-label-text'),
   btnHideAndClean: document.getElementById('btn-hide-and-clean'),
+  btnHideIcon: document.querySelector('#btn-hide-and-clean .btn-icon'),
   btnHideText: document.getElementById('btn-hide-text'),
   btnCleanOnly: document.getElementById('btn-clean-only'),
   btnCleanText: document.getElementById('btn-clean-text'),
@@ -44,6 +49,7 @@ let currentTab = null;
 let parsedUrlInfo = null;
 let allCandidateRules = [];
 let selectedRule = null;
+let currentMatchedRule = null;
 let cachedHistoryItems = [];
 let silentCountdownTimer = null;
 let toastDismissTimer = null;
@@ -127,19 +133,29 @@ function updateActionButtons() {
   elements.btnCleanText.textContent = t('popup.cleanOnly', { count });
   elements.btnCleanOnly.disabled = (count === 0);
 
-  // 主按钮：隐藏并清理 (若已在规则列表中或已被上级规则覆盖，则 disabled)
+  // 主按钮：隐藏并清理 (若已在规则列表中，提供"从列表中删除"功能；若已被上级规则覆盖，则 disabled)
+  const cbLabel = elements.cbRetroactive?.closest('.checkbox-label');
   if (selectedRule.isExactMatch) {
-    elements.btnHideAndClean.disabled = true;
-    elements.btnHideText.textContent = t('popup.alreadyHidden');
-    elements.btnHideAndClean.title = t('popup.badgeInList');
+    elements.btnHideAndClean.disabled = false;
+    elements.btnHideAndClean.classList.add('btn-danger-remove');
+    if (elements.btnHideIcon) elements.btnHideIcon.textContent = '🗑️';
+    elements.btnHideText.textContent = t('popup.removeFromList');
+    elements.btnHideAndClean.title = t('popup.removeFromListTitle', { rule: selectedRule.rule });
+    if (cbLabel) cbLabel.style.display = 'none';
   } else if (selectedRule.isCovered) {
     elements.btnHideAndClean.disabled = true;
+    elements.btnHideAndClean.classList.remove('btn-danger-remove');
+    if (elements.btnHideIcon) elements.btnHideIcon.textContent = '🛡️';
     elements.btnHideText.textContent = t('popup.coveredByParent');
     elements.btnHideAndClean.title = t('popup.badgeCoveredDetail', { rule: selectedRule.coveringRule?.pattern || '' });
+    if (cbLabel) cbLabel.style.display = '';
   } else {
     elements.btnHideAndClean.disabled = false;
+    elements.btnHideAndClean.classList.remove('btn-danger-remove');
+    if (elements.btnHideIcon) elements.btnHideIcon.textContent = '🛡️';
     elements.btnHideText.textContent = t('popup.hideAndClean');
     elements.btnHideAndClean.title = t('popup.hideAndCleanWithRule', { rule: selectedRule.rule });
+    if (cbLabel) cbLabel.style.display = '';
   }
 
   elements.retroactiveLabelText.textContent = t('popup.retroactiveLabel', { count });
@@ -272,13 +288,28 @@ async function refreshPageData() {
 
   // 3. 检查当前 URL 是否已命中现有启用规则
   const { matched, rule } = findMatchingRule(existingRules, currentTab);
+  currentMatchedRule = matched && rule ? rule : null;
 
   if (matched && rule) {
     elements.tabStatusBadge.className = 'badge badge-matched';
     elements.tabStatusBadge.textContent = t('popup.statusMatched', { pattern: rule.pattern });
+
+    if (elements.matchedRuleBanner) {
+      elements.matchedRuleBanner.classList.remove('hidden');
+      if (elements.matchedRuleText) {
+        elements.matchedRuleText.textContent = t('popup.matchedRuleBanner', { rule: rule.pattern });
+      }
+      if (elements.btnRemoveMatchedRule) {
+        elements.btnRemoveMatchedRule.title = t('popup.removeFromListTitle', { rule: rule.pattern });
+      }
+    }
   } else {
     elements.tabStatusBadge.className = 'badge badge-normal';
     elements.tabStatusBadge.textContent = t('popup.statusNormal');
+
+    if (elements.matchedRuleBanner) {
+      elements.matchedRuleBanner.classList.add('hidden');
+    }
   }
 
   // 4. 智能推荐选中的候选规则：优先选择未在列表且未被覆盖的规则
@@ -398,6 +429,26 @@ elements.btnHideAndClean.addEventListener('click', async () => {
     return;
   }
 
+  // 分支 1：当前选中的是已在列表中的规则，执行从列表中删除
+  if (selectedRule.isExactMatch && selectedRule.exactRule) {
+    try {
+      elements.btnHideAndClean.disabled = true;
+      elements.btnHideAndClean.style.opacity = '0.7';
+      elements.btnHideText.textContent = t('popup.toastProcessing');
+
+      await deleteRule(selectedRule.exactRule.id);
+      showToast(t('popup.toastRuleRemoved', { rule: selectedRule.rule }));
+      await refreshPageData();
+    } catch (err) {
+      console.error('Delete rule error:', err);
+      showToast(t('popup.toastFailed', { error: err.message }));
+    } finally {
+      elements.btnHideAndClean.style.opacity = '1';
+      updateActionButtons();
+    }
+    return;
+  }
+
   const originalText = elements.btnHideText.textContent;
 
   try {
@@ -485,6 +536,32 @@ elements.btnCleanOnly.addEventListener('click', async () => {
     updateActionButtons();
   }
 });
+
+// E. 移除已命中保护规则快捷按钮 (顶部横幅)
+if (elements.btnRemoveMatchedRule) {
+  elements.btnRemoveMatchedRule.addEventListener('click', async () => {
+    if (!currentMatchedRule) return;
+
+    const ruleToDelete = currentMatchedRule;
+    try {
+      elements.btnRemoveMatchedRule.disabled = true;
+      elements.btnRemoveMatchedRule.style.opacity = '0.7';
+
+      await deleteRule(ruleToDelete.id);
+      showToast(t('popup.toastRuleRemoved', { rule: ruleToDelete.pattern }));
+
+      await refreshPageData();
+    } catch (err) {
+      console.error('Failed to remove matched rule:', err);
+      showToast(t('popup.toastFailed', { error: err.message }));
+    } finally {
+      if (elements.btnRemoveMatchedRule) {
+        elements.btnRemoveMatchedRule.disabled = false;
+        elements.btnRemoveMatchedRule.style.opacity = '1';
+      }
+    }
+  });
+}
 
 // DOM 启动加载
 document.addEventListener('DOMContentLoaded', initPopup);

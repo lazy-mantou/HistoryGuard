@@ -52,7 +52,11 @@ export default {
     badgeCovered: 'Covered',
     badgeCoveredDetail: 'Covered by rule {rule}',
     alreadyHidden: '✓ Already Hidden',
-    coveredByParent: 'Covered by Parent'
+    coveredByParent: 'Covered by Parent',
+    matchedRuleBanner: 'In Hidden List (Rule: {rule})',
+    removeFromList: 'Remove from List',
+    removeFromListTitle: 'Remove rule from hidden list: {rule}',
+    toastRuleRemoved: 'Removed rule [{rule}] from hidden list'
   },
   options: {
     title: 'HistGuard - History Manager & Console',

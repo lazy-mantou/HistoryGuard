@@ -52,7 +52,11 @@ export default {
     badgeCovered: '已由上级覆盖',
     badgeCoveredDetail: '已由规则 {rule} 覆盖拦截',
     alreadyHidden: '✓ 已在隐藏列表',
-    coveredByParent: '上级规则已覆盖'
+    coveredByParent: '上级规则已覆盖',
+    matchedRuleBanner: '已处于隐藏列表中 (规则: {rule})',
+    removeFromList: '从列表中删除',
+    removeFromListTitle: '从隐藏列表中删除规则并恢复记录: {rule}',
+    toastRuleRemoved: '已从隐藏列表中移除规则 [{rule}]'
   },
   options: {
     title: 'HistGuard - 历史记录管理与控制台',

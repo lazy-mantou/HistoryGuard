@@ -35,6 +35,18 @@
         <span id="tab-status-badge" class="badge badge-normal" data-i18n="popup.statusChecking">● 检测中...</span>
       </div>
       <div id="tab-url-text" class="tab-url" title="" data-i18n="popup.statusLoading">加载中...</div>
+
+      <!-- 命中保护规则时的快捷移除横幅 (默认隐藏) -->
+      <div id="matched-rule-banner" class="matched-banner hidden">
+        <div class="matched-info">
+          <span class="matched-icon">🛡️</span>
+          <span id="matched-rule-text" class="matched-text">已处于隐藏保护中</span>
+        </div>
+        <button id="btn-remove-matched-rule" class="btn-remove-rule" data-i18n-title="popup.removeFromListTitle" title="从隐藏列表中删除该规则并恢复记录">
+          <span class="remove-icon">🗑️</span>
+          <span data-i18n="popup.removeFromList">从列表中删除</span>
+        </button>
+      </div>
     </div>
 
     <!-- 内部页面提示 (默认隐藏) -->

@@ -312,6 +312,98 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* 命中保护规则时的快捷移除横幅 */
+.matched-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: var(--success-light);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-sm);
+  animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.matched-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.matched-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.matched-text {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #34d399;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="light"] .matched-text {
+  color: #059669;
+}
+
+.btn-remove-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--danger-light);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.btn-remove-rule .remove-icon {
+  font-size: 11px;
+}
+
+.btn-remove-rule:hover {
+  background-color: var(--danger);
+  border-color: var(--danger);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-remove-rule:active {
+  transform: translateY(0);
+}
+
+[data-theme="light"] .btn-remove-rule {
+  color: #dc2626;
+}
+
+[data-theme="light"] .btn-remove-rule:hover {
+  color: #ffffff;
+}
+
+.btn-danger-remove {
+  background-color: var(--danger) !important;
+  border-color: var(--danger) !important;
+  color: #ffffff !important;
+}
+
+.btn-danger-remove:hover:not(:disabled) {
+  background-color: var(--danger-hover) !important;
+  border-color: var(--danger-hover) !important;
+  transform: translateY(-1px);
+}
+
 /* 内部页面提示卡片 */
 .alert-card {
   display: flex;

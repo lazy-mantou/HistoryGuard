@@ -4,6 +4,40 @@
 
 ---
 
+## [1.0.30] - 2026-10-15
+
+### 需求整理与功能实现 (Features & Requirements Specification)
+1. **访问已在隐藏列表中的页面时，Popup 提供从列表中删除的功能 (Popup Remove from Hidden List Feature)**:
+   - **用户需求背景**：
+     - 用户明确要求：“访问已在隐藏列表中的页面时，popup中应该有个从列表中删除的功能”；
+     - 原先如果当前网页已经处于隐藏列表中，Popup 主交互按钮仅显示置灰禁用的“✓ 已在隐藏列表”，用户若想解除隐藏保护必须手动打开选项控制台去规则列表中逐条搜索删除，交互链路长且不直观；
+   - **双通道无缝快捷删除交互设计 (Dual-Entry Intuitive UX Design)**:
+     - **通道一：状态卡片置顶横幅一键移除 (Top Banner Quick Removal)**：
+       - 当检测到当前活动标签页命中隐藏规则时，在 Popup 顶部状态卡片（`#status-card`）中动态激活呈现翡翠绿渐变背景的防护横幅（`#matched-rule-banner`）；
+       - 横幅左侧显示盾牌图标与命中的具体规则内容（如 `🛡️ 已处于隐藏列表中 (规则: example.com)`）；
+       - 横幅右侧提供醒目的删除按钮（`#btn-remove-matched-rule`，带垃圾桶图标 `🗑️ 从列表中删除`），点击即可调用 `deleteRule(matchedRule.id)` 一键彻底删除规则；
+     - **通道二：候选胶囊动态语义化主按钮变形 (Capsule Selection & Button Transformation)**：
+       - 当用户在下方域名或路径候选胶囊中选中已存在于规则列表的胶囊（`isExactMatch: true`）时，主操作按钮（`#btn-hide-and-clean`）解除禁用，动态转化为危险动作样式（`.btn-danger-remove` 红底警示态）；
+       - 按钮图标由 `🛡️` 动态切换为 `🗑️`，文字切换为“从列表中删除”，同时隐藏无关的回溯清理勾选框；
+       - 点击该按钮即可直接删除该精确规则。
+   - **全链路状态联动与自动恢复 (End-to-End Reactive State Sync)**：
+     - 规则删除后，调用 `showToast` 提供明确的删除反馈提示（如“已从隐藏列表中移除规则 [example.com]”）；
+     - `deleteRule` 底层保存后通过 `browserApi.storage.onChanged` 自动唤醒后台 Service Worker 重新计算全局与当前标签页防护状态；
+     - 工具栏指示器瞬间自动从绿色保护图标恢复为平时科技蓝图标；
+     - Popup 本地自动触发 `refreshPageData()`，置顶移除横幅自动收起隐藏，胶囊状态恢复为未隐藏，操作丝滑顺畅。
+   - **国际化与样式设计 (i18n & Theme Design System)**：
+     - 中英双语完整支持：添加 `matchedRuleBanner`, `removeFromList`, `removeFromListTitle`, `toastRuleRemoved` 等词条；
+     - 深度适配 Dark/Light 双主题配色与微动效（hover 悬浮反馈与平滑显隐动画）。
+2. **测试与质量保障 (Testing & Quality Assurance)**：
+   - 新增 `tests/popupRemoval.test.js` 单元测试用例，全方位覆盖：
+     - 访问已隐藏页面命中规则并执行 `deleteRule` 彻底解除保护与恢复正常记录；
+     - 候选胶囊选中 `isExactMatch` 规则的删除逻辑联动；
+     - 通配符覆盖规则的精准识别与全站保护解除；
+   - 全量 162 项单元测试 100% 通过（162 pass, 0 fail）；
+   - 同步升级版本号至 `1.0.30`（`package.json`, `manifest.chrome.json`, `manifest.firefox.json`），并执行全量打包构建。
+
+---
+
 ## [1.0.29] - 2026-10-15
 
 ### 需求整理与 Bug 修复 (Bug Fixes & Technical Decisions)
