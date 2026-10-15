@@ -38,8 +38,6 @@ const elements = {
   panelHistory: document.getElementById('panel-history'),
   panelRules: document.getElementById('panel-rules'),
   panelSettings: document.getElementById('panel-settings'),
-  tabRulesBadge: document.getElementById('tab-rules-badge'),
-  tabHistoryBadge: document.getElementById('tab-history-badge'),
 
   // 历史批量清理
   searchInput: document.getElementById('search-input'),
@@ -310,10 +308,6 @@ async function refreshGlobalStats() {
     elements.statTotalHits.className = 'stat-value highlight-hits';
   }
 
-  if (elements.tabRulesBadge) {
-    elements.tabRulesBadge.textContent = cachedRules.length;
-  }
-
   await refreshSilentModeStatus();
 
   elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: cachedRules.length });
@@ -478,9 +472,6 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     }
 
     elements.searchResultsSummary.textContent = t('options.loadedSummary', { count: currentHistoryResults.length });
-    if (elements.tabHistoryBadge) {
-      elements.tabHistoryBadge.textContent = currentHistoryResults.length;
-    }
 
     // 历史批量删除页面，全部清空按钮应该在数据超过当前能显示的数量后才出现
     if (elements.btnDeepClean) {
