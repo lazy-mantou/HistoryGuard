@@ -303,7 +303,7 @@ export const DEFAULT_SETTINGS = {
   enableHitTracking: true,       // 是否统计规则拦截次数
   silentModeDuration: 30,        // 默认静默模式时长 (分钟)
   historyBatchSize: 100,         // 历史批量删除单批次加载条数 (50 | 100 | 200)
-  deleteChunkSize: 30,           // 批量删除并发分片大小 (15 | 30 | 50)
+  deleteChunkSize: 'auto',       // 批量删除并发分片大小 ('auto' | 6 | 15 | 30 | 50)
   defaultRuleType: 'auto',       // 快捷添加规则识别模式 ('auto' | 'domain' | 'path' | 'keyword')
   confirmDeepClean: true,        // 流式全量清空前二次确认
   toastDuration: 2500            // Toast 消息停留时长 (ms)

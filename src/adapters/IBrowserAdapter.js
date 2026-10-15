@@ -6,6 +6,10 @@
 
 export class IBrowserAdapter {
   constructor() {
+    this.name = 'abstract';
+    this.engine = 'unknown';
+    this.isFirefox = false;
+
     this.history = {
       /**
        * 监听页面历史记录新增访问事件

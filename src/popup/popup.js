@@ -443,11 +443,7 @@ async function executeHistoryCleaning(rule, currentUrl, onProgress) {
   }
 
   // 2. 本地回退执行
-  const cleanResult = await cleanHistoryByRule(rule, {
-    chunkSize: 6,
-    batchSize: 500,
-    onProgress
-  });
+  const cleanResult = await cleanHistoryByRule(rule, { onProgress });
 
   if (currentUrl) {
     try {

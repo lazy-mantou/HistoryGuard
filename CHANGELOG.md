@@ -4,6 +4,40 @@
 
 ---
 
+## [1.0.32] - 2026-10-15
+
+### 性能优化与架构升级 (Performance Optimizations & Architectural Improvements)
+1. **浏览器内核自适应并发调度机制 (Kernel-Adaptive Deletion Concurrency)**:
+   - **痛点分析**：
+     - 在 WebExtensions 环境中，`browser.history.deleteUrl` 是逐条删除的单项物理 API。Firefox `places.sqlite` 采用 SQLite 单写锁（Single Writer Lock）架构，若并发度设为通用值 30，数十个并发异步请求在极短时间内争抢写锁，触发严重的 `SQLITE_BUSY` 互斥重试与线程上下文切换，反而导致删除吞吐量急剧恶化，在庞大历史库下卡顿长达数分钟；
+   - **全链路自适应并发策略**：
+     - 在适配器契约层规范化 `name`、`engine` 与 `isFirefox` 属性，`FirefoxAdapter` 明确标识为 `engine: 'gecko'`，`ChromiumAdapter` 标识为 `engine: 'chromium'`；
+     - 核心出清引擎与工作池实现 `getOptimalDeleteConcurrency(api)`：Firefox 自动限制在经过实测验证的最佳吞吐拐点 **6 并发**；Chromium (Chrome / Edge / Brave) 环境则维持在 **20 并发** 以充分利用 TaskRunner 多任务管道；
+     - 实现 `resolveDeleteConcurrency(configuredValue, api)`：
+       - 全局偏好设置 `deleteChunkSize` 默认值升级为 `'auto'`；
+       - **旧配置降级防护**：针对已保存过旧版默认值 30 的老用户，在 Firefox 环境下执行深度防锁拦截，自动降级为安全并发 6，彻底杜绝历史遗留配置拖慢；
+       - Options 设置界面增加 `智能自适应内核 (推荐: Firefox 6 / Chrome 20)` 与 `6 条 (Firefox 深度防锁推荐)` 专属档位。
+
+2. **微让步流控机制 (Micro-Yielding Flow Control)**:
+   - **机制实现**：
+     - 在 `createDeletePool` 的 worker 执行循环中引入分频微让步机制：Firefox 下每处理 2 条记录让出 3ms（`yieldInterval: 2, yieldMs: 3`），Chromium 下每处理 10 条让出 1ms；
+     - 在 `cleanHistoryByRule` 历史检索循环中，每完成一个批次的推入与进度广播，主动让出 2~3ms 宏任务时间片；
+   - **核心收益**：
+     - 为 Firefox Places 的底层 WAL checkpoint、事务提交和全浏览器观察者（`nsINavHistoryObserver` / 地址栏与书签索引）留出必要的呼吸与排空窗口；
+     - 彻底消除删除大历史期间主线程卡死和假死现象，确保 Popup 按钮进度与 UI 交互丝滑平顺。
+
+3. **初筛检索下推增强与时间范围支持 (FTS Query Pushdown & Range Scoping)**:
+   - 优化 `getQueryTextForRule`：针对正则规则，自动剥离转义符与通配符，提取其中最长的常量词根作为 SQLite FTS/LIKE 索引的高召回初筛词；无法提取时安全回退为空字符串全表扫描，彻底避免误传 raw 正则表达式导致返回 0 条匹配项；
+   - 在 `cleanHistoryByRule` 中支持 `startTime` 时间下限约束与双重防御过滤，游标到达时间边界时提前单调安全终止。
+
+4. **测试与质量保障 (Testing & Quality Assurance)**:
+   - 补充 `tests/adapters.test.js` 对基类及两端适配器 `name`、`engine`、`isFirefox` 标识的单测断言；
+   - 补充 `tests/historyCleaner.test.js` 针对自适应并发计算、旧配置安全降级保护、工作池微让步调度及正则初筛提取的全套单元测试；
+   - 全套 173 项单元测试全部通过（173 pass, 0 fail）；
+   - 双内核安装包顺利编译输出至 `dist/chrome/` 与 `dist/firefox/`。
+
+---
+
 ## [1.0.31] - 2026-10-15
 
 ### 需求整理与 Bug 修复 (Bug Fixes & Technical Decisions)

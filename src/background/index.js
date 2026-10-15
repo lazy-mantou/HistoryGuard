@@ -6,7 +6,7 @@
 
 import { browserApi } from '../adapters/index.js';
 import { findMatchingRule, matchesRule } from '../core/ruleMatcher.js';
-import { cleanHistoryByRule } from '../core/historyCleaner.js';
+import { cleanHistoryByRule, resolveDeleteConcurrency } from '../core/historyCleaner.js';
 import {
   getRules,
   getSilentMode,
@@ -288,9 +288,9 @@ if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
 
       try {
         console.log(`[HistGuard BG] 开始在后台执行历史记录全量出清: [${backgroundCleaningState.rulePattern}]`);
+        const concurrency = resolveDeleteConcurrency(cachedSettings.deleteChunkSize, browserApi);
         const result = await cleanHistoryByRule(rule, {
-          chunkSize: 6,
-          batchSize: 500,
+          concurrency,
           onProgress: ({ deleted, scanned }) => {
             backgroundCleaningState.deleted = deleted;
             backgroundCleaningState.scanned = scanned;

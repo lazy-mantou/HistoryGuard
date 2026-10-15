@@ -9,6 +9,9 @@ import { IBrowserAdapter } from './IBrowserAdapter.js';
 export class FirefoxAdapter extends IBrowserAdapter {
   constructor() {
     super();
+    this.name = 'firefox';
+    this.engine = 'gecko';
+    this.isFirefox = true;
 
     // 获取 Firefox 原生 browser 对象或兜底到 chrome
     const getApi = () => {

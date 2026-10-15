@@ -5,7 +5,17 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanHistoryByRule, getQueryTextForRule } from '../src/core/historyCleaner.js';
+import {
+  cleanHistoryByRule,
+  getQueryTextForRule,
+  getOptimalDeleteConcurrency,
+  getOptimalYieldSettings,
+  resolveDeleteConcurrency,
+  createDeletePool,
+  deleteUrlsConcurrently,
+  DEFAULT_FIREFOX_DELETE_CONCURRENCY,
+  DEFAULT_CHROMIUM_DELETE_CONCURRENCY
+} from '../src/core/historyCleaner.js';
 
 describe('historyCleaner - getQueryTextForRule (初筛搜索词提取)', () => {
   it('关键词规则提取：剥离 keyword: / kw: 前缀及通配符', () => {
@@ -236,4 +246,126 @@ describe('historyCleaner - cleanHistoryByRule (历史回溯扫描与精准出清
     assert.strictEqual(result.deleted, 0);
     assert.strictEqual(result.scanned, 0);
   });
+
+  it('时间范围约束 (startTime)：当指定时间范围时，时间游标推进到 startTime 后安全终止', async () => {
+    let callCount = 0;
+    const mockApi = {
+      history: {
+        search: async ({ startTime, endTime }) => {
+          callCount++;
+          if (callCount === 1) {
+            return [
+              { url: 'https://example.com/recent1', lastVisitTime: 10000 },
+              { url: 'https://example.com/recent2', lastVisitTime: 8000 }
+            ];
+          }
+          if (callCount === 2) {
+            return [
+              { url: 'https://example.com/old', lastVisitTime: 4000 }
+            ];
+          }
+          return [];
+        },
+        deleteUrl: async () => {}
+      }
+    };
+
+    // 限制仅清理 8500 之后记录 (第一批的最老记录为 8000 <= 8500)
+    const result = await cleanHistoryByRule(
+      { pattern: 'example.com', type: 'domain' },
+      { api: mockApi, batchSize: 2, startTime: 8500 }
+    );
+
+    assert.strictEqual(result.deleted, 1, '仅删除大于等于 startTime 的记录 (10000)');
+    assert.strictEqual(callCount, 1, '遇到小于等于 startTime 的最老记录时应当立即安全中断，不拉取旧批次');
+  });
 });
+
+describe('historyCleaner - 内核自适应并发与流控计算 (Adaptive Concurrency & Kernel Detection)', () => {
+  it('getOptimalDeleteConcurrency: Firefox 内核返回 6，Chromium 内核返回 20', () => {
+    assert.strictEqual(getOptimalDeleteConcurrency({ isFirefox: true }), 6);
+    assert.strictEqual(getOptimalDeleteConcurrency({ isFirefox: false }), 20);
+    assert.strictEqual(DEFAULT_FIREFOX_DELETE_CONCURRENCY, 6);
+    assert.strictEqual(DEFAULT_CHROMIUM_DELETE_CONCURRENCY, 20);
+  });
+
+  it('getOptimalYieldSettings: Firefox 提供更高让步频次 (2条/3ms)，Chromium 提供轻量让步 (10条/1ms)', () => {
+    const ffYield = getOptimalYieldSettings({ isFirefox: true });
+    assert.strictEqual(ffYield.yieldInterval, 2);
+    assert.strictEqual(ffYield.yieldMs, 3);
+
+    const crYield = getOptimalYieldSettings({ isFirefox: false });
+    assert.strictEqual(crYield.yieldInterval, 10);
+    assert.strictEqual(crYield.yieldMs, 1);
+  });
+
+  it('resolveDeleteConcurrency: 配置 auto 或非法值时自动适配内核默认值', () => {
+    assert.strictEqual(resolveDeleteConcurrency('auto', { isFirefox: true }), 6);
+    assert.strictEqual(resolveDeleteConcurrency('auto', { isFirefox: false }), 20);
+    assert.strictEqual(resolveDeleteConcurrency(null, { isFirefox: true }), 6);
+    assert.strictEqual(resolveDeleteConcurrency(undefined, { isFirefox: false }), 20);
+    assert.strictEqual(resolveDeleteConcurrency(0, { isFirefox: true }), 6);
+  });
+
+  it('resolveDeleteConcurrency: Firefox 深度防锁保护——若配置了旧版默认值 30 或过高并发 (>15)，自动降级至 6', () => {
+    assert.strictEqual(resolveDeleteConcurrency(30, { isFirefox: true }), 6, '旧版默认 30 必须自动降级为 6，防止 Places SQLite 死锁');
+    assert.strictEqual(resolveDeleteConcurrency(50, { isFirefox: true }), 6, '过高并发自动限制');
+    assert.strictEqual(resolveDeleteConcurrency(15, { isFirefox: true }), 15, '安全范围内的显式配置予以保留');
+    assert.strictEqual(resolveDeleteConcurrency(6, { isFirefox: true }), 6);
+  });
+
+  it('resolveDeleteConcurrency: Chromium 环境下尊重用户的自定义并发设置', () => {
+    assert.strictEqual(resolveDeleteConcurrency(30, { isFirefox: false }), 30);
+    assert.strictEqual(resolveDeleteConcurrency(50, { isFirefox: false }), 50);
+    assert.strictEqual(resolveDeleteConcurrency(15, { isFirefox: false }), 15);
+  });
+});
+
+describe('historyCleaner - createDeletePool 与微让步调度 (Micro-yielding Pool)', () => {
+  it('工作池正常推进并在微让步配置下平稳执行', async () => {
+    const deleted = [];
+    const pool = createDeletePool({
+      api: {
+        history: {
+          deleteUrl: async (url) => {
+            deleted.push(url);
+          }
+        }
+      },
+      concurrency: 4,
+      yieldInterval: 2,
+      yieldMs: 2
+    });
+
+    await pool.push(['u1', 'u2', 'u3', 'u4', 'u5']);
+    await pool.drain();
+
+    assert.strictEqual(deleted.length, 5);
+    assert.deepStrictEqual(deleted.sort(), ['u1', 'u2', 'u3', 'u4', 'u5']);
+  });
+
+  it('deleteUrlsConcurrently: 能够按自适应并发批量删除独立 URL 列表', async () => {
+    const deleted = [];
+    const res = await deleteUrlsConcurrently(
+      ['http://a.com', 'http://b.com', 'http://a.com'],
+      {
+        api: {
+          history: {
+            deleteUrl: async (url) => deleted.push(url)
+          }
+        },
+        concurrency: 2
+      }
+    );
+
+    assert.strictEqual(res.deleted, 2, '重复 URL 自动去重');
+    assert.strictEqual(res.failed, 0);
+  });
+
+  it('regex 规则初筛提取：提取最长常量字符串，若无常量返回空字符串避免误传 raw 正则', () => {
+    assert.strictEqual(getQueryTextForRule({ pattern: '/video\\/BV[a-zA-Z0-9]+/', type: 'regex' }), 'video');
+    assert.strictEqual(getQueryTextForRule({ pattern: '/^https?:\\/\\/.*secret_token.*$/', type: 'regex' }), 'secret_token');
+    assert.strictEqual(getQueryTextForRule({ pattern: '/^.*$/', type: 'regex' }), '', '无常量字符时安全返回空字符串');
+  });
+});
+

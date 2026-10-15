@@ -9,6 +9,9 @@ import { IBrowserAdapter } from './IBrowserAdapter.js';
 export class ChromiumAdapter extends IBrowserAdapter {
   constructor() {
     super();
+    this.name = 'chromium';
+    this.engine = 'chromium';
+    this.isFirefox = false;
 
     // History API
     this.history = {

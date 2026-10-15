@@ -6,7 +6,7 @@
 
 import { browserApi } from '../adapters/index.js';
 import { convertSearchTermToRule } from '../core/ruleMatcher.js';
-import { cleanHistoryByRule } from '../core/historyCleaner.js';
+import { cleanHistoryByRule, deleteUrlsConcurrently, resolveDeleteConcurrency } from '../core/historyCleaner.js';
 import { t, initI18n, setLanguage, formatRelativeTime } from '../core/i18n.js';
 import { initTheme } from '../core/theme.js';
 import {
@@ -105,7 +105,7 @@ function getBatchSize() {
 }
 
 function getDeleteChunkSize() {
-  return Number(currentSettings.deleteChunkSize) || 30;
+  return resolveDeleteConcurrency(currentSettings.deleteChunkSize, browserApi);
 }
 
 let currentSearchTimeFilter = 'all'; // 'all' | '1h' | 'today' | '7d'
@@ -537,18 +537,16 @@ async function deleteUrlsWithProgress(urls, title = '正在批量清理历史...
   const chunkSize = getDeleteChunkSize();
 
   try {
-    for (let i = 0; i < total; i += chunkSize) {
-      const chunk = urls.slice(i, i + chunkSize);
-      await Promise.allSettled(chunk.map(url => browserApi.history.deleteUrl(url)));
-      processed += chunk.length;
-
-      const percent = Math.min(100, Math.round((processed / total) * 100));
-      elements.progressFillBar.style.width = `${percent}%`;
-      elements.progressPercentText.textContent = `${percent}% (${processed}/${total})`;
-
-      // 宏任务让出主线程控制权，给浏览器重绘 UI 和响应事件的机会（避免 10万级操作导致无响应弹窗）
-      await new Promise(resolve => setTimeout(resolve, 0));
-    }
+    const result = await deleteUrlsConcurrently(urls, {
+      concurrency: chunkSize,
+      onProgress: ({ processed: done }) => {
+        processed = done;
+        const percent = Math.min(100, Math.round((processed / total) * 100));
+        elements.progressFillBar.style.width = `${percent}%`;
+        elements.progressPercentText.textContent = `${percent}% (${processed}/${total})`;
+      }
+    });
+    processed = result.deleted + result.failed;
   } finally {
     setTimeout(() => {
       elements.progressContainer.classList.add('hidden');
@@ -615,18 +613,24 @@ async function streamCleanAllMatches() {
         break;
       }
 
-      // 分块删除
-      for (let i = 0; i < validUrls.length; i += chunkSize) {
-        const chunk = validUrls.slice(i, i + chunkSize);
-        await Promise.allSettled(chunk.map(url => browserApi.history.deleteUrl(url)));
-        totalDeleted += chunk.length;
-        elements.progressStatusText.textContent = t('options.progressStreamCleaning', { count: totalDeleted });
-        elements.progressPercentText.textContent = `${totalDeleted}`;
-        await new Promise(resolve => setTimeout(resolve, 0));
-      }
+      // 固定并发工作池删除本页（本页删完后再重新检索，已删条目不会再被返回）
+      const baseDeleted = totalDeleted;
+      const result = await deleteUrlsConcurrently(validUrls, {
+        concurrency: chunkSize,
+        onProgress: ({ processed }) => {
+          const current = baseDeleted + processed;
+          elements.progressStatusText.textContent = t('options.progressStreamCleaning', { count: current });
+          elements.progressPercentText.textContent = `${current}`;
+        }
+      });
+      totalDeleted += result.deleted;
+      elements.progressStatusText.textContent = t('options.progressStreamCleaning', { count: totalDeleted });
+      elements.progressPercentText.textContent = `${totalDeleted}`;
 
-      // 稍微让出 10ms，避免底层 SQLite 写事务竞争
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // 整页均删除失败时停止，避免对同一批无法删除的条目无限重试
+      if (result.deleted === 0) {
+        break;
+      }
     }
 
     showToast(t('options.toastStreamCleanSuccess', { count: totalDeleted }));
@@ -970,7 +974,7 @@ async function loadSettingsToUI() {
     elements.settingHistoryBatchSize.value = String(currentSettings.historyBatchSize || 100);
   }
   if (elements.settingDeleteChunkSize) {
-    elements.settingDeleteChunkSize.value = String(currentSettings.deleteChunkSize || 30);
+    elements.settingDeleteChunkSize.value = String(currentSettings.deleteChunkSize || 'auto');
   }
   if (elements.settingConfirmDeepClean) {
     elements.settingConfirmDeepClean.checked = currentSettings.confirmDeepClean !== false;
@@ -1155,10 +1159,11 @@ if (elements.settingHistoryBatchSize) {
 
 if (elements.settingDeleteChunkSize) {
   elements.settingDeleteChunkSize.addEventListener('change', async () => {
-    const val = Number(elements.settingDeleteChunkSize.value) || 30;
+    const rawVal = elements.settingDeleteChunkSize.value;
+    const val = rawVal === 'auto' ? 'auto' : (Number(rawVal) || 'auto');
     await saveSettings({ deleteChunkSize: val });
     currentSettings.deleteChunkSize = val;
-    showToast(t('options.toastChunkSizeChanged', { val }));
+    showToast(t('options.toastChunkSizeChanged', { val: rawVal }));
   });
 }
 

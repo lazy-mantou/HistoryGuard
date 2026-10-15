@@ -454,8 +454,10 @@
                   </div>
                   <div class="setting-control">
                     <select id="setting-delete-chunk-size" class="settings-select">
+                      <option value="auto" data-i18n="options.chunkAuto" selected>智能自适应内核 (推荐: Firefox 6 / Chrome 20)</option>
+                      <option value="6" data-i18n="options.chunk6">6 条/切片 (Firefox 深度防锁推荐)</option>
                       <option value="15" data-i18n="options.chunk15">15 条/切片</option>
-                      <option value="30" data-i18n="options.chunk30" selected>30 条/切片 (推荐默认)</option>
+                      <option value="30" data-i18n="options.chunk30">30 条/切片</option>
                       <option value="50" data-i18n="options.chunk50">50 条/切片</option>
                     </select>
                   </div>

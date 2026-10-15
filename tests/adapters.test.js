@@ -13,6 +13,9 @@ import { browserApi } from '../src/adapters/index.js';
 describe('adapters - IBrowserAdapter 抽象基类规范', () => {
   it('IBrowserAdapter 应当定义完整的接口命名空间', () => {
     const adapter = new IBrowserAdapter();
+    assert.strictEqual(adapter.name, 'abstract');
+    assert.strictEqual(adapter.engine, 'unknown');
+    assert.strictEqual(adapter.isFirefox, false);
     assert.ok(adapter.history, '应当包含 history 命名空间');
     assert.ok(adapter.storage, '应当包含 storage 命名空间');
     assert.ok(adapter.tabs, '应当包含 tabs 命名空间');
@@ -51,6 +54,9 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
 describe('adapters - ChromiumAdapter 实现验证', () => {
   it('ChromiumAdapter 应当完整实现所有必须的 API 契约', () => {
     const adapter = new ChromiumAdapter();
+    assert.strictEqual(adapter.name, 'chromium');
+    assert.strictEqual(adapter.engine, 'chromium');
+    assert.strictEqual(adapter.isFirefox, false);
     assert.strictEqual(typeof adapter.history.onVisited, 'function');
     assert.strictEqual(typeof adapter.history.onVisitRemoved, 'function');
     assert.strictEqual(typeof adapter.history.search, 'function');
@@ -152,6 +158,9 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
 describe('adapters - FirefoxAdapter 实现验证', () => {
   it('FirefoxAdapter 应当完整实现所有必须的 API 契约', () => {
     const adapter = new FirefoxAdapter();
+    assert.strictEqual(adapter.name, 'firefox');
+    assert.strictEqual(adapter.engine, 'gecko');
+    assert.strictEqual(adapter.isFirefox, true);
     assert.strictEqual(typeof adapter.history.onVisited, 'function');
     assert.strictEqual(typeof adapter.history.onVisitRemoved, 'function');
     assert.strictEqual(typeof adapter.history.search, 'function');
