@@ -38,7 +38,12 @@
 
 ---
 
-## [1.0.45] - 2026-10-16
+## 历史内部迭代归档 (Pre-Release Development Iterations)
+> 说明：在 1.0.0 首个正式版本定稿前，项目历经了 45 次内部特性打磨、跨浏览器双核适配与架构加固迭代。为符合语义化版本（SemVer）规范，将历史迭代统一归档为 1.0.0-beta.1 ~ 1.0.0-beta.45：
+
+---
+
+## [1.0.0-beta.45] - 2026-10-16
 
 ### “今日拦截”统计不更新根因修复与全链路时区及冷启动加固 (Fix "Today's Hits" Not Updating & Timezone/SW Cold-Start Hardening)
 1. **定位并修复 Chrome MV3 Service Worker 异步冷启动竞态**:
@@ -61,7 +66,7 @@
 
 ---
 
-## [1.0.44] - 2026-10-16
+## [1.0.0-beta.44] - 2026-10-16
 
 ### 大量删除并发节流默认 auto 与修改高危预警模态弹窗 (Default Auto Concurrency & Risk Warning Modal on Modification)
 1. **并发节流配置默认保持智能自适应 (`deleteChunkSize: 'auto'`)**:
@@ -95,7 +100,7 @@
 
 ---
 
-## [1.0.43] - 2026-10-16
+## [1.0.0-beta.43] - 2026-10-16
 
 ### 偏好默认值重调与拦截数据统计分析面板上线 (Default Settings Adjustment & Interception Analytics Dashboard)
 1. **默认偏好设置科学重调**:
@@ -125,7 +130,7 @@
 
 ---
 
-## [1.0.42] - 2026-10-15
+## [1.0.0-beta.42] - 2026-10-15
 
 ### 规则管理栏“同时清理已有历史”界面美化（独立胶囊交互块） (Modernize Clean Existing History Pill Toggle)
 1. **界面交互升级（采纳用户选定方案 1：独立胶囊块）**:
@@ -147,7 +152,7 @@
 
 ---
 
-## [1.0.41] - 2026-10-15
+## [1.0.0-beta.41] - 2026-10-15
 
 ### 界面语言选单按全球使用规模与母语人口重排 (Reorder Language Selector by Usage & Population)
 1. **多语言下拉选单排序优化 (采纳方案 2)**:
@@ -164,7 +169,7 @@
 
 ---
 
-## [1.0.40] - 2026-10-15
+## [1.0.0-beta.40] - 2026-10-15
 
 ### 国际化多语言矩阵扩展至 12 种主流语言 (Expand i18n Matrix to 12 Major Languages)
 1. **12 种主流语言包原生精准本地化**:
@@ -203,7 +208,7 @@
 
 ---
 
-## [1.0.39] - 2026-10-15
+## [1.0.0-beta.39] - 2026-10-15
 
 ### 规则列表条目新增“清理匹配历史”操作按钮 (Add Rule-Level History Clean Action Button)
 1. **规则列表项操作栏布局升级**:
@@ -230,7 +235,7 @@
 
 ---
 
-## [1.0.38] - 2026-10-15
+## [1.0.0-beta.38] - 2026-10-15
 
 ### 中英文多语言文案全方位润色与术语去黑话 (Comprehensive Copy Polish & Jargon Sanitization)
 1. **中文文案润色与统一 (zh-CN)**:
@@ -268,7 +273,7 @@
 
 ---
 
-## [1.0.37] - 2026-10-15
+## [1.0.0-beta.37] - 2026-10-15
 
 ### 侧边栏导航英文描述精炼与排版防穿模 (Refine Navigation Copy & Prevent Text Overflow)
 1. **侧边栏 Tab 1 英文副标题精炼与防御性截断**:
@@ -280,7 +285,7 @@
 
 ---
 
-## [1.0.36] - 2026-10-15
+## [1.0.0-beta.36] - 2026-10-15
 
 ### 规则输入占位符示例规范化 (Standardize Rule Input Placeholder Examples)
 1. **输入框 Placeholder 示例用词与域名规范化**:
@@ -294,7 +299,7 @@
 
 ---
 
-## [1.0.35] - 2026-10-15
+## [1.0.0-beta.35] - 2026-10-15
 
 ### 规则添加回溯清理控制与默认偏好配置 (Rule Creation Clean Option & Default Preference Setting)
 1. **自动防护规则管理页面新增“同时清理已有历史”多选框**:
@@ -324,7 +329,7 @@
 
 ---
 
-## [1.0.34] - 2026-10-15
+## [1.0.0-beta.34] - 2026-10-15
 
 ### 交互心智与专业文案全链路升级 (UX Copy, Cognitive Clarity & Terminology Refinement)
 1. **核心心智模型纠偏（“隐藏”全面升级为“防护 / 免记录”）**:
@@ -367,7 +372,7 @@
 
 ---
 
-## [1.0.33] - 2026-10-15
+## [1.0.0-beta.33] - 2026-10-15
 
 ### 架构可靠性与崩溃自愈升级 (Fault Tolerance & Crash Recovery Auto-Resume System)
 1. **持久化历史出清任务队列 (Persistent History Clean Job Queue)**:
@@ -406,7 +411,7 @@
 
 ---
 
-## [1.0.32] - 2026-10-15
+## [1.0.0-beta.32] - 2026-10-15
 
 ### 性能优化与架构升级 (Performance Optimizations & Architectural Improvements)
 1. **浏览器内核自适应并发调度机制 (Kernel-Adaptive Deletion Concurrency)**:
@@ -444,7 +449,7 @@
 
 ---
 
-## [1.0.31] - 2026-10-15
+## [1.0.0-beta.31] - 2026-10-15
 
 ### 需求整理与 Bug 修复 (Bug Fixes & Technical Decisions)
 1. **解决大体量历史记录下 Firefox 回溯清理卡死、进度停滞与清理不彻底的核心缺陷 (Fix Heavy History Clean Freeze, Infinite Loop & Incomplete Cleanup in Firefox)**:
@@ -483,7 +488,7 @@
 
 ---
 
-## [1.0.30] - 2026-10-15
+## [1.0.0-beta.30] - 2026-10-15
 
 ### 需求整理与功能实现 (Features & Requirements Specification)
 1. **访问已在隐藏列表中的页面时，Popup 提供从列表中删除的功能 (Popup Remove from Hidden List Feature)**:
@@ -517,7 +522,7 @@
 
 ---
 
-## [1.0.29] - 2026-10-15
+## [1.0.0-beta.29] - 2026-10-15
 
 ### 需求整理与 Bug 修复 (Bug Fixes & Technical Decisions)
 1. **修复静默模式与命中规则时工具栏图标未动态改变的核心 Bug (Fix Toolbar Icon Not Changing in Silent Mode & Rule Hits)**:
@@ -550,7 +555,7 @@
 
 ---
 
-## [1.0.28] - 2026-10-15
+## [1.0.0-beta.28] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **工具栏图标蓝绿双态动态切换与角标纯净化 (Blue/Green Dual-State Icon & Clean Toolbar UX)**:
@@ -590,7 +595,7 @@
 
 ---
 
-## [1.0.27] - 2026-10-15
+## [1.0.0-beta.27] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **去外框纯粹化与 Chrome 官方历史记录符号融合 (Frameless Pure Shield with Chrome History Emblem)**:
@@ -625,7 +630,7 @@
 
 ---
 
-## [1.0.26] - 2026-10-15
+## [1.0.0-beta.26] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **重构工具栏与全套品牌图标：极简轻量化与高亮浅色背景设计 (Light-Themed Minimalist Icon Redesign)**:
@@ -659,7 +664,7 @@
 
 ---
 
-## [1.0.25] - 2026-10-15
+## [1.0.0-beta.25] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **核心规则匹配引擎极端边界强化与拟真高压测试体系 (Rule Matching Core Resilience & Boundary Stress Testing)**:
@@ -708,7 +713,7 @@
 
 ---
 
-## [1.0.24] - 2026-10-15
+## [1.0.0-beta.24] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **直观工具栏图标与角标动态状态指示体系 (Real-time Toolbar Protection Status Indicator)**:
@@ -749,7 +754,7 @@
 
 ---
 
-## [1.0.23] - 2026-10-15
+## [1.0.0-beta.23] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **精简规则列表操作项（移除“立即回溯清理匹配该规则的历史记录”按钮）**：
@@ -775,7 +780,7 @@
 
 ---
 
-## [1.0.22] - 2026-10-15
+## [1.0.0-beta.22] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **全新品牌视觉识别体系设计（打造 HistGuard "Chrono-Shield 时空之盾" 全套图标）**：
@@ -810,7 +815,7 @@
 
 ---
 
-## [1.0.21] - 2026-10-15
+## [1.0.0-beta.21] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **精简历史批量删除底部操作栏（移除“删除记录并将搜索词加入永久隐藏”按钮）**：
@@ -836,7 +841,7 @@
 
 ---
 
-## [1.0.20] - 2026-10-15
+## [1.0.0-beta.20] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **优化历史批量删除中全部清空按钮交互逻辑（列表中无数据时禁用而非隐藏，有数据时可点击）**：
@@ -864,7 +869,7 @@
 
 ---
 
-## [1.0.19] - 2026-10-15
+## [1.0.0-beta.19] - 2026-10-15
 
 ### 需求整理 (Requirements Overview)
 1. **彻底修复关键词规则未生效问题（Google 搜索及 SPA 动态路由无痕拦截）**：
@@ -937,7 +942,7 @@
 
 ---
 
-## [1.0.18] - 2026-10-14
+## [1.0.0-beta.18] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **新增跨域关键词防护规则类型 (Keyword Rule Type)**：
@@ -968,7 +973,7 @@
 
 ---
 
-## [1.0.17] - 2026-10-14
+## [1.0.0-beta.17] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Popup 弹窗界面精简与多级域名级联覆盖防护 (Cascading Coverage)**：
@@ -999,7 +1004,7 @@
 
 ---
 
-## [1.0.16] - 2026-10-14
+## [1.0.0-beta.16] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **彻底根除 Popup 弹窗视口坍缩为“细长条”核心缺陷**：
@@ -1016,7 +1021,7 @@
 
 ---
 
-## [1.0.15] - 2026-10-14
+## [1.0.0-beta.15] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Options 管理控制台静默模式倒计时实时自动更新机制**：
@@ -1035,7 +1040,7 @@
 
 ---
 
-## [1.0.14] - 2026-10-14
+## [1.0.0-beta.14] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Popup 弹窗视口再次拓宽与英文环境按钮防撑爆彻底解决**：
@@ -1054,7 +1059,7 @@
 
 ---
 
-## [1.0.13] - 2026-10-14
+## [1.0.0-beta.13] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Popup 弹窗视口宽度与排版错位全量重构**：
@@ -1073,7 +1078,7 @@
 
 ---
 
-## [1.0.12] - 2026-10-14
+## [1.0.0-beta.12] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **浏览器系统日间/夜间色彩模式原生探测机制**：
@@ -1110,7 +1115,7 @@
 
 ---
 
-## [1.0.11] - 2026-10-14
+## [1.0.0-beta.11] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **模块与文案命名规范统一（“大扫除”改为“批量删除”）**：
@@ -1134,7 +1139,7 @@
 
 ---
 
-## [1.0.10] - 2026-10-14
+## [1.0.0-beta.10] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **移动端浏览器扩展全环境兼容支持 (Firefox for Android & Mobile Chromium)**：
@@ -1168,7 +1173,7 @@
 
 ---
 
-## [1.0.9] - 2026-10-14
+## [1.0.0-beta.9] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **全套自动化单元测试用例体系构建 (Zero-Dependency Modern Test Suite)**：
@@ -1217,7 +1222,7 @@
 
 ---
 
-## [1.0.8] - 2026-10-14
+## [1.0.0-beta.8] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **前端模板化国际化 (i18n) 核心驱动架构设计与零依赖纯原生实现**：
@@ -1249,7 +1254,7 @@
 
 ---
 
-## [1.0.7] - 2026-10-14
+## [1.0.0-beta.7] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Options 控制台左右双侧视窗联动与自适应弹性闭环**：
@@ -1268,7 +1273,7 @@
 
 ---
 
-## [1.0.6] - 2026-10-14
+## [1.0.0-beta.6] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Options 控制台面板高度与滚动条视觉重构优化**：
@@ -1284,7 +1289,7 @@
 
 ---
 
-## [1.0.5] - 2026-10-14
+## [1.0.0-beta.5] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Options 控制台新增第三 Tab「高级偏好设置」**：
@@ -1313,7 +1318,7 @@
 
 ---
 
-## [1.0.4] - 2026-10-14
+## [1.0.0-beta.4] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **历史记录 1500 条限制根因分析与架构重构**：
@@ -1336,7 +1341,7 @@
 
 ---
 
-## [1.0.3] - 2026-10-14
+## [1.0.0-beta.3] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **左侧 Tab 导航字体严格对齐优化**：
@@ -1352,7 +1357,7 @@
 
 ---
 
-## [1.0.2] - 2026-10-14
+## [1.0.0-beta.2] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Options 控制台布局交互重构（左侧 Tab 垂直导航）**：
@@ -1371,7 +1376,7 @@
 
 ---
 
-## [1.0.1] - 2026-10-14
+## [1.0.0-beta.1] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **Firefox Popup “隐藏并清理” 按钮无响应 Bug 修复**：
@@ -1392,7 +1397,7 @@
 
 ---
 
-## [1.0.0] - 2026-10-14
+## [1.0.0-beta.0] - 2026-10-14
 
 ### 需求整理 (Requirements Overview)
 1. **跨浏览器统一架构**：
