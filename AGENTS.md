@@ -87,46 +87,39 @@ HistGuard/
 
 ## 4. 标准开发与交付工作流 (Workflow SOP)
 
-AI Agent 或开发者在承接任务时，应严格遵循以下四步闭环流程：
+为避免“版本号通胀（Version Inflation）”，HistGuard 严格区分 **“日常迭代开发”** 与 **“阶段性正式发版”** 两套流程：
 
 ```mermaid
 graph TD
     A[1. 需求分析与源码定位] --> B[2. 核心逻辑编码与适配]
     B --> C[3. 运行全量单元测试]
     C -- 存在失败 --> B
-    C -- 全部通过 --> D[4. 执行双端原生构建]
-    D --> E[5. 递增版本号并记录 CHANGELOG]
-    E --> F[6. Git 提交并引导用户验证]
+    C -- 全部通过 --> D[4. 执行双端原生构建打包]
+    D --> E{是否为用户明确的发版节点?}
+    E -- 否 (日常开发/修复) --> F[保持当前版本号，常规 Git 提交]
+    E -- 是 (里程碑/正式发版) --> G[统一递增版本号并归档 CHANGELOG]
+    G --> H[发版 Git 提交与 Tag 打标]
 ```
 
-### 第一步：代码编写与安全边界
-* 优先修改 `src/core/` 业务逻辑，并确保逻辑纯粹、无 DOM/扩展 API 强依赖；
-* 修改 UI 时确保深浅色主题兼容（使用 CSS 变量）及高质感玻璃拟态风格。
+### 4.1 日常迭代开发流程（默认模式）
+在承接常规日常功能开发、缺陷修复、UI优化等任务时，**严禁每次交互或提交都递增版本号**：
+1. **编码与适配**：修改业务逻辑与界面，确保逻辑纯粹、深浅主题兼容、12国语言对齐；
+2. **全量单测验证**：必须执行全量单测（`& "D:\nodejs\node.exe" --test tests/*.test.js`），确保 100% 通过（0 fail），涉及新特性必须补齐测试断言；
+3. **双端构建打包**：执行 `& "D:\nodejs\node.exe" build.js` 自动同步最新代码至 `dist/chrome` 与 `dist/firefox`，确保本地随时可用；
+4. **版本号与更新记录**：**版本号保持不变**，如有重要变动细节，在 [CHANGELOG.md](file:///e:/Workspace/HistGuard/CHANGELOG.md) 顶部的 `## [Unreleased]` 下简明追加；
+5. **标准 Git 提交**：使用标准约定式提交（Conventional Commits），例如：
+   `fix(chrome): fix today hits remaining zero via atomic storage write`
 
-### 第二步：自动化单元测试验证
-* 执行全量单元测试（严禁跳过或忽略测试）：
-  ```powershell
-  & "D:\nodejs\node.exe" --test tests/*.test.js
-  ```
-* 若涉及新增特性或边缘修复，必须在 `tests/` 下编写新的单元测试断言，确保测试总通过数正向递增，0 fail。
-
-### 第三步：双端生产构建打包
-* 运行零依赖构建脚本，自动同步资源并生成 Chrome 与 Firefox 产物：
-  ```powershell
-  & "D:\nodejs\node.exe" build.js
-  ```
-* 检查 `dist/chrome` 与 `dist/firefox` 输出文件数量与体积正常。
-
-### 第四步：版本号递增与更新日志
-* 修改以下文件中的版本号（遵循 SemVer 规范）：
-  - `package.json`
-  - `manifest.chrome.json`
-  - `manifest.firefox.json`
-* 在 [CHANGELOG.md](file:///e:/Workspace/HistGuard/CHANGELOG.md) 顶部追加详细的变更说明，记录**根因分析**、**架构改进**、**防护措施**与**测试覆盖情况**。
-
-### 第五步：Git 提交
-* 使用标准约定式提交（Conventional Commits），例如：
-  `fix(chrome): fix today hits remaining zero via atomic storage write (v1.0.46)`
+### 4.2 阶段性正式发版流程（里程碑模式）
+仅在**用户明确要求发版**、或完成了一组完整的新特性/系统性重构后触发：
+1. **确定版本号**：根据 [SemVer](https://semver.org/lang/zh-CN/) 语义化版本规范确定新版本号（如当前为 `1.0.0`，新特性升级为 `1.1.0`，累积缺陷修复升级为 `1.0.1`）；
+2. **三处版本号严格同步**：同步修改以下 3 个文件中的版本字段：
+   - `package.json`
+   - `manifest.chrome.json`
+   - `manifest.firefox.json`
+3. **归档 CHANGELOG**：将 `CHANGELOG.md` 中 `## [Unreleased]` 下积累的变动整理归档为新版本段落（如 `## [1.1.0] - YYYY-MM-DD`），详细阐明**核心亮点**、**修复清单**与**技术改进**；
+4. **构建与最终验证**：再次运行全量单元测试与 `build.js`，验证构建产物输出完整；
+5. **发布提交与打标**：提交发版 Commit（例如 `chore(release): bump version to 1.1.0`），并打上对应的 Git Tag。
 
 ---
 

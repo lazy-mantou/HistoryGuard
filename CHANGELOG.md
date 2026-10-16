@@ -4,7 +4,18 @@
 
 ---
 
-## [1.0.46] - 2026-10-16
+## [Unreleased]
+
+### 暂未发布的开发变动 (Work In Progress)
+- 日常缺陷修复与特性调优将暂存此处，在达到里程碑或用户要求正式发版前不频繁递增版本号。
+
+---
+
+## [1.0.0] - 2026-10-16
+
+### HistGuard 1.0.0 正式发布版 (Official Production Release)
+- **多端稳定性与架构加固**：包含完整的 Chrome MV3 Service Worker 冷启动竞态消除、存储单次原子合并落盘、Firefox Places SQLite 并发流控、多维统计兜底校准及导入 ID 防冲突机制；
+- **全功能矩阵**：涵盖极简 Popup 一键临时无痕、Options 管理控制台、SVG 拦截趋势图、12 国主流语言支持与深浅色主题自适应。
 
 ### Chrome MV3 存储写入原子事务合并与今日拦截多维校验加固 (Chrome MV3 Storage Atomic Write & Multi-Tier Stats Hardening)
 1. **解决 Chrome MV3 前后台存储写入时序撕裂 (Atomic Unified Storage Write)**:
