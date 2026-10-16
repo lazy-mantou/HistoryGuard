@@ -313,6 +313,32 @@ describe('storage - 导入与导出', () => {
       await importRules('invalid json');
     }, /导入失败：不是合法的 JSON 格式文本/);
   });
+
+  it('导入时若 ID 相同但域名不同，应当保留两域名并自动为冲突规则生成全局唯一 ID', async () => {
+    const { rule: localRule } = await addRule({ pattern: 'local.com' });
+    const localId = localRule.id;
+
+    // 模拟外来备份：使用了相同的 id，但域名是 remote.com
+    const conflictPayload = JSON.stringify({
+      rules: [
+        { id: localId, pattern: 'remote.com' }
+      ]
+    });
+
+    const result = await importRules(conflictPayload, 'merge');
+    assert.strictEqual(result.importedCount, 1);
+    assert.strictEqual(result.totalCount, 2);
+
+    const rules = await getRules();
+    const localItem = rules.find(r => r.pattern === 'local.com');
+    const remoteItem = rules.find(r => r.pattern === 'remote.com');
+
+    assert.ok(localItem);
+    assert.ok(remoteItem);
+    assert.strictEqual(localItem.id, localId);
+    assert.notStrictEqual(remoteItem.id, localId); // 成功防冲突，重新分配了唯一 ID
+    assert.ok(remoteItem.id.startsWith('rule_'));
+  });
 });
 
 describe('storage - 全局偏好设置 (Settings)', () => {

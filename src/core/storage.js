@@ -362,10 +362,16 @@ export async function importRules(jsonString, mode = 'merge') {
   if (mode === 'replace') {
     const uniqueValidRules = [];
     const seenPatterns = new Set();
+    const seenIds = new Set();
     for (const vr of validRules) {
-      const key = vr.pattern.toLowerCase();
-      if (!seenPatterns.has(key)) {
-        seenPatterns.add(key);
+      const patternKey = vr.pattern.toLowerCase();
+      if (!seenPatterns.has(patternKey)) {
+        seenPatterns.add(patternKey);
+        // 防 ID 冲突：若导入数据中有多条不同域名但 ID 相同的规则，自动为后者重新生成唯一 ID
+        if (seenIds.has(vr.id)) {
+          vr.id = `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        }
+        seenIds.add(vr.id);
         uniqueValidRules.push(vr);
       }
     }
@@ -376,14 +382,23 @@ export async function importRules(jsonString, mode = 'merge') {
   // merge 模式
   const existing = await getRules();
   const patternMap = new Map();
-  existing.forEach(r => patternMap.set(r.pattern.toLowerCase(), r));
+  const existingIds = new Set();
+  existing.forEach(r => {
+    patternMap.set(r.pattern.toLowerCase(), r);
+    if (r.id) existingIds.add(r.id);
+  });
 
   let newCount = 0;
   for (const vr of validRules) {
-    const key = vr.pattern.toLowerCase();
-    if (!patternMap.has(key)) {
+    const patternKey = vr.pattern.toLowerCase();
+    if (!patternMap.has(patternKey)) {
+      // 防 ID 冲突：若导入的新规则 ID 与本地已存规则 ID 重合，为新规则重新生成唯一的独立 ID
+      if (existingIds.has(vr.id)) {
+        vr.id = `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      }
+      existingIds.add(vr.id);
       existing.push(vr);
-      patternMap.set(key, vr);
+      patternMap.set(patternKey, vr);
       newCount++;
     }
   }
