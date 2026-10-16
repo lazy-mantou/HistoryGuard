@@ -360,8 +360,17 @@ export async function importRules(jsonString, mode = 'merge') {
   }
 
   if (mode === 'replace') {
-    await saveRules(validRules);
-    return { importedCount: validRules.length, totalCount: validRules.length };
+    const uniqueValidRules = [];
+    const seenPatterns = new Set();
+    for (const vr of validRules) {
+      const key = vr.pattern.toLowerCase();
+      if (!seenPatterns.has(key)) {
+        seenPatterns.add(key);
+        uniqueValidRules.push(vr);
+      }
+    }
+    await saveRules(uniqueValidRules);
+    return { importedCount: uniqueValidRules.length, totalCount: uniqueValidRules.length };
   }
 
   // merge 模式
