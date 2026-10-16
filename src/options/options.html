@@ -69,6 +69,21 @@
             <span id="tab-rules-badge" class="tab-count-badge" title="当前已配置规则数">0</span>
           </button>
 
+          <button class="nav-tab hidden" data-tab="stats" id="tab-btn-stats">
+            <div class="tab-icon-box">
+              <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+            <div class="tab-info">
+              <span class="tab-title" data-i18n="options.navStatsTitle">拦截数据统计</span>
+              <span class="tab-desc" data-i18n="options.navStatsDesc">防护成效与趋势分析</span>
+            </div>
+            <span id="tab-stats-badge" class="tab-count-badge" data-i18n-title="options.tabStatsBadgeTitle" title="累计拦截总数">0</span>
+          </button>
+
           <button class="nav-tab" data-tab="settings" id="tab-btn-settings">
             <div class="tab-icon-box">
               <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -251,7 +266,151 @@
           </div>
         </section>
 
-        <!-- 面板 C：高级偏好设置 -->
+        <!-- 面板 C：拦截数据统计分析 -->
+        <section id="panel-stats" class="tab-panel hidden">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title" data-i18n="options.statsTitle">拦截数据统计与成效分析</h2>
+            </div>
+            <div class="header-tools stats-header-tools">
+              <button id="btn-refresh-stats" class="tool-btn" data-i18n-title="options.statsBtnRefreshTitle" title="刷新统计数据">
+                <span class="tool-icon">🔄</span>
+                <span data-i18n="options.statsBtnRefresh">刷新</span>
+              </button>
+              <button id="btn-reset-stats" class="tool-btn tool-btn-danger" data-i18n-title="options.statsBtnResetTitle" title="清空并重置所有拦截命中统计数据">
+                <span class="tool-icon">🗑️</span>
+                <span data-i18n="options.statsBtnReset">重置统计</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="stats-scroll-container">
+            <!-- 1. 核心指标卡片栅格 (4 列卡片) -->
+            <div class="stats-kpi-grid">
+              <!-- KPI 1: 累计拦截总数 -->
+              <div class="kpi-card kpi-total">
+                <div class="kpi-icon-wrapper">
+                  <svg class="kpi-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <div class="kpi-label" data-i18n="options.statsTotalHits">累计拦截总数</div>
+                  <div id="kpi-total-hits" class="kpi-value">0</div>
+                  <div class="kpi-sub" data-i18n="options.statsTotalHitsDesc">用户打开页面时即时抹除</div>
+                </div>
+              </div>
+
+              <!-- KPI 2: 今日拦截 -->
+              <div class="kpi-card kpi-today">
+                <div class="kpi-icon-wrapper">
+                  <svg class="kpi-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <div class="kpi-label" data-i18n="options.statsTodayHits">今日拦截</div>
+                  <div id="kpi-today-hits" class="kpi-value">0</div>
+                  <div class="kpi-sub" data-i18n="options.statsTodayHitsDesc">今日网页防护触发</div>
+                </div>
+              </div>
+
+              <!-- KPI 3: 产生拦截规则数 / 总规则数 -->
+              <div class="kpi-card kpi-rules">
+                <div class="kpi-icon-wrapper">
+                  <svg class="kpi-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <div class="kpi-label" data-i18n="options.statsActiveHitRules">产生拦截规则</div>
+                  <div id="kpi-active-rules" class="kpi-value">0</div>
+                  <div id="kpi-rules-sub" class="kpi-sub" data-i18n="options.statsActiveHitRulesDesc">生效规则命中覆盖</div>
+                </div>
+              </div>
+
+              <!-- KPI 4: 最近一次拦截时间 -->
+              <div class="kpi-card kpi-time">
+                <div class="kpi-icon-wrapper">
+                  <svg class="kpi-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <div class="kpi-content">
+                  <div class="kpi-label" data-i18n="options.statsLastHitTime">最近拦截时间</div>
+                  <div id="kpi-last-time" class="kpi-value kpi-time-value" data-i18n="options.statsNever">从未</div>
+                  <div class="kpi-sub" data-i18n="options.statsLastHitTimeDesc">最新网页防护生效事件</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. 每日拦截趋势图表卡片 (Hero Trend Chart) -->
+            <div class="stats-section-card stats-chart-card">
+              <div class="chart-header">
+                <div class="chart-title-area">
+                  <div class="chart-title">
+                    <span class="chart-title-icon">📈</span>
+                    <span data-i18n="options.statsChartTitle">每日拦截趋势变化</span>
+                  </div>
+                  <div class="chart-subtitle" data-i18n="options.statsChartSubtitle">
+                    仅统计用户打开页面时拦截的数据，不含后台批量清理
+                  </div>
+                </div>
+                <div class="chart-range-picker">
+                  <button class="range-btn active" data-range="7" data-i18n="options.statsChartRange7d">近 7 天</button>
+                  <button class="range-btn" data-range="14" data-i18n="options.statsChartRange14d">近 14 天</button>
+                  <button class="range-btn" data-range="30" data-i18n="options.statsChartRange30d">近 30 天</button>
+                </div>
+              </div>
+
+              <!-- SVG 趋势曲线图容器 -->
+              <div class="chart-canvas-wrapper" id="stats-chart-wrapper">
+                <!-- 动态由 JS 渲染高质感 SVG 趋势图 -->
+              </div>
+            </div>
+
+            <!-- 3. 下半部分：双栏栅格 (规则类型分布 + Top 排行榜) -->
+            <div class="stats-detail-grid">
+              <!-- 左栏：规则类型拦截分布 -->
+              <div class="stats-section-card stats-distribution-card">
+                <div class="section-card-header">
+                  <span class="section-card-icon">🧩</span>
+                  <span class="section-card-title" data-i18n="options.statsTypeDistributionTitle">规则类型拦截分布</span>
+                </div>
+                <div class="distribution-body" id="stats-distribution-body">
+                  <!-- 动态渲染类型分布与百分比堆叠条 -->
+                </div>
+              </div>
+
+              <!-- 右栏：Top 拦截规则排行榜 -->
+              <div class="stats-section-card stats-ranking-card">
+                <div class="section-card-header">
+                  <span class="section-card-icon">🏆</span>
+                  <span class="section-card-title" data-i18n="options.statsTopRulesTitle">Top 拦截规则排行榜</span>
+                </div>
+                <div class="ranking-body" id="stats-ranking-body">
+                  <!-- 动态渲染 Top 5 排行榜 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. 底部说明横幅 -->
+            <div class="stats-notice-banner">
+              <div class="notice-icon">💡</div>
+              <div class="notice-content">
+                <div class="notice-title" data-i18n="options.statsNoticeTitle">统计口径与隐私说明</div>
+                <div class="notice-text" data-i18n="options.statsNotice">
+                  统计口径说明：此处数据专指浏览器访问网页时被规则命中并即时从历史记录中抹除的实时事件；在控制台手动执行的规则回溯清理、批量删除及全部清空属于本地历史维护操作，不计入实时拦截统计。若需彻底隐身无痕，可在高级设置中关闭“统计规则防护命中次数”，关闭后将不再落盘任何计数数据。
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 面板 D：高级偏好设置 -->
         <section id="panel-settings" class="tab-panel hidden">
           <div class="card-header">
             <div class="card-title-group">

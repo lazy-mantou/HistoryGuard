@@ -22,6 +22,7 @@ import {
   saveSettings,
   resetRuleHits,
   clearAllRules,
+  getInterceptionStats,
   DEFAULT_SETTINGS,
   STORAGE_KEYS
 } from '../core/storage.js';
@@ -37,8 +38,11 @@ const elements = {
   navTabs: document.querySelectorAll('.nav-tab'),
   panelHistory: document.getElementById('panel-history'),
   panelRules: document.getElementById('panel-rules'),
+  panelStats: document.getElementById('panel-stats'),
   panelSettings: document.getElementById('panel-settings'),
   tabRulesBadge: document.getElementById('tab-rules-badge'),
+  tabStatsBadge: document.getElementById('tab-stats-badge'),
+  tabBtnStats: document.getElementById('tab-btn-stats'),
 
   // 历史批量清理
   searchInput: document.getElementById('search-input'),
@@ -93,6 +97,18 @@ const elements = {
   settingDeleteChunkSize: document.getElementById('setting-delete-chunk-size'),
   settingConfirmDeepClean: document.getElementById('setting-confirm-deep-clean'),
   settingToastDuration: document.getElementById('setting-toast-duration'),
+
+  // 统计分析面板
+  btnRefreshStats: document.getElementById('btn-refresh-stats'),
+  btnResetStats: document.getElementById('btn-reset-stats'),
+  kpiTotalHits: document.getElementById('kpi-total-hits'),
+  kpiTodayHits: document.getElementById('kpi-today-hits'),
+  kpiActiveRules: document.getElementById('kpi-active-rules'),
+  kpiRulesSub: document.getElementById('kpi-rules-sub'),
+  kpiLastTime: document.getElementById('kpi-last-time'),
+  statsChartWrapper: document.getElementById('stats-chart-wrapper'),
+  statsDistributionBody: document.getElementById('stats-distribution-body'),
+  statsRankingBody: document.getElementById('stats-ranking-body'),
 
   // 全局 Toast
   toast: document.getElementById('toast')
@@ -159,6 +175,14 @@ function switchTab(tabKey) {
 
   elements.panelRules.classList.toggle('hidden', tabKey !== 'rules');
   elements.panelRules.classList.toggle('active', tabKey === 'rules');
+
+  if (elements.panelStats) {
+    elements.panelStats.classList.toggle('hidden', tabKey !== 'stats');
+    elements.panelStats.classList.toggle('active', tabKey === 'stats');
+    if (tabKey === 'stats') {
+      renderStatsDashboard();
+    }
+  }
 
   if (elements.panelSettings) {
     elements.panelSettings.classList.toggle('hidden', tabKey !== 'settings');
@@ -300,12 +324,12 @@ async function refreshGlobalStats() {
 
   elements.statActiveRules.textContent = activeCount;
 
-  if (currentSettings.enableHitTracking === false) {
+  if (currentSettings.enableHitTracking !== true) {
     elements.statTotalHits.textContent = t('options.statTotalHitsDisabled');
     elements.statTotalHits.title = t('options.statTotalHitsDisabledTitle');
     elements.statTotalHits.className = 'stat-value hits-disabled';
   } else {
-    elements.statTotalHits.textContent = totalHits;
+    elements.statTotalHits.textContent = totalHits.toLocaleString();
     elements.statTotalHits.title = t('options.statTotalHitsTitle');
     elements.statTotalHits.className = 'stat-value highlight-hits';
   }
@@ -313,10 +337,343 @@ async function refreshGlobalStats() {
   if (elements.tabRulesBadge) {
     elements.tabRulesBadge.textContent = cachedRules.length;
   }
+  if (elements.tabStatsBadge) {
+    elements.tabStatsBadge.textContent = totalHits.toLocaleString();
+  }
 
+  updateStatsTabVisibility();
   await refreshSilentModeStatus();
 
   elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: cachedRules.length });
+}
+
+/**
+ * 根据偏好设置动态控制“数据统计”Tab 的显隐状态
+ */
+function updateStatsTabVisibility() {
+  const isEnabled = currentSettings.enableHitTracking === true;
+  if (elements.tabBtnStats) {
+    elements.tabBtnStats.classList.toggle('hidden', !isEnabled);
+  }
+  const currentActiveTab = document.querySelector('.nav-tab.active')?.dataset?.tab;
+  if (!isEnabled && currentActiveTab === 'stats') {
+    switchTab('rules');
+  }
+}
+
+let currentStatsRange = 7; // 默认 7 天趋势
+
+/**
+ * 渲染“拦截数据统计分析”面板核心内容
+ */
+async function renderStatsDashboard() {
+  if (!elements.panelStats || elements.panelStats.classList.contains('hidden')) return;
+
+  const [rules, stats] = await Promise.all([
+    getRules(),
+    getInterceptionStats()
+  ]);
+
+  const totalHits = rules.reduce((acc, r) => acc + (r.hits || 0), 0);
+  const now = Date.now();
+  const todayKey = new Date(now).toISOString().slice(0, 10);
+  const todayHits = stats.dailyHits[todayKey] || 0;
+  const activeRulesWithHits = rules.filter(r => (r.hits || 0) > 0).length;
+  const totalRules = rules.length;
+  const coveragePercent = totalRules > 0 ? Math.round((activeRulesWithHits / totalRules) * 100) : 0;
+  const lastTime = stats.lastHitTime || rules.reduce((max, r) => Math.max(max, r.lastHitAt || 0), 0);
+
+  // 1. 更新 KPI 核心指标卡片
+  if (elements.kpiTotalHits) elements.kpiTotalHits.textContent = totalHits.toLocaleString();
+  if (elements.kpiTodayHits) elements.kpiTodayHits.textContent = todayHits.toLocaleString();
+  if (elements.kpiActiveRules) elements.kpiActiveRules.textContent = `${activeRulesWithHits} / ${totalRules}`;
+  if (elements.kpiRulesSub) {
+    elements.kpiRulesSub.textContent = t('options.statsCoverageSub', {
+      active: activeRulesWithHits,
+      total: totalRules,
+      percent: coveragePercent
+    });
+  }
+  if (elements.kpiLastTime) {
+    elements.kpiLastTime.textContent = lastTime > 0 ? formatRelativeTime(lastTime) : t('options.statsNever');
+    elements.kpiLastTime.title = lastTime > 0 ? new Date(lastTime).toLocaleString() : '';
+  }
+  if (elements.tabStatsBadge) {
+    elements.tabStatsBadge.textContent = totalHits.toLocaleString();
+  }
+
+  // 2. 渲染每日拦截趋势曲线图
+  renderStatsChart(stats.dailyHits, currentStatsRange);
+
+  // 3. 渲染规则类型分布堆叠图
+  renderTypeDistribution(rules, stats);
+
+  // 4. 渲染 Top 拦截规则排行榜
+  renderTopRulesRanking(rules);
+}
+
+/**
+ * 绘制高质感 SVG 每日拦截趋势图
+ * @param {Object<string, number>} dailyHits
+ * @param {number} rangeDays
+ */
+function renderStatsChart(dailyHits = {}, rangeDays = 7) {
+  if (!elements.statsChartWrapper) return;
+
+  const dates = [];
+  const counts = [];
+  const now = Date.now();
+
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const d = new Date(now - i * 86400 * 1000);
+    const key = d.toISOString().slice(0, 10);
+    dates.push({
+      key,
+      monthDay: `${d.getMonth() + 1}/${d.getDate()}`,
+      isToday: i === 0
+    });
+    counts.push(dailyHits[key] || 0);
+  }
+
+  const maxVal = Math.max(...counts, 0);
+
+  if (maxVal === 0) {
+    elements.statsChartWrapper.innerHTML = `
+      <div class="chart-empty-state">
+        <span class="chart-empty-icon">📊</span>
+        <span>${t('options.statsChartEmpty')}</span>
+      </div>
+    `;
+    return;
+  }
+
+  const svgWidth = 700;
+  const svgHeight = 200;
+  const padLeft = 45;
+  const padRight = 30;
+  const padTop = 20;
+  const padBottom = 30;
+  const plotWidth = svgWidth - padLeft - padRight;
+  const plotHeight = svgHeight - padTop - padBottom;
+
+  const yMax = Math.ceil(maxVal * 1.15) || 5;
+
+  const points = counts.map((count, idx) => {
+    const x = padLeft + (idx / (counts.length - 1)) * plotWidth;
+    const y = padTop + plotHeight - (count / yMax) * plotHeight;
+    return { x, y, count, ...dates[idx] };
+  });
+
+  // 平滑三次贝塞尔曲线
+  let pathD = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const cp1x = p0.x + (p1.x - p0.x) / 2;
+    const cp1y = p0.y;
+    const cp2x = p0.x + (p1.x - p0.x) / 2;
+    const cp2y = p1.y;
+    pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+  }
+
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${padTop + plotHeight} L ${points[0].x} ${padTop + plotHeight} Z`;
+
+  // 网格水平参考线
+  const gridSteps = 3;
+  let gridLinesHtml = '';
+  for (let s = 0; s <= gridSteps; s++) {
+    const gy = padTop + (plotHeight / gridSteps) * s;
+    const gVal = Math.round(yMax * (1 - s / gridSteps));
+    gridLinesHtml += `
+      <line x1="${padLeft}" y1="${gy}" x2="${padLeft + plotWidth}" y2="${gy}" class="chart-grid-line" />
+      <text x="${padLeft - 8}" y="${gy + 4}" text-anchor="end" class="chart-axis-label">${gVal}</text>
+    `;
+  }
+
+  // X 轴日期刻度
+  let xLabelsHtml = '';
+  points.forEach((p, idx) => {
+    if (rangeDays === 30 && idx % 4 !== 0 && idx !== points.length - 1) return;
+    const labelText = p.isToday ? (t('options.filterToday') || '今天') : p.monthDay;
+    xLabelsHtml += `
+      <text x="${p.x}" y="${padTop + plotHeight + 18}" text-anchor="middle" class="chart-axis-label">${labelText}</text>
+    `;
+  });
+
+  // 数据点与 Tooltip
+  let dotsHtml = '';
+  points.forEach(p => {
+    const tooltipText = t('options.statsChartHitsTooltip', {
+      date: p.key,
+      count: p.count
+    });
+    dotsHtml += `
+      <circle cx="${p.x}" cy="${p.y}" r="3.5" class="chart-dot">
+        <title>${escapeHtml(tooltipText)}</title>
+      </circle>
+    `;
+  });
+
+  elements.statsChartWrapper.innerHTML = `
+    <svg class="stats-svg-chart" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="chart-area-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6366f1" stop-opacity="0.32" />
+          <stop offset="85%" stop-color="#6366f1" stop-opacity="0.04" />
+          <stop offset="100%" stop-color="#6366f1" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+      ${gridLinesHtml}
+      <path d="${areaD}" fill="url(#chart-area-grad)" />
+      <path d="${pathD}" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      ${xLabelsHtml}
+      ${dotsHtml}
+    </svg>
+  `;
+}
+
+/**
+ * 渲染规则类型拦截分布
+ * @param {Array<Object>} rules
+ * @param {Object} stats
+ */
+function renderTypeDistribution(rules, stats) {
+  if (!elements.statsDistributionBody) return;
+
+  const domainRules = rules.filter(r => r.type === 'domain' || !r.type);
+  const pathRules = rules.filter(r => r.type === 'path');
+  const keywordRules = rules.filter(r => r.type === 'keyword');
+
+  const domainHits = domainRules.reduce((sum, r) => sum + (r.hits || 0), 0);
+  const pathHits = pathRules.reduce((sum, r) => sum + (r.hits || 0), 0);
+  const keywordHits = keywordRules.reduce((sum, r) => sum + (r.hits || 0), 0);
+
+  const totalHits = domainHits + pathHits + keywordHits;
+
+  const domainPct = totalHits > 0 ? Math.round((domainHits / totalHits) * 100) : 0;
+  const pathPct = totalHits > 0 ? Math.round((pathHits / totalHits) * 100) : 0;
+  const keywordPct = totalHits > 0 ? Math.max(0, 100 - domainPct - pathPct) : 0;
+
+  elements.statsDistributionBody.innerHTML = `
+    <div class="distribution-stacked-bar">
+      <div class="stacked-segment segment-domain" style="width: ${domainPct}%" title="${t('options.tagDomain')}: ${domainHits}"></div>
+      <div class="stacked-segment segment-path" style="width: ${pathPct}%" title="${t('options.tagPath')}: ${pathHits}"></div>
+      <div class="stacked-segment segment-keyword" style="width: ${keywordPct}%" title="${t('options.tagKeyword')}: ${keywordHits}"></div>
+    </div>
+    <div class="distribution-list">
+      <div class="dist-item">
+        <div class="dist-item-top">
+          <span class="dist-item-badge" style="color: var(--primary);">
+            <span>🌐</span>
+            <span>${t('options.tagDomain')}</span>
+          </span>
+          <span class="dist-item-count">${t('options.statsTypePercent', { count: domainHits.toLocaleString(), percent: domainPct })}</span>
+        </div>
+        <div class="dist-progress-track">
+          <div class="dist-progress-fill" style="width: ${domainPct}%; background-color: var(--primary);"></div>
+        </div>
+      </div>
+      <div class="dist-item">
+        <div class="dist-item-top">
+          <span class="dist-item-badge" style="color: var(--success);">
+            <span>🔀</span>
+            <span>${t('options.tagPath')}</span>
+          </span>
+          <span class="dist-item-count">${t('options.statsTypePercent', { count: pathHits.toLocaleString(), percent: pathPct })}</span>
+        </div>
+        <div class="dist-progress-track">
+          <div class="dist-progress-fill" style="width: ${pathPct}%; background-color: var(--success);"></div>
+        </div>
+      </div>
+      <div class="dist-item">
+        <div class="dist-item-top">
+          <span class="dist-item-badge" style="color: var(--warning);">
+            <span>🔤</span>
+            <span>${t('options.tagKeyword')}</span>
+          </span>
+          <span class="dist-item-count">${t('options.statsTypePercent', { count: keywordHits.toLocaleString(), percent: keywordPct })}</span>
+        </div>
+        <div class="dist-progress-track">
+          <div class="dist-progress-fill" style="width: ${keywordPct}%; background-color: var(--warning);"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * 渲染 Top 5 拦截规则排行榜
+ * @param {Array<Object>} rules
+ */
+function renderTopRulesRanking(rules) {
+  if (!elements.statsRankingBody) return;
+
+  const rulesWithHits = rules
+    .filter(r => (r.hits || 0) > 0)
+    .sort((a, b) => (b.hits || 0) - (a.hits || 0))
+    .slice(0, 5);
+
+  if (rulesWithHits.length === 0) {
+    elements.statsRankingBody.innerHTML = `
+      <div class="ranking-empty">
+        <span style="font-size: 24px; opacity: 0.7;">🌱</span>
+        <span>${t('options.statsTopRulesEmpty')}</span>
+      </div>
+    `;
+    return;
+  }
+
+  const topHits = rulesWithHits[0].hits || 1;
+
+  let html = '<div class="ranking-list">';
+  rulesWithHits.forEach((rule, idx) => {
+    let typeClass = 'type-domain';
+    let typeLabel = t('options.tagDomain');
+    if (rule.type === 'keyword') {
+      typeClass = 'type-keyword';
+      typeLabel = t('options.tagKeyword');
+    } else if (rule.type === 'path') {
+      typeClass = 'type-path';
+      typeLabel = t('options.tagPath');
+    }
+
+    const relPct = Math.min(100, Math.round((rule.hits / topHits) * 100));
+
+    html += `
+      <div class="ranking-item" data-rule-id="${rule.id}" style="cursor: pointer;" title="点击前往规则管理">
+        <div class="ranking-medal">${idx + 1}</div>
+        <div class="ranking-pattern-box">
+          <div class="ranking-pattern-line">
+            <span class="rule-type-badge ${typeClass}">${typeLabel}</span>
+            <span class="ranking-pattern" title="${escapeHtml(rule.pattern)}">${escapeHtml(rule.pattern)}</span>
+          </div>
+          <div class="dist-progress-track" style="margin-top: 4px;">
+            <div class="dist-progress-fill" style="width: ${relPct}%; background-color: var(--primary);"></div>
+          </div>
+        </div>
+        <div class="ranking-hits-badge">${t('options.statsRulesHitsUnit', { count: rule.hits.toLocaleString() })}</div>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  elements.statsRankingBody.innerHTML = html;
+
+  // 绑定点击跳转到规则管理并高亮对应规则
+  elements.statsRankingBody.querySelectorAll('.ranking-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const ruleId = item.dataset.ruleId;
+      switchTab('rules');
+      setTimeout(() => {
+        const targetRow = elements.rulesContainer.querySelector(`[data-id="${ruleId}"]`);
+        if (targetRow) {
+          targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          targetRow.classList.add('highlight-hits');
+          setTimeout(() => targetRow.classList.remove('highlight-hits'), 2000);
+        }
+      }, 100);
+    });
+  });
 }
 
 /* ==========================================================================
@@ -1024,8 +1381,9 @@ async function loadSettingsToUI() {
     elements.settingLanguage.value = currentSettings.language || 'auto';
   }
   if (elements.settingEnableHitTracking) {
-    elements.settingEnableHitTracking.checked = currentSettings.enableHitTracking !== false;
+    elements.settingEnableHitTracking.checked = currentSettings.enableHitTracking === true;
   }
+  updateStatsTabVisibility();
   if (elements.settingSilentDuration) {
     elements.settingSilentDuration.value = String(currentSettings.silentModeDuration || 30);
   }
@@ -1104,6 +1462,54 @@ if (elements.settingEnableHitTracking) {
     showToast(val ? t('options.toastHitTrackingOn') : t('options.toastHitTrackingOff'));
     await refreshGlobalStats();
     await refreshRulesList();
+    updateStatsTabVisibility();
+    if (val && document.querySelector('.nav-tab.active')?.dataset?.tab === 'stats') {
+      renderStatsDashboard();
+    }
+  });
+}
+
+// 统计面板操作按钮绑定
+if (elements.btnRefreshStats) {
+  elements.btnRefreshStats.addEventListener('click', async () => {
+    await renderStatsDashboard();
+    showToast(t('options.toastThemeChanged'));
+  });
+}
+
+if (elements.btnResetStats) {
+  elements.btnResetStats.addEventListener('click', async () => {
+    const ok = window.confirm(t('options.statsBtnResetConfirm'));
+    if (!ok) return;
+
+    await resetRuleHits();
+    await refreshGlobalStats();
+    await refreshRulesList();
+    await renderStatsDashboard();
+    showToast(t('options.statsToastResetSuccess'));
+  });
+}
+
+// 趋势图周期切换按钮
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatsRange = Number(btn.dataset.range) || 7;
+    renderStatsDashboard();
+  });
+});
+
+// 顶部“累计防护”卡片快捷点击交互：开启时跳转至统计页，关闭时引导至设置开启
+if (elements.statTotalHits && elements.statTotalHits.parentElement) {
+  elements.statTotalHits.parentElement.style.cursor = 'pointer';
+  elements.statTotalHits.parentElement.addEventListener('click', () => {
+    if (currentSettings.enableHitTracking === true) {
+      switchTab('stats');
+    } else {
+      switchTab('settings');
+      elements.settingEnableHitTracking?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   });
 }
 
@@ -1282,6 +1688,13 @@ browserApi.storage.onChanged(async (changes) => {
     await loadSettingsToUI();
     await refreshGlobalStats();
     await refreshRulesList();
+    updateStatsTabVisibility();
+  }
+  if (changes[STORAGE_KEYS.STATS]) {
+    await refreshGlobalStats();
+    if (document.querySelector('.nav-tab.active')?.dataset?.tab === 'stats') {
+      renderStatsDashboard();
+    }
   }
 });
 
@@ -1324,7 +1737,7 @@ async function initOptions() {
   // 恢复先前激活的 Tab 状态 (支持 history, rules, settings)
   try {
     const savedTab = localStorage.getItem('histguard_active_options_tab');
-    if (savedTab && (savedTab === 'history' || savedTab === 'rules' || savedTab === 'settings')) {
+    if (savedTab && (savedTab === 'history' || savedTab === 'rules' || savedTab === 'stats' || savedTab === 'settings')) {
       switchTab(savedTab);
     }
   } catch (err) {

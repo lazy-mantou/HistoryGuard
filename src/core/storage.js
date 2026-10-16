@@ -11,7 +11,8 @@ export const STORAGE_KEYS = {
   RULES: 'histguard_rules',
   SILENT_MODE: 'histguard_silent_mode',
   SETTINGS: 'histguard_settings',
-  PENDING_CLEAN_JOB: 'histguard_pending_clean_job'
+  PENDING_CLEAN_JOB: 'histguard_pending_clean_job',
+  STATS: 'histguard_stats'
 };
 
 /**
@@ -162,7 +163,27 @@ export async function deleteRule(ruleId) {
 }
 
 /**
- * 累加规则拦截命中次数
+ * 获取实时拦截统计聚合数据
+ * @returns {Promise<{ dailyHits: Object<string, number>, typeHits: { domain: number, path: number, keyword: number }, lastHitTime: number }>}
+ */
+export async function getInterceptionStats() {
+  const data = await browserApi.storage.get([STORAGE_KEYS.STATS]);
+  const raw = data[STORAGE_KEYS.STATS];
+  const stats = (raw && typeof raw === 'object') ? raw : {};
+  return {
+    dailyHits: (stats.dailyHits && typeof stats.dailyHits === 'object') ? stats.dailyHits : {},
+    typeHits: {
+      domain: Number(stats.typeHits?.domain) || 0,
+      path: Number(stats.typeHits?.path) || 0,
+      keyword: Number(stats.typeHits?.keyword) || 0
+    },
+    lastHitTime: Number(stats.lastHitTime) || 0
+  };
+}
+
+/**
+ * 累加规则拦截命中次数与实时统计数据
+ * （仅在用户真实打开网页被规则即时拦截抹除时调用，不计入后台批量清理）
  * @param {string} ruleId
  * @returns {Promise<number>}
  */
@@ -171,8 +192,35 @@ export async function incrementRuleHits(ruleId) {
   const rule = currentRules.find(r => r.id === ruleId);
   if (!rule) return 0;
 
+  const now = Date.now();
   rule.hits = (rule.hits || 0) + 1;
+  rule.lastHitAt = now;
   await saveRules(currentRules);
+
+  try {
+    const stats = await getInterceptionStats();
+    const todayKey = new Date(now).toISOString().slice(0, 10);
+    stats.dailyHits[todayKey] = (stats.dailyHits[todayKey] || 0) + 1;
+
+    // 剔除 90 天前的陈旧聚合数据，保障存储轻量
+    const cutoffDate = new Date(now - 90 * 86400 * 1000).toISOString().slice(0, 10);
+    for (const dateStr of Object.keys(stats.dailyHits)) {
+      if (dateStr < cutoffDate) {
+        delete stats.dailyHits[dateStr];
+      }
+    }
+
+    const ruleType = rule.type === 'keyword' ? 'keyword' : (rule.type === 'path' ? 'path' : 'domain');
+    stats.typeHits[ruleType] = (stats.typeHits[ruleType] || 0) + 1;
+    stats.lastHitTime = now;
+
+    await browserApi.storage.set({
+      [STORAGE_KEYS.STATS]: stats
+    });
+  } catch (err) {
+    console.warn('Record interception stats error:', err);
+  }
+
   return rule.hits;
 }
 
@@ -322,13 +370,13 @@ export async function exportRules() {
 export const DEFAULT_SETTINGS = {
   theme: 'auto',                 // 界面外观主题 ('auto' | 'dark' | 'light')
   language: 'auto',              // 界面显示语言 ('auto' | 'zh-CN' | 'en')
-  enableHitTracking: true,       // 是否统计规则拦截次数
+  enableHitTracking: false,      // 是否统计规则拦截次数 (默认关闭)
   silentModeDuration: 30,        // 默认静默模式时长 (分钟)
   historyBatchSize: 100,         // 历史批量删除单批次加载条数 (50 | 100 | 200)
   deleteChunkSize: 'auto',       // 批量删除并发分片大小 ('auto' | 6 | 15 | 30 | 50)
   defaultRuleType: 'auto',       // 快捷添加规则识别模式 ('auto' | 'domain' | 'path' | 'keyword')
   confirmDeepClean: true,        // 流式全量清空前二次确认
-  cleanOnAddRule: true,          // 添加防护规则时默认勾选同时清理已有历史记录
+  cleanOnAddRule: true,          // 添加防护规则时默认勾选同时清理已有历史记录 (默认打开)
   toastDuration: 2500            // Toast 消息停留时长 (ms)
 };
 
@@ -363,7 +411,7 @@ export async function saveSettings(partialSettings) {
 }
 
 /**
- * 一键清空所有规则的拦截计数
+ * 一键清空所有规则的拦截计数与历史拦截统计数据
  * @returns {Promise<number>} 受影响的规则数
  */
 export async function resetRuleHits() {
@@ -372,10 +420,20 @@ export async function resetRuleHits() {
   currentRules.forEach(rule => {
     if (rule.hits && rule.hits > 0) {
       rule.hits = 0;
+      delete rule.lastHitAt;
       updatedCount++;
     }
   });
   await saveRules(currentRules);
+
+  await browserApi.storage.set({
+    [STORAGE_KEYS.STATS]: {
+      dailyHits: {},
+      typeHits: { domain: 0, path: 0, keyword: 0 },
+      lastHitTime: 0
+    }
+  });
+
   return updatedCount;
 }
 

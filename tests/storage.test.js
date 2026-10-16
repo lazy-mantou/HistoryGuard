@@ -25,6 +25,7 @@ import {
   getPendingCleanJob,
   savePendingCleanJob,
   clearPendingCleanJob,
+  getInterceptionStats,
   STORAGE_KEYS
 } from '../src/core/storage.js';
 
@@ -176,19 +177,30 @@ describe('storage - 规则增删改查与计数', () => {
     assert.strictEqual(deleteNonExistent, false);
   });
 
-  it('incrementRuleHits 与 resetRuleHits 应当正确累加和归零', async () => {
-    const { rule } = await addRule({ pattern: 'bilibili.com' });
+  it('incrementRuleHits 与 resetRuleHits 应当正确累加和归零，并同步每日与类型统计', async () => {
+    const { rule } = await addRule({ pattern: 'bilibili.com', type: 'domain' });
     assert.strictEqual(rule.hits, 0);
 
     await incrementRuleHits(rule.id);
     const hits2 = await incrementRuleHits(rule.id);
     assert.strictEqual(hits2, 2);
 
+    const stats = await getInterceptionStats();
+    const today = new Date().toISOString().slice(0, 10);
+    assert.strictEqual(stats.dailyHits[today], 2);
+    assert.strictEqual(stats.typeHits.domain, 2);
+    assert.ok(stats.lastHitTime > 0);
+
     const resetCount = await resetRuleHits();
     assert.strictEqual(resetCount, 1);
 
     const list = await getRules();
     assert.strictEqual(list[0].hits, 0);
+
+    const resetStats = await getInterceptionStats();
+    assert.deepStrictEqual(resetStats.dailyHits, {});
+    assert.strictEqual(resetStats.typeHits.domain, 0);
+    assert.strictEqual(resetStats.lastHitTime, 0);
   });
 
   it('clearAllRules 应当清空所有规则', async () => {
@@ -295,7 +307,7 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     const settings = await getSettings();
     assert.strictEqual(settings.theme, 'auto');
     assert.strictEqual(settings.language, DEFAULT_SETTINGS.language);
-    assert.strictEqual(settings.enableHitTracking, true);
+    assert.strictEqual(settings.enableHitTracking, false);
     assert.strictEqual(settings.silentModeDuration, 30);
     assert.strictEqual(settings.cleanOnAddRule, true);
   });
@@ -304,13 +316,13 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     const updated = await saveSettings({
       theme: 'dark',
       language: 'en',
-      enableHitTracking: false,
+      enableHitTracking: true,
       cleanOnAddRule: false
     });
 
     assert.strictEqual(updated.theme, 'dark');
     assert.strictEqual(updated.language, 'en');
-    assert.strictEqual(updated.enableHitTracking, false);
+    assert.strictEqual(updated.enableHitTracking, true);
     assert.strictEqual(updated.cleanOnAddRule, false);
     // 未修改的属性保持默认
     assert.strictEqual(updated.silentModeDuration, 30);
@@ -318,7 +330,7 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     const fetched = await getSettings();
     assert.strictEqual(fetched.theme, 'dark');
     assert.strictEqual(fetched.language, 'en');
-    assert.strictEqual(fetched.enableHitTracking, false);
+    assert.strictEqual(fetched.enableHitTracking, true);
     assert.strictEqual(fetched.cleanOnAddRule, false);
   });
 });

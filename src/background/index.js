@@ -159,7 +159,7 @@ async function handleUrlInspectionAndClean(visitUrl, title = '') {
       // 1. 立即物理删除
       await browserApi.history.deleteUrl(visitUrl);
       // 累加拦截命中计数（根据用户偏好设置控制是否记录，支持极致无痕）
-      if (cachedSettings.enableHitTracking !== false) {
+      if (cachedSettings.enableHitTracking === true) {
         await incrementRuleHits(rule.id);
       }
       console.log(`[HistGuard BG] 命中规则 [${rule.pattern}]，已成功抹除历史:`, visitUrl);
