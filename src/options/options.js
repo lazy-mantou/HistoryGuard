@@ -827,7 +827,12 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
         elements.loadMoreText.textContent = t('options.loadMoreBtn', { count: batchSize });
       } else {
         elements.loadMoreSection.classList.add('hidden');
-        elements.noMoreHint.classList.remove('hidden');
+        // 当列表数据不足以翻页时（总条数未达到单批次步长，无需分页），不展示触底提示；仅当产生过分页时触底展示
+        if (currentHistoryResults.length >= batchSize) {
+          elements.noMoreHint.classList.remove('hidden');
+        } else {
+          elements.noMoreHint.classList.add('hidden');
+        }
       }
     }
 

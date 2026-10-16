@@ -988,8 +988,8 @@ button, input, select, textarea {
   text-align: center;
   font-size: 11.5px;
   color: var(--text-muted);
-  border-top: 1px solid rgba(38, 42, 54, 0.4);
-  background-color: rgba(18, 20, 26, 0.4);
+  background-color: transparent;
+  border-top: 1px solid var(--border-color);
 }
 
 /* 自定义极简滚动条 */
