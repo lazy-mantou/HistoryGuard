@@ -194,6 +194,10 @@ describe('storage - 规则增删改查与计数', () => {
     assert.strictEqual(stats.typeHits.domain, 2);
     assert.ok(stats.lastHitTime > 0);
 
+    const listBeforeReset = await getRules();
+    assert.strictEqual(listBeforeReset[0].hits, 2);
+    assert.ok(listBeforeReset[0].lastHitAt > 0);
+
     const resetCount = await resetRuleHits();
     assert.strictEqual(resetCount, 1);
 

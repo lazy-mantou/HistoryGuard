@@ -4,6 +4,29 @@
 
 ---
 
+## [1.0.46] - 2026-10-16
+
+### Chrome MV3 存储写入原子事务合并与今日拦截多维校验加固 (Chrome MV3 Storage Atomic Write & Multi-Tier Stats Hardening)
+1. **解决 Chrome MV3 前后台存储写入时序撕裂 (Atomic Unified Storage Write)**:
+   - **根因分析**：原 `incrementRuleHits` 先调用 `saveRules(currentRules)` 写入 `histguard_rules`，后在独立的 try 块中执行 `getInterceptionStats()` 并调用 `storage.set({ histguard_stats: stats })`。在 Chrome MV3 Service Worker 架构下，第一次写操作立即触发前台 options 页的 `storage.onChanged` 监听，前台迅速执行看板重绘时，后台对 `histguard_stats` 的异步写操作尚未完成或发生并发重叠，导致前台拉取到的每日聚合数据仍为空或旧值，呈现“总拦截数递增而今日拦截恒为 0”的假象；
+   - **原子合并落盘机制**：将规则数组更新与聚合统计数据更新合并为单次 `browserApi.storage.set({ [STORAGE_KEYS.RULES]: currentRules, [STORAGE_KEYS.STATS]: stats })` 原子调用，确保 Chrome 底层存储事务性同步，消除前后台通信时差与状态撕裂。
+
+2. **强化选项页今日拦截多维深度兜底校验**:
+   - **多级容错推断机制**：除 `dailyHits` 本地键与 UTC 键校验外，新增三级联动智能兜底：
+     1. 优先统计规则在今日产生的最近拦截（`lastHitAt >= 今日 00:00:00`）；
+     2. 容错统计今日新创建且产生过拦截的规则（`createdAt >= 今日 00:00:00` 且 `hits > 0`）；
+     3. 结合统计聚合元数据中的最近命中时间戳（`lastHitTime >= 今日 00:00:00`）；
+   - **趋势图今日坐标动态对齐**：当且仅当今日产生过实时拦截时，趋势曲线图今日节点数值自动与计算出的今日有效拦截指标严格同步。
+
+3. **规则元数据全生命周期字段完整性保障**:
+   - `addRule` 初始化时补齐 `lastHitAt: 0` 字段；
+   - `importRules` 在导入或合并外部备份规则时，完整保留 `lastHitAt` 时间戳元数据，防止恢复配置后历史拦截时序丢失。
+
+4. **存储变更监听防抖与合并防竞态**:
+   - 优化 `options.js` 中 `storage.onChanged` 事件处理，将 `RULES` 与 `STATS` 的联合变动合并为单次受控重绘，杜绝重复并发异步渲染。
+
+---
+
 ## [1.0.45] - 2026-10-16
 
 ### “今日拦截”统计不更新根因修复与全链路时区及冷启动加固 (Fix "Today's Hits" Not Updating & Timezone/SW Cold-Start Hardening)

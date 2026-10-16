@@ -102,6 +102,7 @@ export async function addRule({ pattern, type, enabled = true }) {
     type: actualType,
     enabled: Boolean(enabled),
     hits: 0,
+    lastHitAt: 0,
     createdAt: Date.now()
   };
 
@@ -208,37 +209,49 @@ export async function incrementRuleHits(ruleId) {
   const now = Date.now();
   rule.hits = (rule.hits || 0) + 1;
   rule.lastHitAt = now;
-  await saveRules(currentRules);
 
+  let stats;
   try {
-    const stats = await getInterceptionStats();
-    const localKey = getLocalDateKey(now);
-    const utcKey = new Date(now).toISOString().slice(0, 10);
-
-    // 写入本地日历日期键，若本地与 UTC 跨日不同时同步镜像，保障双向兼容
-    stats.dailyHits[localKey] = (stats.dailyHits[localKey] || 0) + 1;
-    if (localKey !== utcKey) {
-      stats.dailyHits[utcKey] = (stats.dailyHits[utcKey] || 0) + 1;
-    }
-
-    // 剔除 90 天前的陈旧聚合数据，保障存储轻量
-    const cutoffDate = getLocalDateKey(now - 90 * 86400 * 1000);
-    for (const dateStr of Object.keys(stats.dailyHits)) {
-      if (dateStr < cutoffDate) {
-        delete stats.dailyHits[dateStr];
-      }
-    }
-
-    const ruleType = rule.type === 'keyword' ? 'keyword' : (rule.type === 'path' ? 'path' : 'domain');
-    stats.typeHits[ruleType] = (stats.typeHits[ruleType] || 0) + 1;
-    stats.lastHitTime = now;
-
-    await browserApi.storage.set({
-      [STORAGE_KEYS.STATS]: stats
-    });
-  } catch (err) {
-    console.warn('Record interception stats error:', err);
+    stats = await getInterceptionStats();
+  } catch {
+    stats = {
+      dailyHits: {},
+      typeHits: { domain: 0, path: 0, keyword: 0 },
+      lastHitTime: 0
+    };
   }
+
+  const localKey = getLocalDateKey(now);
+  const utcKey = new Date(now).toISOString().slice(0, 10);
+
+  if (!stats.dailyHits || typeof stats.dailyHits !== 'object') {
+    stats.dailyHits = {};
+  }
+  stats.dailyHits[localKey] = (stats.dailyHits[localKey] || 0) + 1;
+  if (localKey !== utcKey) {
+    stats.dailyHits[utcKey] = (stats.dailyHits[utcKey] || 0) + 1;
+  }
+
+  // 剔除 90 天前的陈旧聚合数据，保障存储轻量
+  const cutoffDate = getLocalDateKey(now - 90 * 86400 * 1000);
+  for (const dateStr of Object.keys(stats.dailyHits)) {
+    if (dateStr < cutoffDate) {
+      delete stats.dailyHits[dateStr];
+    }
+  }
+
+  if (!stats.typeHits || typeof stats.typeHits !== 'object') {
+    stats.typeHits = { domain: 0, path: 0, keyword: 0 };
+  }
+  const ruleType = rule.type === 'keyword' ? 'keyword' : (rule.type === 'path' ? 'path' : 'domain');
+  stats.typeHits[ruleType] = (stats.typeHits[ruleType] || 0) + 1;
+  stats.lastHitTime = now;
+
+  // 核心：单次原子合并写入规则与统计数据，彻底杜绝 Chrome MV3 Service Worker 跨进程存储时序撕裂
+  await browserApi.storage.set({
+    [STORAGE_KEYS.RULES]: currentRules,
+    [STORAGE_KEYS.STATS]: stats
+  });
 
   return rule.hits;
 }
@@ -340,6 +353,7 @@ export async function importRules(jsonString, mode = 'merge') {
         type: item.type === 'keyword' ? 'keyword' : (item.type === 'path' ? 'path' : 'domain'),
         enabled: item.enabled !== false,
         hits: typeof item.hits === 'number' ? item.hits : 0,
+        lastHitAt: typeof item.lastHitAt === 'number' ? item.lastHitAt : 0,
         createdAt: item.createdAt || Date.now()
       });
     }
@@ -443,9 +457,9 @@ export async function resetRuleHits() {
       updatedCount++;
     }
   });
-  await saveRules(currentRules);
 
   await browserApi.storage.set({
+    [STORAGE_KEYS.RULES]: currentRules,
     [STORAGE_KEYS.STATS]: {
       dailyHits: {},
       typeHits: { domain: 0, path: 0, keyword: 0 },

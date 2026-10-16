@@ -385,14 +385,29 @@ async function renderStatsDashboard() {
   const utcKey = new Date(now).toISOString().slice(0, 10);
   let todayHits = Number(stats.dailyHits[localKey]) || Number(stats.dailyHits[utcKey]) || 0;
 
-  // 健壮兜底：若聚合 dailyHits 暂时未写入或跨时区未对齐，但规则在今日产生过实时拦截命中
+  // 健壮兜底：多维双重校验今日拦截数据（杜绝因 Chrome 冷启动/跨进程时序/历史导入数据缺失等导致的今日显示为 0）
   if (todayHits === 0 && totalHits > 0) {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayMs = startOfToday.getTime();
-    const todayRulesHits = rules
+
+    // 1. 优先统计规则在今日的最近拦截 (lastHitAt >= 今日 00:00:00)
+    let todayRulesHits = rules
       .filter(r => (r.lastHitAt || 0) >= startOfTodayMs)
       .reduce((sum, r) => sum + (r.hits || 0), 0);
+
+    // 2. 容错统计：若规则在今日新创建且产生了拦截 (createdAt >= 今日 00:00:00)
+    if (todayRulesHits === 0) {
+      todayRulesHits = rules
+        .filter(r => (r.createdAt || 0) >= startOfTodayMs && (r.hits || 0) > 0)
+        .reduce((sum, r) => sum + (r.hits || 0), 0);
+    }
+
+    // 3. 容错统计：若统计聚合中包含今日时间戳记录 (lastHitTime >= 今日 00:00:00)
+    if (todayRulesHits === 0 && stats.lastHitTime >= startOfTodayMs) {
+      todayRulesHits = 1;
+    }
+
     if (todayRulesHits > 0) {
       todayHits = Math.min(todayRulesHits, totalHits);
     }
@@ -418,7 +433,7 @@ async function renderStatsDashboard() {
   }
 
   // 2. 渲染每日拦截趋势曲线图
-  renderStatsChart(stats.dailyHits, currentStatsRange);
+  renderStatsChart(stats.dailyHits, currentStatsRange, todayHits);
 
   // 3. 渲染规则类型分布堆叠图
   renderTypeDistribution(rules, stats);
@@ -431,8 +446,9 @@ async function renderStatsDashboard() {
  * 绘制高质感 SVG 每日拦截趋势图
  * @param {Object<string, number>} dailyHits
  * @param {number} rangeDays
+ * @param {number} [activeTodayHits=0]
  */
-function renderStatsChart(dailyHits = {}, rangeDays = 7) {
+function renderStatsChart(dailyHits = {}, rangeDays = 7, activeTodayHits = 0) {
   if (!elements.statsChartWrapper) return;
 
   const dates = [];
@@ -448,7 +464,11 @@ function renderStatsChart(dailyHits = {}, rangeDays = 7) {
       monthDay: `${d.getMonth() + 1}/${d.getDate()}`,
       isToday: i === 0
     });
-    counts.push(Number(dailyHits[localKey]) || Number(dailyHits[utcKey]) || 0);
+    let val = Number(dailyHits[localKey]) || Number(dailyHits[utcKey]) || 0;
+    if (i === 0 && val === 0 && activeTodayHits > 0) {
+      val = activeTodayHits;
+    }
+    counts.push(val);
   }
 
   const maxVal = Math.max(...counts, 0);
@@ -1780,15 +1800,14 @@ if (elements.settingToastDuration) {
 
 // 监听跨页面存储变更，实现多窗口实时同步
 browserApi.storage.onChanged(async (changes) => {
+  const isStatsTab = document.querySelector('.nav-tab.active')?.dataset?.tab === 'stats';
+
   if (changes[STORAGE_KEYS.SILENT_MODE]) {
     await refreshSilentModeStatus();
   }
   if (changes[STORAGE_KEYS.RULES]) {
     await refreshRulesList();
     await refreshHistoryIfVisibleOrMarkDirty();
-    if (document.querySelector('.nav-tab.active')?.dataset?.tab === 'stats') {
-      await renderStatsDashboard();
-    }
   }
   if (changes[STORAGE_KEYS.SETTINGS]) {
     const newSettings = changes[STORAGE_KEYS.SETTINGS].newValue;
@@ -1802,9 +1821,9 @@ browserApi.storage.onChanged(async (changes) => {
   }
   if (changes[STORAGE_KEYS.STATS]) {
     await refreshGlobalStats();
-    if (document.querySelector('.nav-tab.active')?.dataset?.tab === 'stats') {
-      renderStatsDashboard();
-    }
+  }
+  if (isStatsTab && (changes[STORAGE_KEYS.RULES] || changes[STORAGE_KEYS.STATS])) {
+    await renderStatsDashboard();
   }
 });
 
