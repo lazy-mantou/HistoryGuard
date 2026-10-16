@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'Bersihkan dan atur ulang semua hitungan pemblokiran',
     statsBtnResetConfirm: 'Apakah Anda yakin ingin mengatur ulang semua statistik pemblokiran? Tindakan ini tidak dapat dibatalkan.',
     statsToastResetSuccess: 'Semua statistik pemblokiran telah diatur ulang',
+    statsToastRefreshSuccess: 'Statistik berhasil diperbarui',
     statsTotalHits: 'Total Pemblokiran',
     statsTotalHitsDesc: 'Dihapus seketika saat membuka halaman',
     statsTodayHits: 'Pemblokiran Hari Ini',

@@ -4,6 +4,29 @@
 
 ---
 
+## [1.0.45] - 2026-10-16
+
+### “今日拦截”统计不更新根因修复与全链路时区及冷启动加固 (Fix "Today's Hits" Not Updating & Timezone/SW Cold-Start Hardening)
+1. **定位并修复 Chrome MV3 Service Worker 异步冷启动竞态**:
+   - **根因分析**：原后台守护脚本在模块顶层以 `cachedSettings = { ...DEFAULT_SETTINGS }`（默认 `enableHitTracking: false`）初始化，并以非阻塞方式调用异步 `refreshCache()`；当 Service Worker 从休眠中被唤醒时，页面导航事件已瞬间触发，拦截逻辑误判统计未开启，导致 `incrementRuleHits` 被直接跳过；
+   - **安全加载器机制**：将后台内存设置重构为未决状态管理，引入 `getOrFetchSettings()` 机制，在拦截处理时确保读取到真实持久化的用户偏好，彻底消除冷启动状态下的拦截统计漏记。
+
+2. **解决时区偏差导致的跨日错位 (UTC vs Local Calendar Date)**:
+   - **根因分析**：原实现使用 `new Date().toISOString().slice(0, 10)`，输出为 UTC 标准时间。在东八区（UTC+8）及其他非 0 时区，每天 00:00~08:00 期间 UTC 仍属“昨天”，导致清晨产生的拦截被记入昨天，而仪表盘以本地今天查询时返回 0；趋势图 X 轴本地月日刻度亦与 UTC 键发生整整 1 天的脱节；
+   - **本地日历键生成器 (`getLocalDateKey`)**：在 `src/core/storage.js` 统一封装并导出基于用户计算机本地时区的 `YYYY-MM-DD` 格式化工具；
+   - **双轨兼容与镜像落盘**：`incrementRuleHits` 写入本地键的同时，若本地与 UTC 跨日不同则同步镜像写入 UTC 键，保证新旧版本平滑过渡与双向兼容；
+   - **规则命中时间戳兜底**：在选项页看板中若聚合数据暂时为空，自动结合规则在本地今日零点以后的 `lastHitAt` 与总命中数进行即时校准兜底，保障数字实时更新。
+
+3. **控制台多窗口响应式监听与刷新按钮交互修复**:
+   - **全事件看板响应**：在 `browserApi.storage.onChanged` 监听中，补齐 `STORAGE_KEYS.RULES` 变动时对“数据统计”当前激活面板的实时自动重绘；
+   - **操作反馈文案纠正**：修复统计面板“刷新”按钮（`#btn-refresh-stats`）点击后误触发“外观主题已更新”的错乱反馈，联动刷新全局头部 KPI 并在 12 国语言包中同步新增 `statsToastRefreshSuccess`（“统计数据已即时刷新”）。
+
+4. **自动化单元测试与双端生产构建**:
+   - 补充 `getLocalDateKey` 格式准确性与跨时区双向统计累加测试用例；
+   - 保持全部单元测试 100% 覆盖通过，完成 Chrome / Firefox 双内核打包输出。
+
+---
+
 ## [1.0.44] - 2026-10-16
 
 ### 大量删除并发节流默认 auto 与修改高危预警模态弹窗 (Default Auto Concurrency & Risk Warning Modal on Modification)

@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'Alle Trefferzähler löschen und zurücksetzen',
     statsBtnResetConfirm: 'Möchten Sie wirklich alle Blockierungsstatistiken zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden.',
     statsToastResetSuccess: 'Alle Blockierungsstatistiken wurden zurückgesetzt',
+    statsToastRefreshSuccess: 'Statistiken erfolgreich aktualisiert',
     statsTotalHits: 'Gesamte Blockierungen',
     statsTotalHitsDesc: 'Sofort beim Öffnen von Seiten gelöscht',
     statsTodayHits: 'Heute blockiert',

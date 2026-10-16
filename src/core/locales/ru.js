@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'Очистить и сбросить все счетчики срабатываний',
     statsBtnResetConfirm: 'Вы уверены, что хотите сбросить всю статистику блокировок? Это действие необратимо.',
     statsToastResetSuccess: 'Вся статистика блокировок успешно сброшена',
+    statsToastRefreshSuccess: 'Статистика успешно обновлена',
     statsTotalHits: 'Всего блокировок',
     statsTotalHitsDesc: 'Удалено мгновенно при открытии страниц',
     statsTodayHits: 'Блокировок сегодня',

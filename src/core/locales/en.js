@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'Clear and reset all interception hit counters',
     statsBtnResetConfirm: 'Are you sure you want to reset all interception statistics? This action cannot be undone.',
     statsToastResetSuccess: 'All interception statistics have been reset',
+    statsToastRefreshSuccess: 'Statistics refreshed successfully',
     statsTotalHits: 'Total Interceptions',
     statsTotalHitsDesc: 'Erased immediately upon opening pages',
     statsTodayHits: 'Today\'s Hits',

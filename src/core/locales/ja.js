@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'すべてのブロックカウントをクリアしてリセット',
     statsBtnResetConfirm: 'すべてのブロック統計データをリセットしてもよろしいですか？この操作は元に戻せません。',
     statsToastResetSuccess: 'すべてのブロック統計をリセットしました',
+    statsToastRefreshSuccess: '統計データを更新しました',
     statsTotalHits: '累計ブロック数',
     statsTotalHitsDesc: 'ページを開いた瞬間にリアルタイム抹消',
     statsTodayHits: '本日のブロック',

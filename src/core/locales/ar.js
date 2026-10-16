@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'مسح وإعادة تعيين جميع عدادات الحظر',
     statsBtnResetConfirm: 'هل أنت متأكد من رغبتك في إعادة تعيين جميع إحصائيات الحظر؟ لا يمكن التراجع عن هذا الإجراء.',
     statsToastResetSuccess: 'تمت إعادة تعيين جميع إحصائيات الحظر',
+    statsToastRefreshSuccess: 'تم تحديث الإحصائيات بنجاح',
     statsTotalHits: 'إجمالي الحظر',
     statsTotalHitsDesc: 'تم مسحها فوراً عند فتح الصفحات',
     statsTodayHits: 'حظر اليوم',

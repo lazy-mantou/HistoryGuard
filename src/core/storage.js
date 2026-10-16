@@ -182,6 +182,19 @@ export async function getInterceptionStats() {
 }
 
 /**
+ * 获取本地日期的 YYYY-MM-DD 键名（基于用户本地时区，避免 UTC 导致的时区偏差与跨日错位）
+ * @param {number} [timestamp=Date.now()]
+ * @returns {string} 例如 "2026-10-16"
+ */
+export function getLocalDateKey(timestamp = Date.now()) {
+  const d = new Date(timestamp);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * 累加规则拦截命中次数与实时统计数据
  * （仅在用户真实打开网页被规则即时拦截抹除时调用，不计入后台批量清理）
  * @param {string} ruleId
@@ -199,11 +212,17 @@ export async function incrementRuleHits(ruleId) {
 
   try {
     const stats = await getInterceptionStats();
-    const todayKey = new Date(now).toISOString().slice(0, 10);
-    stats.dailyHits[todayKey] = (stats.dailyHits[todayKey] || 0) + 1;
+    const localKey = getLocalDateKey(now);
+    const utcKey = new Date(now).toISOString().slice(0, 10);
+
+    // 写入本地日历日期键，若本地与 UTC 跨日不同时同步镜像，保障双向兼容
+    stats.dailyHits[localKey] = (stats.dailyHits[localKey] || 0) + 1;
+    if (localKey !== utcKey) {
+      stats.dailyHits[utcKey] = (stats.dailyHits[utcKey] || 0) + 1;
+    }
 
     // 剔除 90 天前的陈旧聚合数据，保障存储轻量
-    const cutoffDate = new Date(now - 90 * 86400 * 1000).toISOString().slice(0, 10);
+    const cutoffDate = getLocalDateKey(now - 90 * 86400 * 1000);
     for (const dateStr of Object.keys(stats.dailyHits)) {
       if (dateStr < cutoffDate) {
         delete stats.dailyHits[dateStr];

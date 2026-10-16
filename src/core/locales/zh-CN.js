@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: '清空并重置所有拦截命中统计数据',
     statsBtnResetConfirm: '确定要清空所有规则的拦截命中统计数据吗？此操作无法撤销。',
     statsToastResetSuccess: '已重置所有拦截统计数据',
+    statsToastRefreshSuccess: '统计数据已即时刷新',
     statsTotalHits: '累计拦截总数',
     statsTotalHitsDesc: '用户打开页面时即时抹除',
     statsTodayHits: '今日拦截',

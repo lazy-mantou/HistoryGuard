@@ -25,6 +25,32 @@ import { updateTabToolbarIndicator, updateGlobalToolbarIndicator, ICON_PATHS } f
 let cachedRules = [];
 let cachedSilentUntil = 0;
 let cachedSettings = { ...DEFAULT_SETTINGS };
+let isSettingsLoaded = false;
+let settingsFetchPromise = null;
+
+/**
+ * 安全获取当前偏好设置（解决 MV3 Service Worker 冷启动竞态下默认配置未决问题）
+ * @returns {Promise<typeof DEFAULT_SETTINGS>}
+ */
+async function getOrFetchSettings() {
+  if (isSettingsLoaded) {
+    return cachedSettings;
+  }
+  if (!settingsFetchPromise) {
+    settingsFetchPromise = getSettings()
+      .then(s => {
+        cachedSettings = s;
+        isSettingsLoaded = true;
+        settingsFetchPromise = null;
+        return s;
+      })
+      .catch(err => {
+        settingsFetchPromise = null;
+        return cachedSettings;
+      });
+  }
+  return settingsFetchPromise;
+}
 
 /**
  * 全量同步所有标签页与全局默认的工具栏状态指示器
@@ -83,6 +109,7 @@ async function refreshCache() {
     cachedSilentUntil = silent.active ? silent.until : 0;
 
     cachedSettings = await getSettings();
+    isSettingsLoaded = true;
 
     // 缓存刷新后立即同步全局与各标签页的工具栏指示器
     await syncAllTabsToolbarIndicators();
@@ -159,7 +186,8 @@ async function handleUrlInspectionAndClean(visitUrl, title = '') {
       // 1. 立即物理删除
       await browserApi.history.deleteUrl(visitUrl);
       // 累加拦截命中计数（根据用户偏好设置控制是否记录，支持极致无痕）
-      if (cachedSettings.enableHitTracking === true) {
+      const currentSettings = await getOrFetchSettings();
+      if (currentSettings.enableHitTracking === true) {
         await incrementRuleHits(rule.id);
       }
       console.log(`[HistGuard BG] 命中规则 [${rule.pattern}]，已成功抹除历史:`, visitUrl);
@@ -299,7 +327,8 @@ if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
 
       try {
         console.log(`[HistGuard BG] 开始在后台执行历史记录全量出清: [${backgroundCleaningState.rulePattern}]`);
-        const concurrency = resolveDeleteConcurrency(cachedSettings.deleteChunkSize, browserApi);
+        const currentSettings = await getOrFetchSettings();
+        const concurrency = resolveDeleteConcurrency(currentSettings.deleteChunkSize, browserApi);
         const result = await cleanHistoryByRule(rule, {
           concurrency,
           onProgress: ({ deleted, scanned }) => {
@@ -374,7 +403,8 @@ export async function checkAndResumePendingCleanJob(delayMs = 2500) {
     backgroundCleaningState.scanned = 0;
     backgroundCleaningState.lastUpdated = Date.now();
 
-    const concurrency = resolveDeleteConcurrency(cachedSettings.deleteChunkSize, browserApi);
+    const currentSettings = await getOrFetchSettings();
+    const concurrency = resolveDeleteConcurrency(currentSettings.deleteChunkSize, browserApi);
     const result = await cleanHistoryByRule(pendingJob.rule, {
       concurrency,
       onProgress: ({ deleted, scanned }) => {

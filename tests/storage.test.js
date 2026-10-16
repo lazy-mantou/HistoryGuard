@@ -26,6 +26,7 @@ import {
   savePendingCleanJob,
   clearPendingCleanJob,
   getInterceptionStats,
+  getLocalDateKey,
   STORAGE_KEYS
 } from '../src/core/storage.js';
 
@@ -186,8 +187,10 @@ describe('storage - 规则增删改查与计数', () => {
     assert.strictEqual(hits2, 2);
 
     const stats = await getInterceptionStats();
-    const today = new Date().toISOString().slice(0, 10);
-    assert.strictEqual(stats.dailyHits[today], 2);
+    const localToday = getLocalDateKey();
+    const utcToday = new Date().toISOString().slice(0, 10);
+    assert.strictEqual(stats.dailyHits[localToday], 2);
+    assert.strictEqual(stats.dailyHits[utcToday], 2);
     assert.strictEqual(stats.typeHits.domain, 2);
     assert.ok(stats.lastHitTime > 0);
 
@@ -201,6 +204,12 @@ describe('storage - 规则增删改查与计数', () => {
     assert.deepStrictEqual(resetStats.dailyHits, {});
     assert.strictEqual(resetStats.typeHits.domain, 0);
     assert.strictEqual(resetStats.lastHitTime, 0);
+  });
+
+  it('getLocalDateKey 应当正确返回本地日历 YYYY-MM-DD 格式，避免跨时区错位', () => {
+    const fixedTs = new Date(2026, 9, 16, 10, 15, 0).getTime(); // 2026-10-16
+    const key = getLocalDateKey(fixedTs);
+    assert.strictEqual(key, '2026-10-16');
   });
 
   it('clearAllRules 应当清空所有规则', async () => {

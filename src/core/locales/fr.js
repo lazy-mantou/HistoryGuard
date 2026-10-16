@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'Effacer et réinitialiser tous les compteurs de blocage',
     statsBtnResetConfirm: 'Voulez-vous vraiment réinitialiser toutes les statistiques de blocage ? Cette action est irréversible.',
     statsToastResetSuccess: 'Toutes les statistiques de blocage ont été réinitialisées',
+    statsToastRefreshSuccess: 'Statistiques actualisées avec succès',
     statsTotalHits: 'Total des blocages',
     statsTotalHitsDesc: 'Effacés instantanément à l\'ouverture des pages',
     statsTodayHits: 'Blocages du jour',

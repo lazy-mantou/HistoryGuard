@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: '모든 차단 횟수 카운터 초기화',
     statsBtnResetConfirm: '모든 차단 통계 데이터를 초기화하시겠습니까? 이 작업은 취소할 수 없습니다.',
     statsToastResetSuccess: '모든 차단 통계가 초기화되었습니다',
+    statsToastRefreshSuccess: '통계 데이터가 즉시 새로고침되었습니다',
     statsTotalHits: '누적 차단 수',
     statsTotalHitsDesc: '페이지 방문 시 실시간으로 즉시 영구 삭제',
     statsTodayHits: '오늘 차단',

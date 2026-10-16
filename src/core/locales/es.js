@@ -266,6 +266,7 @@ export default {
     statsBtnResetTitle: 'Borrar y restablecer todos los contadores de bloqueo',
     statsBtnResetConfirm: '¿Seguro que deseas restablecer todas las estadísticas de bloqueo? Esta acción no se puede deshacer.',
     statsToastResetSuccess: 'Se han restablecido todas las estadísticas de bloqueo',
+    statsToastRefreshSuccess: 'Estadísticas actualizadas con éxito',
     statsTotalHits: 'Bloqueos totales',
     statsTotalHitsDesc: 'Eliminados al instante al abrir páginas',
     statsTodayHits: 'Bloqueos hoy',

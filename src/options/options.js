@@ -23,6 +23,7 @@ import {
   resetRuleHits,
   clearAllRules,
   getInterceptionStats,
+  getLocalDateKey,
   DEFAULT_SETTINGS,
   STORAGE_KEYS
 } from '../core/storage.js';
@@ -380,8 +381,23 @@ async function renderStatsDashboard() {
 
   const totalHits = rules.reduce((acc, r) => acc + (r.hits || 0), 0);
   const now = Date.now();
-  const todayKey = new Date(now).toISOString().slice(0, 10);
-  const todayHits = stats.dailyHits[todayKey] || 0;
+  const localKey = getLocalDateKey(now);
+  const utcKey = new Date(now).toISOString().slice(0, 10);
+  let todayHits = Number(stats.dailyHits[localKey]) || Number(stats.dailyHits[utcKey]) || 0;
+
+  // 健壮兜底：若聚合 dailyHits 暂时未写入或跨时区未对齐，但规则在今日产生过实时拦截命中
+  if (todayHits === 0 && totalHits > 0) {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
+    const todayRulesHits = rules
+      .filter(r => (r.lastHitAt || 0) >= startOfTodayMs)
+      .reduce((sum, r) => sum + (r.hits || 0), 0);
+    if (todayRulesHits > 0) {
+      todayHits = Math.min(todayRulesHits, totalHits);
+    }
+  }
+
   const activeRulesWithHits = rules.filter(r => (r.hits || 0) > 0).length;
   const totalRules = rules.length;
   const coveragePercent = totalRules > 0 ? Math.round((activeRulesWithHits / totalRules) * 100) : 0;
@@ -425,13 +441,14 @@ function renderStatsChart(dailyHits = {}, rangeDays = 7) {
 
   for (let i = rangeDays - 1; i >= 0; i--) {
     const d = new Date(now - i * 86400 * 1000);
-    const key = d.toISOString().slice(0, 10);
+    const localKey = getLocalDateKey(d.getTime());
+    const utcKey = d.toISOString().slice(0, 10);
     dates.push({
-      key,
+      key: localKey,
       monthDay: `${d.getMonth() + 1}/${d.getDate()}`,
       isToday: i === 0
     });
-    counts.push(dailyHits[key] || 0);
+    counts.push(Number(dailyHits[localKey]) || Number(dailyHits[utcKey]) || 0);
   }
 
   const maxVal = Math.max(...counts, 0);
@@ -1476,8 +1493,9 @@ if (elements.settingEnableHitTracking) {
 // 统计面板操作按钮绑定
 if (elements.btnRefreshStats) {
   elements.btnRefreshStats.addEventListener('click', async () => {
+    await refreshGlobalStats();
     await renderStatsDashboard();
-    showToast(t('options.toastThemeChanged'));
+    showToast(t('options.statsToastRefreshSuccess') || '统计数据已即时刷新');
   });
 }
 
@@ -1768,6 +1786,9 @@ browserApi.storage.onChanged(async (changes) => {
   if (changes[STORAGE_KEYS.RULES]) {
     await refreshRulesList();
     await refreshHistoryIfVisibleOrMarkDirty();
+    if (document.querySelector('.nav-tab.active')?.dataset?.tab === 'stats') {
+      await renderStatsDashboard();
+    }
   }
   if (changes[STORAGE_KEYS.SETTINGS]) {
     const newSettings = changes[STORAGE_KEYS.SETTINGS].newValue;
