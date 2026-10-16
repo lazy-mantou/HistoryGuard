@@ -98,6 +98,11 @@ const elements = {
   settingConfirmDeepClean: document.getElementById('setting-confirm-deep-clean'),
   settingToastDuration: document.getElementById('setting-toast-duration'),
 
+  // 大量删除并发节流修改高危提示 Modal
+  modalChunkWarning: document.getElementById('modal-chunk-warning'),
+  btnChunkWarningKeep: document.getElementById('btn-chunk-warning-keep'),
+  btnChunkWarningProceed: document.getElementById('btn-chunk-warning-proceed'),
+
   // 统计分析面板
   btnRefreshStats: document.getElementById('btn-refresh-stats'),
   btnResetStats: document.getElementById('btn-reset-stats'),
@@ -1643,13 +1648,98 @@ if (elements.settingHistoryBatchSize) {
   });
 }
 
+// 大量删除并发节流设置与修改高危警告弹窗
+let pendingChunkSizeVal = null;
+
+function closeChunkWarningModal(revertToSafe = true) {
+  if (revertToSafe) {
+    if (elements.settingDeleteChunkSize) {
+      elements.settingDeleteChunkSize.value = String(currentSettings.deleteChunkSize || 'auto');
+    }
+  }
+  if (elements.modalChunkWarning) {
+    elements.modalChunkWarning.classList.add('hidden');
+  }
+  pendingChunkSizeVal = null;
+}
+
 if (elements.settingDeleteChunkSize) {
   elements.settingDeleteChunkSize.addEventListener('change', async () => {
     const rawVal = elements.settingDeleteChunkSize.value;
-    const val = rawVal === 'auto' ? 'auto' : (Number(rawVal) || 'auto');
-    await saveSettings({ deleteChunkSize: val });
-    currentSettings.deleteChunkSize = val;
-    showToast(t('options.toastChunkSizeChanged', { val: rawVal }));
+
+    // 若用户选择恢复为 "auto" (智能自适应内核)，无风险且符合推荐，直接生效
+    if (rawVal === 'auto') {
+      await saveSettings({ deleteChunkSize: 'auto' });
+      currentSettings.deleteChunkSize = 'auto';
+      showToast(t('options.toastChunkAutoRestored'));
+      return;
+    }
+
+    // 若用户试图修改为非 auto 手动并发值，弹出高危警示弹窗提醒潜在风险并建议保持 auto
+    pendingChunkSizeVal = rawVal;
+
+    if (elements.modalChunkWarning) {
+      elements.modalChunkWarning.classList.remove('hidden');
+      // 默认聚焦在推荐按钮上，便于键盘操作与防误触
+      elements.btnChunkWarningKeep?.focus();
+    } else {
+      // 容错降级：在不支持或缺失 modal 结构时采用原生 confirm 对话框
+      const warningMsg = `${t('options.chunkWarningTitle')}\n\n${t('options.chunkWarningDesc')}\n- ${t('options.chunkWarningIssue1')}\n- ${t('options.chunkWarningIssue2')}\n\n${t('options.chunkWarningRecommendation')}`;
+      const confirmed = window.confirm(warningMsg);
+      if (!confirmed) {
+        elements.settingDeleteChunkSize.value = String(currentSettings.deleteChunkSize || 'auto');
+        pendingChunkSizeVal = null;
+        return;
+      }
+      const val = Number(rawVal) || 'auto';
+      await saveSettings({ deleteChunkSize: val });
+      currentSettings.deleteChunkSize = val;
+      showToast(t('options.toastChunkSizeChanged', { val: rawVal }));
+      pendingChunkSizeVal = null;
+    }
+  });
+}
+
+// 模态弹窗操作按钮与事件监听
+if (elements.btnChunkWarningKeep) {
+  elements.btnChunkWarningKeep.addEventListener('click', async () => {
+    // 用户接受建议：保持/恢复智能自适应
+    if (currentSettings.deleteChunkSize !== 'auto') {
+      await saveSettings({ deleteChunkSize: 'auto' });
+      currentSettings.deleteChunkSize = 'auto';
+      showToast(t('options.toastChunkAutoRestored'));
+    }
+    closeChunkWarningModal(true);
+  });
+}
+
+if (elements.btnChunkWarningProceed) {
+  elements.btnChunkWarningProceed.addEventListener('click', async () => {
+    // 用户执意修改：应用选定的手动并发数值
+    const targetVal = pendingChunkSizeVal;
+    if (targetVal) {
+      const val = targetVal === 'auto' ? 'auto' : (Number(targetVal) || 'auto');
+      await saveSettings({ deleteChunkSize: val });
+      currentSettings.deleteChunkSize = val;
+      showToast(t('options.toastChunkSizeChanged', { val: targetVal }));
+    }
+    closeChunkWarningModal(false);
+  });
+}
+
+if (elements.modalChunkWarning) {
+  // 点击半透明遮罩背景取消修改
+  elements.modalChunkWarning.addEventListener('click', (e) => {
+    if (e.target === elements.modalChunkWarning) {
+      closeChunkWarningModal(true);
+    }
+  });
+
+  // 按下 ESC 键取消修改
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !elements.modalChunkWarning.classList.contains('hidden')) {
+      closeChunkWarningModal(true);
+    }
   });
 }
 

@@ -310,6 +310,7 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     assert.strictEqual(settings.enableHitTracking, false);
     assert.strictEqual(settings.silentModeDuration, 30);
     assert.strictEqual(settings.cleanOnAddRule, true);
+    assert.strictEqual(settings.deleteChunkSize, 'auto');
   });
 
   it('保存部分设置应与现有配置合并', async () => {
@@ -317,13 +318,15 @@ describe('storage - 全局偏好设置 (Settings)', () => {
       theme: 'dark',
       language: 'en',
       enableHitTracking: true,
-      cleanOnAddRule: false
+      cleanOnAddRule: false,
+      deleteChunkSize: 6
     });
 
     assert.strictEqual(updated.theme, 'dark');
     assert.strictEqual(updated.language, 'en');
     assert.strictEqual(updated.enableHitTracking, true);
     assert.strictEqual(updated.cleanOnAddRule, false);
+    assert.strictEqual(updated.deleteChunkSize, 6);
     // 未修改的属性保持默认
     assert.strictEqual(updated.silentModeDuration, 30);
 

@@ -628,8 +628,8 @@
 
                 <div class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-title" data-i18n="options.settingChunkSizeTitle">大批量清理并发节流</div>
-                    <div class="setting-desc" data-i18n="options.settingChunkSizeDesc">控制重型历史清理时的执行节奏与并发度。推荐使用“智能自适应”，可根据不同浏览器内核自动调整性能并防止界面卡顿。</div>
+                    <div class="setting-title" data-i18n="options.settingChunkSizeTitle">大量删除并发节流限制</div>
+                    <div class="setting-desc" data-i18n="options.settingChunkSizeDesc">控制重型历史清理时的执行节奏与并发度。推荐保持“智能自适应”，可根据不同浏览器内核自动调整性能并防止界面卡顿。</div>
                   </div>
                   <div class="setting-control">
                     <select id="setting-delete-chunk-size" class="settings-select">
@@ -682,6 +682,47 @@
           </div>
         </section>
       </main>
+    </div>
+
+    <!-- 大量删除并发节流修改高危提示 Modal 弹窗 -->
+    <div id="modal-chunk-warning" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="chunk-warning-title">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-icon-badge warning">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="modal-header-text">
+            <h3 id="chunk-warning-title" class="modal-title" data-i18n="options.chunkWarningTitle">⚠️ 修改并发节流限制警告</h3>
+            <p class="modal-subtitle" data-i18n="options.chunkWarningDesc">非必要请勿修改此设置！HistGuard 默认采用“智能自适应”，已针对不同浏览器底层架构进行了极致调优。手动更改并发数可能导致以下问题：</p>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <div class="modal-warning-card">
+            <div class="warning-point">
+              <span class="warning-bullet">🔒</span>
+              <div class="warning-text" data-i18n="options.chunkWarningIssue1">Firefox 数据库锁死：Firefox Places SQLite 采用单写锁机制。并发过高极易引发 database is locked 报错，导致浏览器严重卡顿甚至无响应。</div>
+            </div>
+            <div class="warning-point">
+              <span class="warning-bullet">⚡</span>
+              <div class="warning-text" data-i18n="options.chunkWarningIssue2">性能消耗与卡顿：过高并发会导致浏览器进程与磁盘 I/O 瞬间飙高，在进行大批量删除时可能引起正常网页浏览掉帧或短暂假死。</div>
+            </div>
+            <div class="warning-point highlight">
+              <span class="warning-bullet">🛡️</span>
+              <div class="warning-text" data-i18n="options.chunkWarningRecommendation">强烈建议保持“智能自适应”，HistGuard 会自动匹配当前浏览器的最佳性能与稳定性。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btn-chunk-warning-proceed" class="btn btn-secondary" data-i18n="options.chunkWarningBtnProceed">仍要修改</button>
+          <button id="btn-chunk-warning-keep" class="btn btn-primary" data-i18n="options.chunkWarningBtnKeep">保持智能自适应 (推荐)</button>
+        </div>
+      </div>
     </div>
 
     <!-- 操作提示 Toast 浮层 -->
