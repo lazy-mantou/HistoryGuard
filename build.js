@@ -100,36 +100,35 @@ function getDirStats(dir) {
  */
 function build() {
   console.log('====================================================');
-  console.log('🛡️  HistGuard 跨浏览器扩展构建工具 (Zero-Dependency)');
+  console.log('🛡️  HistGuard Cross-Browser Extension Build Tool (Zero-Dependency)');
   console.log('====================================================\n');
 
   const startTime = Date.now();
 
-  // 1. 确保 dist 根目录存在
+  // 1. Ensure dist root exists
   if (!fs.existsSync(DIST_DIR)) {
     fs.mkdirSync(DIST_DIR, { recursive: true });
   }
 
-  // 2. 遍历构建目标
+  // 2. Iterate over build targets
   for (const target of TARGETS) {
-    console.log(`📦 正在构建 ${target.label} 产物...`);
+    console.log(`📦 Building ${target.label} artifacts...`);
     cleanAndEnsureDir(target.outputDir);
 
-    // A. 校验并复制对应 Manifest
+    // A. Validate and copy manifest
     if (!fs.existsSync(target.manifestSrc)) {
-      throw new Error(`找不到清单文件: ${target.manifestSrc}`);
+      throw new Error(`Manifest file not found: ${target.manifestSrc}`);
     }
     const manifestContent = fs.readFileSync(target.manifestSrc, 'utf-8');
-    // 校验 JSON 格式
     JSON.parse(manifestContent);
     fs.writeFileSync(path.join(target.outputDir, 'manifest.json'), manifestContent, 'utf-8');
 
-    // B. 复制图标资源
+    // B. Copy icons
     if (fs.existsSync(ICONS_DIR)) {
       copyDirRecursiveSync(ICONS_DIR, path.join(target.outputDir, 'icons'));
     }
 
-    // C. 复制核心业务与界面源码 (adapters, core, background, popup, options)
+    // C. Copy core modules (adapters, core, background, popup, options)
     const modulesToCopy = ['adapters', 'core', 'background', 'popup', 'options'];
     for (const mod of modulesToCopy) {
       const srcModDir = path.join(SRC_DIR, mod);
@@ -137,26 +136,26 @@ function build() {
       if (fs.existsSync(srcModDir)) {
         copyDirRecursiveSync(srcModDir, destModDir);
       } else {
-        console.warn(`[WARN] 模块目录不存在: ${srcModDir}`);
+        console.warn(`[WARN] Module directory not found: ${srcModDir}`);
       }
     }
 
     const stats = getDirStats(target.outputDir);
-    console.log(`   ✓ 成功输出至: dist/${target.name} (共 ${stats.count} 个文件, ${(stats.sizeBytes / 1024).toFixed(1)} KB)`);
+    console.log(`   ✓ Successfully output to: dist/${target.name} (${stats.count} files, ${(stats.sizeBytes / 1024).toFixed(1)} KB)`);
   }
 
   const duration = Date.now() - startTime;
   console.log('\n====================================================');
-  console.log(`🎉 构建圆满完成！耗时: ${duration}ms`);
-  console.log('📂 产物就绪:');
-  console.log('   - Chrome:  dist/chrome/  (在 chrome://extensions 中载入已解压的扩展程序)');
-  console.log('   - Firefox: dist/firefox/ (在 about:debugging 中载入临时附加组件)');
+  console.log(`🎉 Build completed successfully in ${duration}ms!`);
+  console.log('📂 Artifacts ready:');
+  console.log('   - Chrome:  dist/chrome/  (Load unpacked in chrome://extensions)');
+  console.log('   - Firefox: dist/firefox/ (Load temporary add-on in about:debugging)');
   console.log('====================================================');
 }
 
 try {
   build();
 } catch (err) {
-  console.error('\n❌ 构建失败:', err);
+  console.error('\n❌ Build failed:', err);
   process.exit(1);
 }

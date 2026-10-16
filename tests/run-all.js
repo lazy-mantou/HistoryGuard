@@ -26,7 +26,7 @@ const testFiles = [
 ];
 
 console.log('\n========================================================');
-console.log('   🛡️  HistGuard 跨浏览器插件全自动化单元测试套件');
+console.log('   🛡️  HistGuard Automated Unit Test Suite');
 console.log('========================================================\n');
 
 const testArgs = ['--test', ...testFiles.map(f => path.join(__dirname, f))];
@@ -39,9 +39,9 @@ const child = spawn(process.execPath, testArgs, {
 child.on('close', (code) => {
   console.log('\n========================================================');
   if (code === 0) {
-    console.log('   🎉 全部单元测试通过 (All tests passed)!');
+    console.log('   🎉 All unit tests passed successfully!');
   } else {
-    console.error(`   ❌ 存在测试未通过，退出码: ${code}`);
+    console.error(`   ❌ Unit tests failed with exit code: ${code}`);
   }
   console.log('========================================================\n');
   process.exit(code || 0);

@@ -114,7 +114,7 @@ async function refreshCache() {
     // 缓存刷新后立即同步全局与各标签页的工具栏指示器
     await syncAllTabsToolbarIndicators();
   } catch (err) {
-    console.error('[HistGuard BG] 刷新缓存失败:', err);
+    console.error('[HistGuard BG] Failed to refresh cache:', err);
   }
 }
 
@@ -138,7 +138,7 @@ browserApi.alarms.onAlarm(async (alarm) => {
     cachedSilentUntil = 0;
     await clearSilentMode();
     await syncAllTabsToolbarIndicators();
-    console.log('[HistGuard BG] 30 分钟临时无痕模式已到期，恢复正常历史记录监控。');
+    console.log('[HistGuard BG] 30-minute silent mode expired. Resumed normal history monitoring.');
   }
 });
 
@@ -161,9 +161,9 @@ async function handleUrlInspectionAndClean(visitUrl, title = '') {
   if (cachedSilentUntil > now) {
     try {
       await browserApi.history.deleteUrl(visitUrl);
-      console.log('[HistGuard BG] 临时无痕保护中，已抹除:', visitUrl);
+      console.log('[HistGuard BG] Silent mode active, erased:', visitUrl);
     } catch (err) {
-      console.error('[HistGuard BG] 临时无痕删除失败:', err);
+      console.error('[HistGuard BG] Silent mode erasure failed:', err);
     }
     return;
   } else if (cachedSilentUntil > 0 && cachedSilentUntil <= now) {
@@ -190,9 +190,9 @@ async function handleUrlInspectionAndClean(visitUrl, title = '') {
       if (currentSettings.enableHitTracking === true) {
         await incrementRuleHits(rule.id);
       }
-      console.log(`[HistGuard BG] 命中规则 [${rule.pattern}]，已成功抹除历史:`, visitUrl);
+      console.log(`[HistGuard BG] Matched rule [${rule.pattern}], history erased:`, visitUrl);
     } catch (err) {
-      console.error('[HistGuard BG] 执行删除或命中统计失败:', err);
+      console.error('[HistGuard BG] Failed to erase history or record hit stats:', err);
     }
 
     // 2. 防 Chrome 异步写入延迟与 Google 搜索等多级跳转/SPA pushState 残留：
@@ -326,7 +326,7 @@ if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
       });
 
       try {
-        console.log(`[HistGuard BG] 开始在后台执行历史记录全量出清: [${backgroundCleaningState.rulePattern}]`);
+        console.log(`[HistGuard BG] Starting background full history clean for rule: [${backgroundCleaningState.rulePattern}]`);
         const currentSettings = await getOrFetchSettings();
         const concurrency = resolveDeleteConcurrency(currentSettings.deleteChunkSize, browserApi);
         const result = await cleanHistoryByRule(rule, {
@@ -347,11 +347,11 @@ if (browserApi.runtime && typeof browserApi.runtime.onMessage === 'function') {
         }
 
         backgroundCleaningState.isCleaning = false;
-        console.log(`[HistGuard BG] 后台历史出清完成: 删除 ${result.deleted} 条, 扫描 ${result.scanned} 条`);
+        console.log(`[HistGuard BG] Background clean completed: deleted ${result.deleted}, scanned ${result.scanned}`);
         return { success: true, deleted: result.deleted, scanned: result.scanned };
       } catch (err) {
         backgroundCleaningState.isCleaning = false;
-        console.error('[HistGuard BG] 后台历史出清失败:', err);
+        console.error('[HistGuard BG] Background clean failed:', err);
         return { success: false, error: err.message, deleted: backgroundCleaningState.deleted, scanned: backgroundCleaningState.scanned };
       } finally {
         await clearPendingCleanJob();
@@ -384,7 +384,7 @@ export async function checkAndResumePendingCleanJob(delayMs = 2500) {
     }
 
     const rulePattern = typeof pendingJob.rule === 'string' ? pendingJob.rule : (pendingJob.rule.pattern || '');
-    console.log(`[HistGuard BG] 发现异常中断的历史出清任务 [${rulePattern}]，启动后台自愈续跑...`);
+    console.log(`[HistGuard BG] Found interrupted history clean job [${rulePattern}], initiating self-healing resume...`);
 
     // 校验规则是否依然有效且未被停用
     const allRules = await getRules();
@@ -392,7 +392,7 @@ export async function checkAndResumePendingCleanJob(delayMs = 2500) {
     const existingRule = allRules.find(r => (ruleId && r.id === ruleId) || r.pattern === rulePattern);
 
     if (existingRule && existingRule.enabled === false) {
-      console.log(`[HistGuard BG] 挂起任务对应的规则已被停用，取消续跑:`, rulePattern);
+      console.log(`[HistGuard BG] Pending clean job rule is disabled, cancelling resume:`, rulePattern);
       await clearPendingCleanJob();
       return null;
     }
@@ -422,10 +422,10 @@ export async function checkAndResumePendingCleanJob(delayMs = 2500) {
       }
     }
 
-    console.log(`[HistGuard BG] 异常断点历史自愈出清完成: 删除 ${result.deleted} 条, 扫描 ${result.scanned} 条`);
+    console.log(`[HistGuard BG] Self-healing clean completed: deleted ${result.deleted}, scanned ${result.scanned}`);
     return result;
   } catch (err) {
-    console.error('[HistGuard BG] 异常断点自愈出清执行失败:', err);
+    console.error('[HistGuard BG] Self-healing clean execution failed:', err);
     return null;
   } finally {
     backgroundCleaningState.isCleaning = false;
@@ -435,7 +435,7 @@ export async function checkAndResumePendingCleanJob(delayMs = 2500) {
 
 // 5. 启动自愈机制：延迟检查并恢复因意外退出而中断的历史出清任务
 checkAndResumePendingCleanJob(2500).catch(err => {
-  console.error('[HistGuard BG] 恢复挂起出清任务异常:', err);
+  console.error('[HistGuard BG] Error resuming pending clean job:', err);
 });
 
-console.log('[HistGuard BG] 后台拦截守护服务已启动就绪 (多通道拦截、工具栏状态指示与后台出清引擎)');
+console.log('[HistGuard BG] Background protection service ready (multi-channel interception, toolbar indicator, and clean engine).');

@@ -293,12 +293,12 @@ export class ChromiumAdapter extends IBrowserAdapter {
           try {
             chrome.action.setIcon(details, () => {
               if (chrome.runtime?.lastError) {
-                console.warn('[HistGuard] chrome.action.setIcon 提示:', chrome.runtime.lastError.message, details);
+                console.warn('[HistGuard] chrome.action.setIcon notice:', chrome.runtime.lastError.message, details);
               }
               resolve();
             });
           } catch (err) {
-            console.warn('[HistGuard] chrome.action.setIcon 异常:', err);
+            console.warn('[HistGuard] chrome.action.setIcon error:', err);
             resolve();
           }
         });
