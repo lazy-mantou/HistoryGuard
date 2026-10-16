@@ -110,7 +110,6 @@ const elements = {
   kpiTodayHits: document.getElementById('kpi-today-hits'),
   kpiActiveRules: document.getElementById('kpi-active-rules'),
   kpiRulesSub: document.getElementById('kpi-rules-sub'),
-  kpiLastTime: document.getElementById('kpi-last-time'),
   statsChartWrapper: document.getElementById('stats-chart-wrapper'),
   statsDistributionBody: document.getElementById('stats-distribution-body'),
   statsRankingBody: document.getElementById('stats-ranking-body'),
@@ -386,7 +385,6 @@ async function renderStatsDashboard() {
   const activeRulesWithHits = rules.filter(r => (r.hits || 0) > 0).length;
   const totalRules = rules.length;
   const coveragePercent = totalRules > 0 ? Math.round((activeRulesWithHits / totalRules) * 100) : 0;
-  const lastTime = stats.lastHitTime || rules.reduce((max, r) => Math.max(max, r.lastHitAt || 0), 0);
 
   // 1. 更新 KPI 核心指标卡片
   if (elements.kpiTotalHits) elements.kpiTotalHits.textContent = totalHits.toLocaleString();
@@ -398,10 +396,6 @@ async function renderStatsDashboard() {
       total: totalRules,
       percent: coveragePercent
     });
-  }
-  if (elements.kpiLastTime) {
-    elements.kpiLastTime.textContent = lastTime > 0 ? formatRelativeTime(lastTime) : t('options.statsNever');
-    elements.kpiLastTime.title = lastTime > 0 ? new Date(lastTime).toLocaleString() : '';
   }
   if (elements.tabStatsBadge) {
     elements.tabStatsBadge.textContent = totalHits.toLocaleString();

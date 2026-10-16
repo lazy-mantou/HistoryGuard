@@ -1552,7 +1552,7 @@ button, input, select, textarea {
 /* 1. 核心 KPI 栅格卡片 */
 .stats-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 
@@ -1606,12 +1606,6 @@ button, input, select, textarea {
   background-color: rgba(56, 189, 248, 0.12);
   color: #38bdf8;
   border: 1px solid rgba(56, 189, 248, 0.25);
-}
-
-.kpi-time .kpi-icon-wrapper {
-  background-color: var(--warning-light);
-  color: var(--warning);
-  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .kpi-content {
@@ -2331,7 +2325,7 @@ button, input, select, textarea {
 
   /* 统计面板在窄屏上的响应式自适应 */
   .stats-kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 10px;
   }
 
