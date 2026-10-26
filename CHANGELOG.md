@@ -6,7 +6,13 @@
 
 ## [Unreleased]
 
-### 暂未发布的开发变动 (Work In Progress)
+---
+
+## [1.0.0] - 2026-10-26
+
+### HistGuard 1.0.0 正式发布版 (Official Production Release)
+- **多端稳定性与架构加固**：包含完整的 Chrome MV3 Service Worker 冷启动竞态消除、存储单次原子合并落盘、Firefox Places SQLite 并发流控、多维统计兜底校准及导入 ID 防冲突机制；
+- **全功能矩阵**：涵盖极简 Popup 一键临时无痕、Options 管理控制台、SVG 拦截趋势图、12 国主流语言支持与深浅色主题自适应；
 - **Popup 临时无痕时长下拉菜单与多档位支持**：
   - 将 Popup 右上角“临时无痕”按钮升级为支持多档位时长的下拉选择列表，提供 `15min`、`30min`、`1h`、`2h`、`4h`、`8h`、`12h` 共 7 种可选范围；
   - 下拉菜单内高亮当前默认时长标签（默认项带徽标指示），处于无痕模式时在列表顶部快捷提供“退出临时无痕”操作项并支持一键切换延长时长；
@@ -26,13 +32,13 @@
     - 在全部 12 个多语言字典中补齐 `toastAddRuleFailed`、`toastImportMergeWithSkipped`、`toastImportReplaceWithSkipped`、`ruleCapacityWarning`、`ruleErrorEmpty`、`ruleErrorTooLong`、`ruleErrorTooManyWildcards`、`ruleErrorWildcardOvermatch`、`ruleErrorCapacityLimit` 翻译键，通过全语言字典叶子键严格对等性测试（共 302 键，45 项断言 100% 通过）；
     - 全量单元测试增至 225 项，双端构建同步更新至 `dist/chrome` 与 `dist/firefox`。
 
----
 
-## [1.0.0] - 2026-10-16
 
-### HistGuard 1.0.0 正式发布版 (Official Production Release)
-- **多端稳定性与架构加固**：包含完整的 Chrome MV3 Service Worker 冷启动竞态消除、存储单次原子合并落盘、Firefox Places SQLite 并发流控、多维统计兜底校准及导入 ID 防冲突机制；
-- **全功能矩阵**：涵盖极简 Popup 一键临时无痕、Options 管理控制台、SVG 拦截趋势图、12 国主流语言支持与深浅色主题自适应。
+
+
+
+
+
 
 ### Chrome MV3 存储写入原子事务合并与今日拦截多维校验加固 (Chrome MV3 Storage Atomic Write & Multi-Tier Stats Hardening)
 1. **解决 Chrome MV3 前后台存储写入时序撕裂 (Atomic Unified Storage Write)**:
