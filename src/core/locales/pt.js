@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'Duração Padrão Sem Rastros',
     settingSilentDurationDesc: 'Tempo pré-definido ao ativar o Modo Sem Rastros no Popup. A proteção normal retorna ao expirar.',
     duration15m: '15 Minutos',
-    duration30m: '30 Minutos (Recomendado)',
+    duration30m: '30 Minutos',
     duration60m: '1 Hora',
     duration120m: '2 Horas',
     duration240m: '4 Horas',

@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'المدة الافتراضية لوضع بدون أثر',
     settingSilentDurationDesc: 'الوقت المحدد مسبقاً عند تفعيل وضع بدون أثر. تُستأنف الحماية تلقائياً بعد انتهاء الوقت.',
     duration15m: '15 دقيقة',
-    duration30m: '30 دقيقة (موصى به)',
+    duration30m: '30 دقيقة',
     duration60m: 'ساعة واحدة',
     duration120m: 'ساعتان',
     duration240m: '4 ساعات',

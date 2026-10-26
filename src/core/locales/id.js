@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'Durasi Bebas Jejak Standar',
     settingSilentDurationDesc: 'Waktu hitung mundur saat mengaktifkan Mode Bebas Jejak di Popup. Perlindungan normal dilanjutkan saat timer habis.',
     duration15m: '15 Menit',
-    duration30m: '30 Menit (Direkomendasikan)',
+    duration30m: '30 Menit',
     duration60m: '1 Jam',
     duration120m: '2 Jam',
     duration240m: '4 Jam',

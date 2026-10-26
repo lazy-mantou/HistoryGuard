@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'Durée par défaut du mode sans trace',
     settingSilentDurationDesc: 'Compte à rebours prédéfini lors de l\'activation du mode sans trace. La protection normale reprend automatiquement à l\'expiration.',
     duration15m: '15 minutes',
-    duration30m: '30 minutes (recommandé)',
+    duration30m: '30 minutes',
     duration60m: '1 heure',
     duration120m: '2 heures',
     duration240m: '4 heures',

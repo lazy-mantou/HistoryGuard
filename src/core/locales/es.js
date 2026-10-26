@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'Duración predeterminada sin rastro',
     settingSilentDurationDesc: 'Tiempo de cuenta atrás preestablecido al activar el modo sin rastro. La protección normal se reanuda al expirar.',
     duration15m: '15 minutos',
-    duration30m: '30 minutos (recomendado)',
+    duration30m: '30 minutos',
     duration60m: '1 hora',
     duration120m: '2 horas',
     duration240m: '4 horas',

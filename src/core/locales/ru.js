@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'Длительность режима без следов по умолчанию',
     settingSilentDurationDesc: 'Время обратного отсчета при включении режима без следов. Стандартная защита возобновляется автоматически.',
     duration15m: '15 минут',
-    duration30m: '30 минут (рекомендуется)',
+    duration30m: '30 минут',
     duration60m: '1 час',
     duration120m: '2 часа',
     duration240m: '4 часа',

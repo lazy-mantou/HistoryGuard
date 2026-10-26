@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'Default Trace-Free Duration',
     settingSilentDurationDesc: 'Preset countdown duration when turning on Trace-Free Mode in Popup. Normal protection automatically resumes when the timer expires.',
     duration15m: '15 Minutes',
-    duration30m: '30 Minutes (Recommended)',
+    duration30m: '30 Minutes',
     duration60m: '1 Hour',
     duration120m: '2 Hours',
     duration240m: '4 Hours',

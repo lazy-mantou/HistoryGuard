@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: '기본 흔적 없는 모드 시간',
     settingSilentDurationDesc: '팝업에서 흔적 없는 모드를 켤 때의 기본 타이머 시간입니다. 타이머가 만료되면 정상 보호 모드가 자동으로 복원됩니다.',
     duration15m: '15분',
-    duration30m: '30분 (권장)',
+    duration30m: '30분',
     duration60m: '1시간',
     duration120m: '2시간',
     duration240m: '4시간',

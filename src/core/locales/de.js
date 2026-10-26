@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: 'Standarddauer für spurenfreien Modus',
     settingSilentDurationDesc: 'Voreingestellte Countdown-Dauer bei Aktivierung des spurenfreien Modus. Schutz wird danach automatisch fortgesetzt.',
     duration15m: '15 Minuten',
-    duration30m: '30 Minuten (empfohlen)',
+    duration30m: '30 Minuten',
     duration60m: '1 Stunde',
     duration120m: '2 Stunden',
     duration240m: '4 Stunden',

@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: '預設免記錄時長',
     settingSilentDurationDesc: '在彈窗中開啟臨時無痕模式時的預設倒計時時間，倒計時結束自動恢復正常防護。',
     duration15m: '15 分鐘',
-    duration30m: '30 分鐘 (推薦)',
+    duration30m: '30 分鐘',
     duration60m: '1 小時',
     duration120m: '2 小時',
     duration240m: '4 小時',

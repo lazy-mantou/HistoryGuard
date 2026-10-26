@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: '既定の痕跡なし継続時間',
     settingSilentDurationDesc: 'ポップアップで痕跡なしモードを有効にした際の事前設定カウントダウン時間です。タイマー終了時に自動的に通常の保護に戻ります。',
     duration15m: '15 分',
-    duration30m: '30 分 (推奨)',
+    duration30m: '30 分',
     duration60m: '1 時間',
     duration120m: '2 時間',
     duration240m: '4 時間',

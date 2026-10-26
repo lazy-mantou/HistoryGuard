@@ -177,7 +177,7 @@ export default {
     settingSilentDurationTitle: '默认临时无痕时长',
     settingSilentDurationDesc: '在弹窗快捷开启“临时无痕模式”时，预设的倒计时生效时长。到期后将自动恢复常规防护。',
     duration15m: '15 分钟',
-    duration30m: '30 分钟 (推荐)',
+    duration30m: '30 分钟',
     duration60m: '1 小时',
     duration120m: '2 小时',
     duration240m: '4 小时',
