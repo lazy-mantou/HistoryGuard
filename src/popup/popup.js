@@ -78,15 +78,24 @@ function showToast(message, duration = 2500) {
 }
 
 /**
- * 将分钟数转换为紧凑的时长显示文本 (如 15min, 30min, 1h, 2h, 4h, 8h, 12h)
+ * 获取对应语言的时长文案（和 options 完全对应，如 15 分钟、30 分钟 (推荐)、1 小时等）
  * @param {number} minutes
+ * @param {boolean} [clean=false] 是否剥离 (推荐) 等额外修饰词
  * @returns {string}
  */
-function formatDurationLabel(minutes) {
+function getDurationI18nText(minutes, clean = false) {
   const m = Number(minutes) || 30;
-  if (m < 60) return `${m}min`;
-  const h = m / 60;
-  return Number.isInteger(h) ? `${h}h` : `${m}min`;
+  const key = `options.duration${m}m`;
+  let text = t(key);
+  if (!text || text === key) {
+    if (m < 60) return `${m}min`;
+    const h = m / 60;
+    return Number.isInteger(h) ? `${h}h` : `${m}min`;
+  }
+  if (clean) {
+    return text.replace(/\s*[\(（][^\)）]*[\)）]/g, '').trim();
+  }
+  return text;
 }
 
 /**
@@ -148,22 +157,28 @@ async function updateSilentModeState() {
   }
 
   const silent = await getSilentMode();
-  const defaultLabel = formatDurationLabel(defaultDuration);
+  const defaultLabel = getDurationI18nText(defaultDuration, true);
 
-  // 更新下拉菜单中的 "默认" 徽标
+  // 更新下拉菜单各时长文案（与 options 保持完全同步的 i18n 翻译）及 "默认" 徽标
   if (elements.silentDurationItems) {
     elements.silentDurationItems.forEach(item => {
       const dur = Number(item.dataset.duration);
+      const textSpan = item.querySelector('.item-text');
+      if (textSpan) {
+        textSpan.textContent = getDurationI18nText(dur, false);
+      }
       const badge = item.querySelector('.item-badge');
       if (dur === defaultDuration) {
         if (badge) {
           badge.textContent = t('popup.silentDefaultTag');
           badge.classList.remove('hidden');
         }
+        item.classList.add('selected');
       } else {
         if (badge) {
           badge.classList.add('hidden');
         }
+        item.classList.remove('selected');
       }
     });
   }
