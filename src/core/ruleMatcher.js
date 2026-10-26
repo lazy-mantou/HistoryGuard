@@ -5,12 +5,149 @@
  */
 
 /**
+ * 规则长度与容量安全上限常量
+ */
+export const MAX_RULE_LENGTH = 1024;
+export const MAX_WILDCARDS_PER_RULE = 5;
+export const MAX_RULES_TOTAL_LIMIT = 20000;
+export const WARN_RULES_TOTAL_THRESHOLD = 10000;
+
+export const RULE_ERROR_CODES = {
+  EMPTY: 'RULE_EMPTY',
+  TOO_LONG: 'RULE_TOO_LONG',
+  TOO_MANY_WILDCARDS: 'RULE_TOO_MANY_WILDCARDS',
+  WILDCARD_OVERMATCH: 'RULE_WILDCARD_OVERMATCH',
+  CAPACITY_LIMIT: 'RULES_CAPACITY_LIMIT'
+};
+
+export const RULE_ERROR_I18N_KEYS = {
+  [RULE_ERROR_CODES.EMPTY]: 'options.ruleErrorEmpty',
+  [RULE_ERROR_CODES.TOO_LONG]: 'options.ruleErrorTooLong',
+  [RULE_ERROR_CODES.TOO_MANY_WILDCARDS]: 'options.ruleErrorTooManyWildcards',
+  [RULE_ERROR_CODES.WILDCARD_OVERMATCH]: 'options.ruleErrorWildcardOvermatch',
+  [RULE_ERROR_CODES.CAPACITY_LIMIT]: 'options.ruleErrorCapacityLimit'
+};
+
+const DEFAULT_ERROR_MESSAGES = {
+  [RULE_ERROR_CODES.EMPTY]: '规则表达式不能为空',
+  [RULE_ERROR_CODES.TOO_LONG]: '单条规则长度不能超过 1024 个字符',
+  [RULE_ERROR_CODES.TOO_MANY_WILDCARDS]: '单条规则通配符 (*) 数量不能超过 5 个',
+  [RULE_ERROR_CODES.WILDCARD_OVERMATCH]: '禁止使用纯通配符或泛匹配规则 (如 *、*.*、*/*)，以防误删全部历史',
+  [RULE_ERROR_CODES.CAPACITY_LIMIT]: '已达到规则最大存储上限 (20,000 条)，无法继续添加'
+};
+
+/**
+ * 获取规则校验错误的默认或国际化文本
+ * @param {string} code
+ * @param {Function} [tFn]
+ * @returns {string}
+ */
+export function getRuleErrorMessage(code, tFn) {
+  if (typeof tFn === 'function') {
+    const key = RULE_ERROR_I18N_KEYS[code];
+    if (key) {
+      const translated = tFn(key);
+      if (translated && translated !== key) return translated;
+    }
+  }
+  return DEFAULT_ERROR_MESSAGES[code] || '无效的规则表达式';
+}
+
+/**
+ * 规则表达式输入智能预清洗
+ * 1. 剔除 ASCII 控制字符 (\x00-\x1F\x7F)
+ * 2. 剥离首尾多余空白字符
+ * 3. 智能压缩多余的连续通配符 (*** -> *)，防止 NFA 正则回溯爆炸
+ * @param {string} rawPattern
+ * @returns {string}
+ */
+export function sanitizeRulePattern(rawPattern) {
+  if (typeof rawPattern !== 'string') return '';
+  return rawPattern
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim()
+    .replace(/\*{2,}/g, '*');
+}
+
+/**
+ * 校验规则表达式的合法性与边界安全
+ * @param {string} pattern
+ * @param {'domain'|'path'|'keyword'} [type]
+ * @param {{ t?: Function }} [options]
+ * @returns {{ valid: boolean, pattern?: string, code?: string, message?: string }}
+ */
+export function validateRulePattern(pattern, type, options = {}) {
+  const sanitized = sanitizeRulePattern(pattern);
+  const tFn = options.t;
+
+  if (!sanitized) {
+    return {
+      valid: false,
+      code: RULE_ERROR_CODES.EMPTY,
+      message: getRuleErrorMessage(RULE_ERROR_CODES.EMPTY, tFn)
+    };
+  }
+
+  if (sanitized.length > MAX_RULE_LENGTH) {
+    return {
+      valid: false,
+      code: RULE_ERROR_CODES.TOO_LONG,
+      message: getRuleErrorMessage(RULE_ERROR_CODES.TOO_LONG, tFn)
+    };
+  }
+
+  const wildcardsCount = (sanitized.match(/\*/g) || []).length;
+  if (wildcardsCount > MAX_WILDCARDS_PER_RULE) {
+    return {
+      valid: false,
+      code: RULE_ERROR_CODES.TOO_MANY_WILDCARDS,
+      message: getRuleErrorMessage(RULE_ERROR_CODES.TOO_MANY_WILDCARDS, tFn)
+    };
+  }
+
+  // 严防“无差别抹杀全历史”的纯通配符模式 (如 *, *.*, */*, https://*, kw:*, domain:*)
+  let core = sanitized;
+  core = core.replace(/^(?:keyword|kw|domain|path):\s*/i, '');
+  core = core.replace(/^(?:https?:)?\/\//i, '');
+  const stripped = core.replace(/[*.\s/\\:?#&=-]/g, '');
+  if (stripped.length === 0) {
+    return {
+      valid: false,
+      code: RULE_ERROR_CODES.WILDCARD_OVERMATCH,
+      message: getRuleErrorMessage(RULE_ERROR_CODES.WILDCARD_OVERMATCH, tFn)
+    };
+  }
+
+  return {
+    valid: true,
+    pattern: sanitized
+  };
+}
+
+/**
+ * 断言规则表达式有效，若非法则直接抛出带有 code 的 Error，若有效返回预清洗后的 pattern
+ * @param {string} pattern
+ * @param {'domain'|'path'|'keyword'} [type]
+ * @param {{ t?: Function }} [options]
+ * @returns {string}
+ */
+export function assertValidRulePattern(pattern, type, options = {}) {
+  const result = validateRulePattern(pattern, type, options);
+  if (!result.valid) {
+    const err = new Error(result.message);
+    err.code = result.code;
+    throw err;
+  }
+  return result.pattern;
+}
+
+/**
  * 逃逸正则特殊字符，保留通配符 *
  * @param {string} str
  * @returns {string}
  */
 function escapeRegexExceptWildcard(str) {
-  return str.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+  return str.replace(/\*{2,}/g, '*').replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
 }
 
 /**

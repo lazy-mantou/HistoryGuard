@@ -17,7 +17,8 @@ import {
   getSilentMode,
   setSilentMode,
   clearSilentMode,
-  getSettings
+  getSettings,
+  RULE_ERROR_I18N_KEYS
 } from '../core/storage.js';
 
 // DOM 元素引用
@@ -658,7 +659,9 @@ elements.btnHideAndClean.addEventListener('click', async () => {
   } catch (err) {
     console.error('Hide and clean error:', err);
     elements.btnHideText.textContent = originalText;
-    showToast(t('popup.toastFailed', { error: err.message }));
+    const i18nKey = err.code && RULE_ERROR_I18N_KEYS[err.code];
+    const errMsg = i18nKey ? t(i18nKey) : (err.message || String(err));
+    showToast(t('popup.toastFailed', { error: errMsg }));
   } finally {
     setTimeout(() => {
       elements.btnHideAndClean.style.opacity = '1';

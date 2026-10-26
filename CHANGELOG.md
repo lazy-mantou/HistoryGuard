@@ -14,9 +14,17 @@
 - **Options 控制台默认临时无痕时长配置扩展**：
   - 在管理控制台“默认临时无痕时长”选项中完整同步扩展为 15 分钟、30 分钟 (推荐)、1 小时、2 小时、4 小时、8 小时与 12 小时；
   - 初次安装扩展时严格默认 30 分钟（`DEFAULT_SETTINGS.silentModeDuration = 30`）；
-- **12 国语言本地化矩阵与单测全量对齐**：
-  - 在 `zh-CN`、`zh-TW`、`en`、`es`、`fr`、`de`、`ja`、`ko`、`ru`、`pt`、`id`、`ar` 全部 12 种语言字典中 100% 对齐补全 `duration240m`、`duration480m`、`duration720m`、`silentBtnParam`、`silentExit`、`silentDefaultTag` 等翻译键；
-  - 补齐单元测试断言，确保全量测试通过。
+- **防护规则输入安全校验、防 ReDoS 回溯与存储容量熔断防护**：
+  - **输入智能清洗与去危 (Sanitization)**：新增 `sanitizeRulePattern`，自动剔除不可见 ASCII 控制字符（`\x00-\x1F\x7F`）并剥离首尾空白；智能合并压缩多个连续通配符（如 `***` 压缩为单个 `*`），杜绝正则引擎生成 `.*.*.*` 导致灾难性指数级 NFA 回溯（ReDoS 攻击）；
+  - **单条规则长度与通配符硬约束 (Limits)**：单条规则限制最大长度为 1024 字符（`MAX_RULE_LENGTH = 1024`）；限制最多包含 5 个通配符（`MAX_WILDCARDS_PER_RULE = 5`）；
+  - **纯通配符防误杀熔断拦截 (Anti-Overmatch)**：严禁输入剥离协议与标点后无实质有效内容的纯通配符规则（如 `*`、`*.*`、`*/*`、`https://*`、`keyword:*`、`domain:*`），防止用户意外添加导致全部历史记录被无差别永久抹杀；
+  - **存储容量软预警与 20,000 条硬熔断守护 (Capacity Quota Guard)**：
+    - 当存储规则超过 10,000 条（`WARN_RULES_TOTAL_THRESHOLD`）时，在 Options 规则统计摘要区展示醒目轻量预警标签（`.rules-warning-pill`），提示用户适度精简；
+    - 当达到 20,000 条硬上限（`MAX_RULES_TOTAL_LIMIT`）时，全面阻断新增，防止撑爆 Chrome 浏览器 10MB `storage.local` 额度导致整体扩展写入溃缩；
+  - **JSON 备份导入智能容错与跳过统计 (Import Resilience)**：在 `importRules` 中，对外部数据自动执行清洗，跳过超长、超限或危险纯通配符规则，并在导入完成后精准返回跳过数量（`skippedCount`），并在 Toast 提示中告知用户跳过的无效规则数量；
+  - **12 国语言本地化完整矩阵与测试断言对齐**：
+    - 在全部 12 个多语言字典中补齐 `toastAddRuleFailed`、`toastImportMergeWithSkipped`、`toastImportReplaceWithSkipped`、`ruleCapacityWarning`、`ruleErrorEmpty`、`ruleErrorTooLong`、`ruleErrorTooManyWildcards`、`ruleErrorWildcardOvermatch`、`ruleErrorCapacityLimit` 翻译键，通过全语言字典叶子键严格对等性测试（共 302 键，45 项断言 100% 通过）；
+    - 全量单元测试增至 225 项，双端构建同步更新至 `dist/chrome` 与 `dist/firefox`。
 
 ---
 

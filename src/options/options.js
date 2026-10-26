@@ -25,7 +25,9 @@ import {
   getInterceptionStats,
   getLocalDateKey,
   DEFAULT_SETTINGS,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  WARN_RULES_TOTAL_THRESHOLD,
+  RULE_ERROR_I18N_KEYS
 } from '../core/storage.js';
 
 // DOM 元素引用
@@ -353,7 +355,12 @@ async function refreshGlobalStats() {
   updateStatsTabVisibility();
   await refreshSilentModeStatus();
 
-  elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: cachedRules.length });
+  const rulesCount = cachedRules.length;
+  if (rulesCount >= WARN_RULES_TOTAL_THRESHOLD) {
+    elements.rulesCountSummary.innerHTML = `${t('options.rulesSummary', { count: rulesCount })} <span class="rules-warning-pill" title="${t('options.ruleCapacityWarning')}">${t('options.ruleCapacityWarning')}</span>`;
+  } else {
+    elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: rulesCount });
+  }
 }
 
 /**
@@ -1344,7 +1351,9 @@ elements.btnAddRule.addEventListener('click', async () => {
     }
   } catch (err) {
     console.error('Add rule and clean history failed:', err);
-    showToast(t('options.toastImportFailed', { error: err.message }));
+    const i18nKey = err.code && RULE_ERROR_I18N_KEYS[err.code];
+    const errMsg = i18nKey ? t(i18nKey) : (err.message || String(err));
+    showToast(t('options.toastAddRuleFailed', { error: errMsg }));
   } finally {
     elements.btnAddRule.disabled = false;
     elements.btnAddRule.style.opacity = '1';
@@ -1618,12 +1627,20 @@ if (elements.fileSettingsImport) {
     reader.onload = async (event) => {
       try {
         const content = event.target?.result;
-        const { importedCount, totalCount } = await importRules(content, mode);
-        showToast(
-          mode === 'replace'
-            ? t('options.toastImportReplaceSuccess', { count: importedCount })
-            : t('options.toastImportMergeSuccess', { imported: importedCount, total: totalCount })
-        );
+        const { importedCount, skippedCount, totalCount } = await importRules(content, mode);
+        if (skippedCount > 0) {
+          showToast(
+            mode === 'replace'
+              ? t('options.toastImportReplaceWithSkipped', { count: importedCount, skipped: skippedCount })
+              : t('options.toastImportMergeWithSkipped', { imported: importedCount, skipped: skippedCount, total: totalCount })
+          );
+        } else {
+          showToast(
+            mode === 'replace'
+              ? t('options.toastImportReplaceSuccess', { count: importedCount })
+              : t('options.toastImportMergeSuccess', { imported: importedCount, total: totalCount })
+          );
+        }
         await refreshRulesList();
       } catch (err) {
         showToast(t('options.toastImportFailed', { error: err.message }));

@@ -5,7 +5,32 @@
  */
 
 import { browserApi } from '../adapters/index.js';
-import { detectRuleType } from './ruleMatcher.js';
+import {
+  detectRuleType,
+  MAX_RULE_LENGTH,
+  MAX_WILDCARDS_PER_RULE,
+  MAX_RULES_TOTAL_LIMIT,
+  WARN_RULES_TOTAL_THRESHOLD,
+  RULE_ERROR_CODES,
+  RULE_ERROR_I18N_KEYS,
+  sanitizeRulePattern,
+  validateRulePattern,
+  assertValidRulePattern,
+  getRuleErrorMessage
+} from './ruleMatcher.js';
+
+export {
+  MAX_RULE_LENGTH,
+  MAX_WILDCARDS_PER_RULE,
+  MAX_RULES_TOTAL_LIMIT,
+  WARN_RULES_TOTAL_THRESHOLD,
+  RULE_ERROR_CODES,
+  RULE_ERROR_I18N_KEYS,
+  sanitizeRulePattern,
+  validateRulePattern,
+  assertValidRulePattern,
+  getRuleErrorMessage
+};
 
 export const STORAGE_KEYS = {
   RULES: 'histguard_rules',
@@ -42,11 +67,12 @@ export async function saveRules(rules) {
  * @returns {Promise<{ rule: Object, isNew: boolean }>}
  */
 export async function addRule({ pattern, type, enabled = true }) {
-  let cleanPattern = (pattern || '').trim();
-  if (!cleanPattern) {
-    throw new Error('规则表达式不能为空');
+  if (typeof pattern !== 'string') {
+    throw new Error(getRuleErrorMessage(RULE_ERROR_CODES.EMPTY));
   }
 
+  // 1. 语法与边界验证（自动清洗控制字符、压缩连续通配符、验证长度与纯通配符防误杀）
+  let cleanPattern = assertValidRulePattern(pattern, type);
   let actualType = type;
 
   // 智能解析用户输入中可能包含的前缀修饰符 (如 keyword:xxx, kw:xxx, domain:xxx, path:xxx)
@@ -64,10 +90,6 @@ export async function addRule({ pattern, type, enabled = true }) {
     cleanPattern = cleanPattern.replace(/^path:\s*/i, '').trim();
   }
 
-  if (!cleanPattern) {
-    throw new Error('规则表达式不能为空');
-  }
-
   actualType = actualType || detectRuleType(cleanPattern);
 
   // 核心规范化：针对域名规则（无论是自动推断还是显式指定为 domain）
@@ -80,6 +102,9 @@ export async function addRule({ pattern, type, enabled = true }) {
     // 路径规则同样剥离协议头，规范化前缀格式
     cleanPattern = cleanPattern.replace(/^https?:\/\//i, '').trim();
   }
+
+  // 二次校验规范化后的 pattern，确保未剥离成纯通配符或空字符
+  cleanPattern = assertValidRulePattern(cleanPattern, actualType);
 
   const currentRules = await getRules();
 
@@ -94,6 +119,13 @@ export async function addRule({ pattern, type, enabled = true }) {
     currentRules[existingIndex].type = actualType;
     await saveRules(currentRules);
     return { rule: currentRules[existingIndex], isNew: false };
+  }
+
+  // 检查全局容量熔断保护 (20,000 条)
+  if (currentRules.length >= MAX_RULES_TOTAL_LIMIT) {
+    const err = new Error(getRuleErrorMessage(RULE_ERROR_CODES.CAPACITY_LIMIT));
+    err.code = RULE_ERROR_CODES.CAPACITY_LIMIT;
+    throw err;
   }
 
   const newRule = {
@@ -327,7 +359,7 @@ export async function clearSilentMode() {
  * 导入规则 JSON
  * @param {string} jsonString
  * @param {'merge'|'replace'} [mode='merge']
- * @returns {Promise<{ importedCount: number, totalCount: number }>}
+ * @returns {Promise<{ importedCount: number, skippedCount: number, totalCount: number }>}
  */
 export async function importRules(jsonString, mode = 'merge') {
   let parsed;
@@ -343,20 +375,61 @@ export async function importRules(jsonString, mode = 'merge') {
   }
 
   const validRules = [];
+  let skippedCount = 0;
+
   for (const item of rawRules) {
-    if (item && item.pattern && typeof item.pattern === 'string') {
-      const pattern = item.pattern.trim();
-      if (!pattern) continue;
-      validRules.push({
-        id: item.id || `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        pattern,
-        type: item.type === 'keyword' ? 'keyword' : (item.type === 'path' ? 'path' : 'domain'),
-        enabled: item.enabled !== false,
-        hits: typeof item.hits === 'number' ? item.hits : 0,
-        lastHitAt: typeof item.lastHitAt === 'number' ? item.lastHitAt : 0,
-        createdAt: item.createdAt || Date.now()
-      });
+    if (!item || typeof item.pattern !== 'string') {
+      skippedCount++;
+      continue;
     }
+
+    const validation = validateRulePattern(item.pattern, item.type);
+    if (!validation.valid) {
+      skippedCount++;
+      continue;
+    }
+
+    let pattern = validation.pattern;
+    let actualType = item.type;
+
+    if (/^keyword:\s*/i.test(pattern)) {
+      actualType = 'keyword';
+      pattern = pattern.replace(/^keyword:\s*/i, '').trim();
+    } else if (/^kw:\s*/i.test(pattern)) {
+      actualType = 'keyword';
+      pattern = pattern.replace(/^kw:\s*/i, '').trim();
+    } else if (/^domain:\s*/i.test(pattern)) {
+      actualType = 'domain';
+      pattern = pattern.replace(/^domain:\s*/i, '').trim();
+    } else if (/^path:\s*/i.test(pattern)) {
+      actualType = 'path';
+      pattern = pattern.replace(/^path:\s*/i, '').trim();
+    }
+
+    actualType = actualType === 'keyword' ? 'keyword' : (actualType === 'path' ? 'path' : (actualType === 'domain' ? 'domain' : detectRuleType(pattern)));
+
+    if (actualType === 'domain') {
+      pattern = pattern.replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
+    } else if (actualType === 'path') {
+      pattern = pattern.replace(/^https?:\/\//i, '').trim();
+    }
+
+    const postVal = validateRulePattern(pattern, actualType);
+    if (!postVal.valid) {
+      skippedCount++;
+      continue;
+    }
+    pattern = postVal.pattern;
+
+    validRules.push({
+      id: item.id || `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      pattern,
+      type: actualType,
+      enabled: item.enabled !== false,
+      hits: typeof item.hits === 'number' ? item.hits : 0,
+      lastHitAt: typeof item.lastHitAt === 'number' ? item.lastHitAt : 0,
+      createdAt: item.createdAt || Date.now()
+    });
   }
 
   if (mode === 'replace') {
@@ -366,6 +439,10 @@ export async function importRules(jsonString, mode = 'merge') {
     for (const vr of validRules) {
       const patternKey = vr.pattern.toLowerCase();
       if (!seenPatterns.has(patternKey)) {
+        if (uniqueValidRules.length >= MAX_RULES_TOTAL_LIMIT) {
+          skippedCount++;
+          continue;
+        }
         seenPatterns.add(patternKey);
         // 防 ID 冲突：若导入数据中有多条不同域名但 ID 相同的规则，自动为后者重新生成唯一 ID
         if (seenIds.has(vr.id)) {
@@ -376,7 +453,11 @@ export async function importRules(jsonString, mode = 'merge') {
       }
     }
     await saveRules(uniqueValidRules);
-    return { importedCount: uniqueValidRules.length, totalCount: uniqueValidRules.length };
+    return {
+      importedCount: uniqueValidRules.length,
+      skippedCount,
+      totalCount: uniqueValidRules.length
+    };
   }
 
   // merge 模式
@@ -392,6 +473,10 @@ export async function importRules(jsonString, mode = 'merge') {
   for (const vr of validRules) {
     const patternKey = vr.pattern.toLowerCase();
     if (!patternMap.has(patternKey)) {
+      if (existing.length >= MAX_RULES_TOTAL_LIMIT) {
+        skippedCount++;
+        continue;
+      }
       // 防 ID 冲突：若导入的新规则 ID 与本地已存规则 ID 重合，为新规则重新生成唯一的独立 ID
       if (existingIds.has(vr.id)) {
         vr.id = `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -404,7 +489,11 @@ export async function importRules(jsonString, mode = 'merge') {
   }
 
   await saveRules(existing);
-  return { importedCount: newCount, totalCount: existing.length };
+  return {
+    importedCount: newCount,
+    skippedCount,
+    totalCount: existing.length
+  };
 }
 
 /**

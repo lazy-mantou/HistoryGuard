@@ -19,7 +19,16 @@ import {
   normalizeDomain,
   isSubdomainOf,
   computeCandidateStatus,
-  keywordRuleToRegex
+  keywordRuleToRegex,
+  MAX_RULE_LENGTH,
+  MAX_WILDCARDS_PER_RULE,
+  MAX_RULES_TOTAL_LIMIT,
+  WARN_RULES_TOTAL_THRESHOLD,
+  RULE_ERROR_CODES,
+  sanitizeRulePattern,
+  validateRulePattern,
+  assertValidRulePattern,
+  getRuleErrorMessage
 } from '../src/core/ruleMatcher.js';
 
 describe('EdgeCases - detectRuleType (用户多样化输入与边界检测)', () => {
@@ -475,4 +484,119 @@ describe('EdgeCases - 大规模历史记录批量匹配性能与准确率压测 
     assert.ok(duration < 500, `500 条历史匹配耗时过长: ${duration}ms`);
   });
 });
+
+describe('EdgeCases - 规则校验与安全清洗 (sanitizeRulePattern & validateRulePattern)', () => {
+  it('sanitizeRulePattern 应当有效剔除控制字符并压缩多余连续通配符', () => {
+    // 剔除 ASCII 控制字符与首尾空格
+    assert.strictEqual(sanitizeRulePattern('  example.com\x00\x1F\x7F  '), 'example.com');
+    // 压缩连续多个通配符 (*** -> *)
+    assert.strictEqual(sanitizeRulePattern('*.example.com/***'), '*.example.com/*');
+    assert.strictEqual(sanitizeRulePattern('*****'), '*');
+    assert.strictEqual(sanitizeRulePattern('https://***test.com***'), 'https://*test.com*');
+    // 非字符串安全处理
+    assert.strictEqual(sanitizeRulePattern(null), '');
+    assert.strictEqual(sanitizeRulePattern(undefined), '');
+    assert.strictEqual(sanitizeRulePattern(123), '');
+  });
+
+  it('validateRulePattern 应当拒绝空规则表达式', () => {
+    const res1 = validateRulePattern('');
+    assert.strictEqual(res1.valid, false);
+    assert.strictEqual(res1.code, RULE_ERROR_CODES.EMPTY);
+
+    const res2 = validateRulePattern('   \x00   ');
+    assert.strictEqual(res2.valid, false);
+    assert.strictEqual(res2.code, RULE_ERROR_CODES.EMPTY);
+
+    assert.throws(() => assertValidRulePattern('   '), {
+      message: '规则表达式不能为空'
+    });
+  });
+
+  it('validateRulePattern 应当限制单条规则最大长度为 1024 字符', () => {
+    const exactly1024 = 'a'.repeat(1020) + '.com'; // length 1024
+    assert.strictEqual(exactly1024.length, 1024);
+    const validRes = validateRulePattern(exactly1024);
+    assert.strictEqual(validRes.valid, true);
+
+    const over1024 = 'a'.repeat(1021) + '.com'; // length 1025
+    assert.strictEqual(over1024.length, 1025);
+    const invalidRes = validateRulePattern(over1024);
+    assert.strictEqual(invalidRes.valid, false);
+    assert.strictEqual(invalidRes.code, RULE_ERROR_CODES.TOO_LONG);
+
+    assert.throws(() => assertValidRulePattern(over1024), {
+      message: '单条规则长度不能超过 1024 个字符'
+    });
+  });
+
+  it('validateRulePattern 应当限制单条规则通配符数量最多为 5 个', () => {
+    // 5 个通配符应允许通过 (*a*b*c*d*e 恰好 5 个 *)
+    const fiveWildcards = '*a*b*c*d*e';
+    const validRes = validateRulePattern(fiveWildcards);
+    assert.strictEqual(validRes.valid, true);
+
+    // 6 个通配符应被阻断 (*a*b*c*d*e*f 包含 6 个 *)
+    const sixWildcards = '*a*b*c*d*e*f';
+    const invalidRes = validateRulePattern(sixWildcards);
+    assert.strictEqual(invalidRes.valid, false);
+    assert.strictEqual(invalidRes.code, RULE_ERROR_CODES.TOO_MANY_WILDCARDS);
+
+    assert.throws(() => assertValidRulePattern(sixWildcards), {
+      message: '单条规则通配符 (*) 数量不能超过 5 个'
+    });
+  });
+
+  it('validateRulePattern 严禁使用全通配或无差别误杀全部历史的模式 (WILDCARD_OVERMATCH)', () => {
+    const dangerousPatterns = [
+      '*',
+      '**',
+      '***',
+      '*.*',
+      '*/*/*',
+      'https://*',
+      'http://*.*',
+      'path: /*',
+      'keyword: *',
+      'kw: ***',
+      'domain: *.',
+      'domain: *',
+      '*.',
+      '/*/'
+    ];
+
+    for (const pat of dangerousPatterns) {
+      const res = validateRulePattern(pat);
+      assert.strictEqual(
+        res.valid,
+        false,
+        `危险通配规则未被阻断: ${pat}`
+      );
+      assert.strictEqual(res.code, RULE_ERROR_CODES.WILDCARD_OVERMATCH);
+      assert.throws(() => assertValidRulePattern(pat), err => {
+        return err.code === RULE_ERROR_CODES.WILDCARD_OVERMATCH;
+      });
+    }
+  });
+
+  it('合法规则能够顺利通过并返回清洗后的有效表达式', () => {
+    const safePatterns = [
+      'google.com',
+      '*.google.com',
+      'https://example.com/login',
+      'github.com/org/repo/*',
+      'localhost:3000',
+      '127.0.0.1',
+      'keyword: 登录',
+      'keyword: secret_token'
+    ];
+
+    for (const pat of safePatterns) {
+      const res = validateRulePattern(pat);
+      assert.strictEqual(res.valid, true, `安全规则被误拦截: ${pat}`);
+      assert.ok(typeof res.pattern === 'string' && res.pattern.length > 0);
+    }
+  });
+});
+
 

@@ -27,7 +27,9 @@ import {
   clearPendingCleanJob,
   getInterceptionStats,
   getLocalDateKey,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  MAX_RULES_TOTAL_LIMIT,
+  RULE_ERROR_CODES
 } from '../src/core/storage.js';
 
 // 内存模拟存储
@@ -153,6 +155,52 @@ describe('storage - 规则增删改查与计数', () => {
     await assert.rejects(async () => {
       await addRule({ pattern: '   ' });
     }, /规则表达式不能为空/);
+  });
+
+  it('addRule 应当严格校验单条规则安全性与边界限制', async () => {
+    // 纯通配符阻断
+    await assert.rejects(async () => {
+      await addRule({ pattern: '*' });
+    }, err => err.code === RULE_ERROR_CODES.WILDCARD_OVERMATCH);
+
+    await assert.rejects(async () => {
+      await addRule({ pattern: 'keyword: *' });
+    }, err => err.code === RULE_ERROR_CODES.WILDCARD_OVERMATCH);
+
+    // 超过 1024 字符阻断
+    const longPattern = 'x'.repeat(1021) + '.com';
+    await assert.rejects(async () => {
+      await addRule({ pattern: longPattern });
+    }, err => err.code === RULE_ERROR_CODES.TOO_LONG);
+
+    // 超过 5 个通配符阻断
+    await assert.rejects(async () => {
+      await addRule({ pattern: '*a*b*c*d*e*f' });
+    }, err => err.code === RULE_ERROR_CODES.TOO_MANY_WILDCARDS);
+
+    // 控制字符与多余连续通配符自动清洗
+    const { rule } = await addRule({ pattern: '  safe-domain.com\x00\x1F  ' });
+    assert.strictEqual(rule.pattern, 'safe-domain.com');
+  });
+
+  it('addRule 达到最大存储上限 MAX_RULES_TOTAL_LIMIT 时应当熔断拒绝添加新规则', async () => {
+    // 构造已有伪造规则达到 MAX_RULES_TOTAL_LIMIT (20000)
+    const fakeRules = Array.from({ length: MAX_RULES_TOTAL_LIMIT }, (_, i) => ({
+      id: `rule_fake_${i}`,
+      pattern: `fake${i}.com`,
+      type: 'domain',
+      enabled: true
+    }));
+    await saveRules(fakeRules);
+
+    // 添加全新规则应当被熔断拦截
+    await assert.rejects(async () => {
+      await addRule({ pattern: 'brand-new.com' });
+    }, err => err.code === RULE_ERROR_CODES.CAPACITY_LIMIT);
+
+    // 但是如果规则已存在，允许更新状态而不报超限
+    const updateRes = await addRule({ pattern: 'fake0.com', enabled: true });
+    assert.strictEqual(updateRes.isNew, false);
   });
 
   it('toggleRule 应当正确切换或强制设置启用状态', async () => {
@@ -346,6 +394,7 @@ describe('storage - 导入与导出', () => {
 
     const result = await importRules(conflictPayload, 'merge');
     assert.strictEqual(result.importedCount, 1);
+    assert.strictEqual(result.skippedCount, 0);
     assert.strictEqual(result.totalCount, 2);
 
     const rules = await getRules();
@@ -357,6 +406,31 @@ describe('storage - 导入与导出', () => {
     assert.strictEqual(localItem.id, localId);
     assert.notStrictEqual(remoteItem.id, localId); // 成功防冲突，重新分配了唯一 ID
     assert.ok(remoteItem.id.startsWith('rule_'));
+  });
+
+  it('导入规则时应当自动清洗合法规则、跳过危险/非法规则并精确返回 skippedCount', async () => {
+    const importPayload = JSON.stringify({
+      rules: [
+        { pattern: 'valid1.com' },
+        { pattern: '  valid2.com\x00  ' }, // 控制字符清洗后合法
+        { pattern: '*' },                  // 危险纯通配符，应跳过
+        { pattern: '*.*' },                // 危险纯通配符，应跳过
+        { pattern: 'a'.repeat(2000) },     // 超长，应跳过
+        { pattern: '*a*b*c*d*e*f' },       // 通配符超过 5 个，应跳过
+        { pattern: '' },                   // 空，应跳过
+        { not_a_pattern: 123 }             // 非法结构，应跳过
+      ]
+    });
+
+    const mergeRes = await importRules(importPayload, 'merge');
+    assert.strictEqual(mergeRes.importedCount, 2);
+    assert.strictEqual(mergeRes.skippedCount, 6);
+    assert.strictEqual(mergeRes.totalCount, 2);
+
+    const rules = await getRules();
+    assert.strictEqual(rules.some(r => r.pattern === 'valid1.com'), true);
+    assert.strictEqual(rules.some(r => r.pattern === 'valid2.com'), true);
+    assert.strictEqual(rules.some(r => r.pattern === '*'), false);
   });
 });
 
