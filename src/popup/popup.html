@@ -15,10 +15,50 @@
         <span class="brand-title">HistGuard</span>
       </div>
       <div class="header-actions">
-        <button id="btn-silent-mode" class="capsule-btn silent-btn" data-i18n-title="popup.silentTooltip" title="开启后 30 分钟内一切新浏览均不留痕">
-          <span class="silent-icon">🕶️</span>
-          <span id="silent-text" data-i18n="popup.silentBtn">临时无痕 30m</span>
-        </button>
+        <div class="silent-dropdown" id="silent-dropdown">
+          <button id="btn-silent-mode" class="capsule-btn silent-btn" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="popup.silentTooltip" title="开启后在所选时间内一切新浏览均不留痕">
+            <span class="silent-icon">🕶️</span>
+            <span id="silent-text" data-i18n="popup.silentBtn">临时无痕 30m</span>
+            <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div id="silent-dropdown-menu" class="silent-dropdown-menu hidden" role="listbox">
+            <button type="button" class="silent-dropdown-item silent-exit-item hidden" id="item-silent-exit" role="option">
+              <span class="item-icon">✕</span>
+              <span class="item-text" data-i18n="popup.silentExit">退出临时无痕</span>
+            </button>
+            <div class="silent-dropdown-divider hidden" id="silent-menu-divider"></div>
+            <button type="button" class="silent-dropdown-item" data-duration="15" role="option">
+              <span class="item-text">15min</span>
+              <span class="item-badge hidden"></span>
+            </button>
+            <button type="button" class="silent-dropdown-item" data-duration="30" role="option">
+              <span class="item-text">30min</span>
+              <span class="item-badge hidden"></span>
+            </button>
+            <button type="button" class="silent-dropdown-item" data-duration="60" role="option">
+              <span class="item-text">1h</span>
+              <span class="item-badge hidden"></span>
+            </button>
+            <button type="button" class="silent-dropdown-item" data-duration="120" role="option">
+              <span class="item-text">2h</span>
+              <span class="item-badge hidden"></span>
+            </button>
+            <button type="button" class="silent-dropdown-item" data-duration="240" role="option">
+              <span class="item-text">4h</span>
+              <span class="item-badge hidden"></span>
+            </button>
+            <button type="button" class="silent-dropdown-item" data-duration="480" role="option">
+              <span class="item-text">8h</span>
+              <span class="item-badge hidden"></span>
+            </button>
+            <button type="button" class="silent-dropdown-item" data-duration="720" role="option">
+              <span class="item-text">12h</span>
+              <span class="item-badge hidden"></span>
+            </button>
+          </div>
+        </div>
         <button id="btn-open-options" class="icon-btn" data-i18n-title="popup.optionsTooltip" title="打开管理控制台">
           <svg class="gear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>

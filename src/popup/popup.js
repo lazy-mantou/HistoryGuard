@@ -22,8 +22,13 @@ import {
 
 // DOM 元素引用
 const elements = {
+  silentDropdown: document.getElementById('silent-dropdown'),
   btnSilentMode: document.getElementById('btn-silent-mode'),
   silentText: document.getElementById('silent-text'),
+  silentDropdownMenu: document.getElementById('silent-dropdown-menu'),
+  itemSilentExit: document.getElementById('item-silent-exit'),
+  silentMenuDivider: document.getElementById('silent-menu-divider'),
+  silentDurationItems: document.querySelectorAll('.silent-dropdown-item[data-duration]'),
   btnOpenOptions: document.getElementById('btn-open-options'),
   tabStatusBadge: document.getElementById('tab-status-badge'),
   tabUrlText: document.getElementById('tab-url-text'),
@@ -73,20 +78,60 @@ function showToast(message, duration = 2500) {
 }
 
 /**
- * 格式化倒计时毫秒数 (分:秒)
+ * 将分钟数转换为紧凑的时长显示文本 (如 15min, 30min, 1h, 2h, 4h, 8h, 12h)
+ * @param {number} minutes
+ * @returns {string}
+ */
+function formatDurationLabel(minutes) {
+  const m = Number(minutes) || 30;
+  if (m < 60) return `${m}min`;
+  const h = m / 60;
+  return Number.isInteger(h) ? `${h}h` : `${m}min`;
+}
+
+/**
+ * 格式化倒计时毫秒数 (时:分:秒 或 分:秒)
  * @param {number} ms
  * @returns {string}
  */
 function formatRemainingTime(ms) {
   if (ms <= 0) return '00:00';
   const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+function openSilentDropdown() {
+  if (!elements.silentDropdownMenu || !elements.silentDropdown) return;
+  elements.silentDropdown.classList.add('open');
+  elements.silentDropdownMenu.classList.remove('hidden');
+  elements.btnSilentMode.setAttribute('aria-expanded', 'true');
+}
+
+function closeSilentDropdown() {
+  if (!elements.silentDropdownMenu || !elements.silentDropdown) return;
+  elements.silentDropdown.classList.remove('open');
+  elements.silentDropdownMenu.classList.add('hidden');
+  elements.btnSilentMode.setAttribute('aria-expanded', 'false');
+}
+
+function toggleSilentDropdown() {
+  if (!elements.silentDropdownMenu) return;
+  const isHidden = elements.silentDropdownMenu.classList.contains('hidden');
+  if (isHidden) {
+    openSilentDropdown();
+  } else {
+    closeSilentDropdown();
+  }
+}
+
 /**
- * 初始化并刷新静默免记录按钮状态
+ * 初始化并刷新静默免记录按钮与下拉菜单状态
  */
 async function updateSilentModeState() {
   if (silentCountdownTimer) {
@@ -94,10 +139,41 @@ async function updateSilentModeState() {
     silentCountdownTimer = null;
   }
 
+  let defaultDuration = 30;
+  try {
+    const settings = await getSettings();
+    defaultDuration = Number(settings.silentModeDuration) || 30;
+  } catch (err) {
+    console.warn('Failed to load settings in silent mode check:', err);
+  }
+
   const silent = await getSilentMode();
+  const defaultLabel = formatDurationLabel(defaultDuration);
+
+  // 更新下拉菜单中的 "默认" 徽标
+  if (elements.silentDurationItems) {
+    elements.silentDurationItems.forEach(item => {
+      const dur = Number(item.dataset.duration);
+      const badge = item.querySelector('.item-badge');
+      if (dur === defaultDuration) {
+        if (badge) {
+          badge.textContent = t('popup.silentDefaultTag');
+          badge.classList.remove('hidden');
+        }
+      } else {
+        if (badge) {
+          badge.classList.add('hidden');
+        }
+      }
+    });
+  }
+
   if (silent.active && silent.remainingMs > 0) {
     elements.btnSilentMode.classList.add('active');
     elements.silentText.textContent = t('popup.silentBtnActive', { time: formatRemainingTime(silent.remainingMs) });
+
+    if (elements.itemSilentExit) elements.itemSilentExit.classList.remove('hidden');
+    if (elements.silentMenuDivider) elements.silentMenuDivider.classList.remove('hidden');
 
     silentCountdownTimer = setInterval(async () => {
       const current = await getSilentMode();
@@ -107,12 +183,17 @@ async function updateSilentModeState() {
         clearInterval(silentCountdownTimer);
         silentCountdownTimer = null;
         elements.btnSilentMode.classList.remove('active');
-        elements.silentText.textContent = t('popup.silentBtn');
+        elements.silentText.textContent = t('popup.silentBtnParam', { duration: defaultLabel });
+        if (elements.itemSilentExit) elements.itemSilentExit.classList.add('hidden');
+        if (elements.silentMenuDivider) elements.silentMenuDivider.classList.add('hidden');
       }
     }, 1000);
   } else {
     elements.btnSilentMode.classList.remove('active');
-    elements.silentText.textContent = t('popup.silentBtn');
+    elements.silentText.textContent = t('popup.silentBtnParam', { duration: defaultLabel });
+
+    if (elements.itemSilentExit) elements.itemSilentExit.classList.add('hidden');
+    if (elements.silentMenuDivider) elements.silentMenuDivider.classList.add('hidden');
   }
 }
 
@@ -399,19 +480,48 @@ async function initPopup() {
 }
 
 // 事件绑定
-// A. 静默免记录模式切换按钮
-elements.btnSilentMode.addEventListener('click', async () => {
-  const silent = await getSilentMode();
-  if (silent.active) {
+// A1. 点击临时无痕按钮切换下拉菜单显隐
+elements.btnSilentMode.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleSilentDropdown();
+});
+
+// A2. 点击退出无痕模式
+if (elements.itemSilentExit) {
+  elements.itemSilentExit.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    closeSilentDropdown();
     await clearSilentMode();
     showToast(t('popup.toastSilentExit'));
-  } else {
-    const settings = await getSettings();
-    const duration = settings.silentModeDuration || 30;
-    await setSilentMode(duration);
-    showToast(t('popup.toastSilentEnter', { duration }));
+    await updateSilentModeState();
+  });
+}
+
+// A3. 点击各时长选项
+if (elements.silentDurationItems) {
+  elements.silentDurationItems.forEach(item => {
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      closeSilentDropdown();
+      const duration = Number(item.dataset.duration) || 30;
+      await setSilentMode(duration);
+      showToast(t('popup.toastSilentEnter', { duration }));
+      await updateSilentModeState();
+    });
+  });
+}
+
+// A4. 点击页面外部关闭下拉菜单，按 Escape 键关闭
+document.addEventListener('click', (e) => {
+  if (elements.silentDropdown && !elements.silentDropdown.contains(e.target)) {
+    closeSilentDropdown();
   }
-  await updateSilentModeState();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeSilentDropdown();
+  }
 });
 
 // B. 打开设置页齿轮入口

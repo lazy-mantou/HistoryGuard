@@ -273,15 +273,19 @@ function escapeHtml(str) {
    ========================================================================== */
 
 /**
- * 格式化倒计时毫秒数 (分:秒)
+ * 格式化倒计时毫秒数 (时:分:秒 或 分:秒)
  * @param {number} ms
  * @returns {string}
  */
 function formatRemainingTime(ms) {
   if (ms <= 0) return '00:00';
   const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 

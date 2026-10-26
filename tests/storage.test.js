@@ -259,6 +259,25 @@ describe('storage - 静默免记录模式', () => {
     const current = await getSilentMode();
     assert.strictEqual(current.active, false);
   });
+
+  it('支持多种可选时长 (15m, 30m, 1h, 2h, 4h, 8h, 12h) 且精确计算到期时间与报警器', async () => {
+    const durations = [15, 30, 60, 120, 240, 480, 720];
+    for (const duration of durations) {
+      const before = Date.now();
+      const state = await setSilentMode(duration);
+      const after = Date.now();
+
+      assert.strictEqual(state.active, true);
+      assert.ok(state.until >= before + duration * 60 * 1000);
+      assert.ok(state.until <= after + duration * 60 * 1000);
+      assert.strictEqual(mockAlarmsMap.get('silent_mode_alarm')?.delayInMinutes, duration);
+
+      const current = await getSilentMode();
+      assert.strictEqual(current.active, true);
+      assert.ok(current.remainingMs > (duration - 1) * 60 * 1000);
+      assert.ok(current.remainingMs <= duration * 60 * 1000);
+    }
+  });
 });
 
 describe('storage - 导入与导出', () => {
@@ -374,6 +393,16 @@ describe('storage - 全局偏好设置 (Settings)', () => {
     assert.strictEqual(fetched.language, 'en');
     assert.strictEqual(fetched.enableHitTracking, true);
     assert.strictEqual(fetched.cleanOnAddRule, false);
+  });
+
+  it('支持修改并持久化默认临时无痕时长 (silentModeDuration)', async () => {
+    for (const dur of [15, 60, 120, 240, 480, 720, 30]) {
+      const saved = await saveSettings({ silentModeDuration: dur });
+      assert.strictEqual(saved.silentModeDuration, dur);
+
+      const fetched = await getSettings();
+      assert.strictEqual(fetched.silentModeDuration, dur);
+    }
   });
 });
 
