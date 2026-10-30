@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "HistGuard - Smart History Protection & Privacy Guard",
+    "description": "The name of the extension"
+  },
+  "appDesc": {
+    "message": "Lightweight cross-browser history management & automatic privacy protection.",
+    "description": "The description of the extension"
+  },
+  "actionTitle": {
+    "message": "HistGuard Privacy Guard",
+    "description": "The default title for the toolbar action button"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "HistGuard - إدارة سجل التصفح وحماية الخصوصية",
+    "description": "The name of the extension"
+  },
+  "appDesc": {
+    "message": "إدارة ذكية لسجل التصفح وحماية تلقائية لخصوصيتك.",
+    "description": "The description of the extension"
+  },
+  "actionTitle": {
+    "message": "HistGuard حارس الخصوصية",
+    "description": "The default title for the toolbar action button"
+  }
+}

@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = __dirname;
 const SRC_DIR = path.join(ROOT_DIR, 'src');
 const ICONS_DIR = path.join(ROOT_DIR, 'icons');
+const LOCALES_DIR = path.join(ROOT_DIR, '_locales');
 const DIST_DIR = path.join(ROOT_DIR, 'dist');
 
 const TARGETS = [
@@ -138,6 +139,11 @@ function build() {
       } else {
         console.warn(`[WARN] Module directory not found: ${srcModDir}`);
       }
+    }
+
+    // D. Copy _locales (manifest i18n dictionaries)
+    if (fs.existsSync(LOCALES_DIR)) {
+      copyDirRecursiveSync(LOCALES_DIR, path.join(target.outputDir, '_locales'));
     }
 
     const stats = getDirStats(target.outputDir);

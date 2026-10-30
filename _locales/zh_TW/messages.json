@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "HistGuard - 歷史紀錄智慧管理與防護",
+    "description": "The name of the extension"
+  },
+  "appDesc": {
+    "message": "輕量級跨瀏覽器歷史紀錄智慧管理與全自動隱私防護",
+    "description": "The description of the extension"
+  },
+  "actionTitle": {
+    "message": "HistGuard 隱私管家",
+    "description": "The default title for the toolbar action button"
+  }
+}

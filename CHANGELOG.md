@@ -23,8 +23,12 @@
 - **国际化引擎增强与模板插值修复**：
   - 在 `src/core/i18n.js` 中新增 `data-i18n-params` 属性动态解析机制，修复下拉选项中模板变量（如 `{duration}`）偶现未替换的问题；
   - `zh-CN`、`zh-TW`、`en`、`es`、`ar`、`pt`、`id`、`fr`、`ru`、`de`、`ja`、`ko` 12 种主流语言多语言矩阵 100% 补齐并严格对齐；
+- **Manifest 原生国际化支持与 `_locales` 架构**：
+  - 在 `manifest.chrome.json` 与 `manifest.firefox.json` 中配置 `default_locale: "zh_CN"`，将 `name`、`description` 和 `action.default_title` 升级为 `__MSG_appName__`、`__MSG_appDesc__` 与 `__MSG_actionTitle__` 动态多语言占位符；
+  - 建立 `_locales/` 原生多语言目录，全覆盖 12 种主流语言（包含 `zh_CN`、`zh_TW`、`en`、`ja`、`ko`、`es`、`fr`、`de`、`ru`、`pt_BR`、`pt_PT`、`id`、`ar`）；
+  - `build.js` 自动化打包同步将 `_locales/` 拷贝至 `dist/chrome` 与 `dist/firefox`，新增测试用例确保字典完整性；
 - **测试与稳定性保障**：
-  - 原生单元测试总数扩充至 236 项并全部通过（236 pass, 0 fail），双端构建脚本（`build.js`）零依赖自动化打包。
+  - 原生单元测试总数扩充至 238 项并全部通过（238 pass, 0 fail），双端构建脚本（`build.js`）零依赖自动化打包。
 
 ### 基础发布特性归档 (HistGuard 1.0.0 Base Architecture)
 - **多端稳定性与架构加固**：包含完整的 Chrome MV3 Service Worker 冷启动竞态消除、存储单次原子合并落盘、Firefox Places SQLite 并发流控、多维统计兜底校准及导入 ID 防冲突机制；

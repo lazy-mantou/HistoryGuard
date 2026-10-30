@@ -6,6 +6,8 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   resolveLanguage,
   t,
@@ -407,3 +409,38 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定与 RTL 适配)', () => {
     delete globalThis.document;
   });
 });
+
+describe('manifest.json 国际化规范与资源完整性校验', () => {
+  const rootDir = path.resolve('E:/Workspace/HistGuard');
+  const localesDir = path.join(rootDir, '_locales');
+
+  it('manifest.chrome.json 与 manifest.firefox.json 必须合法且配置 default_locale 与 __MSG_ 占位符', () => {
+    const chromeManifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'manifest.chrome.json'), 'utf8'));
+    const firefoxManifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'manifest.firefox.json'), 'utf8'));
+
+    for (const manifest of [chromeManifest, firefoxManifest]) {
+      assert.strictEqual(manifest.default_locale, 'zh_CN');
+      assert.strictEqual(manifest.name, '__MSG_appName__');
+      assert.strictEqual(manifest.description, '__MSG_appDesc__');
+      assert.strictEqual(manifest.action.default_title, '__MSG_actionTitle__');
+    }
+  });
+
+  it('_locales 必须包含完整的多语言 messages.json 且各字典键结构对齐', () => {
+    const expectedLocales = ['zh_CN', 'zh_TW', 'en', 'ja', 'ko', 'es', 'fr', 'de', 'ru', 'pt_BR', 'pt_PT', 'id', 'ar'];
+    const requiredKeys = ['appName', 'appDesc', 'actionTitle'];
+
+    for (const locale of expectedLocales) {
+      const filePath = path.join(localesDir, locale, 'messages.json');
+      assert.ok(fs.existsSync(filePath), `_locales/${locale}/messages.json 应存在`);
+
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      for (const key of requiredKeys) {
+        assert.ok(content[key], `${locale} 中必须存在 ${key} 键`);
+        assert.ok(typeof content[key].message === 'string' && content[key].message.length > 0, `${locale}.${key}.message 必须为非空字符串`);
+        assert.ok(typeof content[key].description === 'string' && content[key].description.length > 0, `${locale}.${key}.description 必须为非空字符串`);
+      }
+    }
+  });
+});
+

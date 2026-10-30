@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "HistGuard - Gestión del historial y privacidad",
+    "description": "The name of the extension"
+  },
+  "appDesc": {
+    "message": "Gestión inteligente del historial y protección automática de la privacidad.",
+    "description": "The description of the extension"
+  },
+  "actionTitle": {
+    "message": "HistGuard Protección de Privacidad",
+    "description": "The default title for the toolbar action button"
+  }
+}

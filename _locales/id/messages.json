@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "HistGuard - Pengelola Riwayat & Privasi",
+    "description": "The name of the extension"
+  },
+  "appDesc": {
+    "message": "Pengelolaan riwayat pintar & perlindungan privasi otomatis.",
+    "description": "The description of the extension"
+  },
+  "actionTitle": {
+    "message": "HistGuard Pelindung Privasi",
+    "description": "The default title for the toolbar action button"
+  }
+}

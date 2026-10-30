@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "HistGuard - Verlaufsverwaltung & Datenschutz",
+    "description": "The name of the extension"
+  },
+  "appDesc": {
+    "message": "Intelligente Verlaufsverwaltung & automatischer Schutz der Privatsphäre.",
+    "description": "The description of the extension"
+  },
+  "actionTitle": {
+    "message": "HistGuard Datenschutz-Wächter",
+    "description": "The default title for the toolbar action button"
+  }
+}
