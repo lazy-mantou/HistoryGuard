@@ -17,6 +17,9 @@ import {
   getSilentMode,
   setSilentMode,
   clearSilentMode,
+  getPauseStatus,
+  setPauseStatus,
+  clearPauseStatus,
   importRules,
   exportRules,
   getSettings,
@@ -324,6 +327,98 @@ describe('storage - 静默免记录模式', () => {
       assert.strictEqual(current.active, true);
       assert.ok(current.remainingMs > (duration - 1) * 60 * 1000);
       assert.ok(current.remainingMs <= duration * 60 * 1000);
+    }
+  });
+});
+
+describe('storage - 防护暂停模式', () => {
+  it('初次获取时应返回非激活状态', async () => {
+    const status = await getPauseStatus();
+    assert.strictEqual(status.active, false);
+    assert.strictEqual(status.until, 0);
+    assert.strictEqual(status.manual, false);
+    assert.strictEqual(status.remainingMs, 0);
+  });
+
+  it('开启限时暂停模式应正确持久化并注册 alarm', async () => {
+    const state = await setPauseStatus(15);
+    assert.strictEqual(state.active, true);
+    assert.strictEqual(state.manual, false);
+    assert.ok(state.until > Date.now());
+    assert.ok(mockAlarmsMap.has('protection_pause_alarm'));
+    assert.strictEqual(mockAlarmsMap.get('protection_pause_alarm').delayInMinutes, 15);
+
+    const current = await getPauseStatus();
+    assert.strictEqual(current.active, true);
+    assert.strictEqual(current.manual, false);
+    assert.ok(current.remainingMs > 0);
+  });
+
+  it('开启常闭暂停模式（一直关闭到下次开启）应正确持久化且不创建 alarm', async () => {
+    const state = await setPauseStatus('manual');
+    assert.strictEqual(state.active, true);
+    assert.strictEqual(state.manual, true);
+    assert.strictEqual(state.until, -1);
+    assert.strictEqual(mockAlarmsMap.has('protection_pause_alarm'), false);
+
+    const current = await getPauseStatus();
+    assert.strictEqual(current.active, true);
+    assert.strictEqual(current.manual, true);
+    assert.strictEqual(current.until, -1);
+    assert.strictEqual(current.remainingMs, -1);
+  });
+
+  it('恢复防护 (clearPauseStatus) 应清空状态并清除 alarm', async () => {
+    await setPauseStatus(60);
+    await clearPauseStatus();
+
+    const current = await getPauseStatus();
+    assert.strictEqual(current.active, false);
+    assert.strictEqual(current.manual, false);
+    assert.strictEqual(mockAlarmsMap.has('protection_pause_alarm'), false);
+  });
+
+  it('已过期的限时暂停模式应自动重置为非活跃状态', async () => {
+    mockStorageMap.set('histguard_pause_status', {
+      active: true,
+      until: Date.now() - 5000,
+      manual: false
+    });
+
+    const current = await getPauseStatus();
+    assert.strictEqual(current.active, false);
+  });
+
+  it('互斥机制：开启暂停模式应自动关闭处于激活中的临时无痕模式', async () => {
+    await setSilentMode(30);
+    let silent = await getSilentMode();
+    assert.strictEqual(silent.active, true);
+
+    await setPauseStatus(15);
+    silent = await getSilentMode();
+    assert.strictEqual(silent.active, false);
+    const pause = await getPauseStatus();
+    assert.strictEqual(pause.active, true);
+  });
+
+  it('互斥机制：开启临时无痕应自动解除暂停防护状态', async () => {
+    await setPauseStatus('manual');
+    let pause = await getPauseStatus();
+    assert.strictEqual(pause.active, true);
+
+    await setSilentMode(30);
+    pause = await getPauseStatus();
+    assert.strictEqual(pause.active, false);
+    const silent = await getSilentMode();
+    assert.strictEqual(silent.active, true);
+  });
+
+  it('支持所有预设时长 (15m, 30m, 1h, 2h, 4h, 8h, 12h)', async () => {
+    const durations = [15, 30, 60, 120, 240, 480, 720];
+    for (const d of durations) {
+      const state = await setPauseStatus(d);
+      assert.strictEqual(state.active, true);
+      assert.strictEqual(mockAlarmsMap.get('protection_pause_alarm')?.delayInMinutes, d);
     }
   });
 });

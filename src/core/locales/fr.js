@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'Par défaut',
     silentTooltip: 'Aucun historique de navigation ne sera enregistré pendant la durée sélectionnée',
     optionsTooltip: 'Ouvrir le tableau de bord',
+    pauseBtn: 'Mettre en pause',
+    pauseTooltip: 'Suspendre ou désactiver la protection de l\'historique',
+    pauseResume: 'Reprendre la protection maintenant',
+    pauseForever: 'Jusqu\'à réactivation',
+    pauseBannerTitle: 'Protection en pause',
+    pauseBannerDesc: 'Aucun historique n\'est actuellement intercepté ; le navigateur l\'enregistre normalement.',
+    pauseDurationItem: 'Suspendre pendant {duration}',
+    toastPauseExit: 'Protection reprise',
+    toastPauseEnter: 'Protection suspendue ({duration})',
+    toastPauseEnterForever: 'Protection désactivée jusqu\'au prochain démarrage',
     currentTab: 'Onglet actif',
     statusChecking: '● Vérification...',
     statusLoading: 'Chargement...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: 'Sans trace',
     statSilentOff: 'Désactivé',
     statSilentOn: 'Actif ({time})',
+    statProtectionStatus: 'État de fonctionnement',
+    statStatusRunning: 'En cours d\'exécution',
+    statStatusPaused: 'En pause ({time})',
+    statStatusPausedForever: 'En pause (Désactivé)',
     navHistoryTitle: 'Rechercher et nettoyer',
     navHistoryDesc: 'Recherche et nettoyage approfondi',
     navRulesTitle: 'Règles de protection',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - règle : {pattern}',
     tooltipTraceFree: 'HistGuard : Mode sans trace actif (Enregistrement global en pause)',
     tooltipRecording: 'HistGuard : Enregistrement de l\'historique (Cliquer pour protéger)',
-    tooltipInternal: 'HistGuard : Page interne du navigateur'
+    tooltipInternal: 'HistGuard : Page interne du navigateur',
+    tooltipPaused: 'HistGuard : Protection en pause (L\'historique est enregistré)'
   }
 };

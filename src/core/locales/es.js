@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'Predeterminado',
     silentTooltip: 'No se registrará historial de navegación durante la duración seleccionada',
     optionsTooltip: 'Abrir panel de control',
+    pauseBtn: 'Pausar protección',
+    pauseTooltip: 'Pausar o desactivar la protección del historial',
+    pauseResume: 'Reanudar protección ahora',
+    pauseForever: 'Hasta que se vuelva a activar',
+    pauseBannerTitle: 'Protección pausada',
+    pauseBannerDesc: 'Actualmente no se intercepta el historial; el navegador lo guardará normalmente.',
+    pauseDurationItem: 'Pausar por {duration}',
+    toastPauseExit: 'Protección reanudada',
+    toastPauseEnter: 'Protección pausada ({duration})',
+    toastPauseEnterForever: 'Protección desactivada hasta la próxima activación',
     currentTab: 'Pestaña activa',
     statusChecking: '● Comprobando...',
     statusLoading: 'Cargando...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: 'Modo sin rastro',
     statSilentOff: 'Inactivo',
     statSilentOn: 'Activo ({time})',
+    statProtectionStatus: 'Estado de Ejecución',
+    statStatusRunning: 'En ejecución',
+    statStatusPaused: 'Pausado ({time})',
+    statStatusPausedForever: 'Pausado (Apagado)',
     navHistoryTitle: 'Buscar y limpiar historial',
     navHistoryDesc: 'Búsqueda y limpieza profunda',
     navRulesTitle: 'Reglas de protección',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - regla: {pattern}',
     tooltipTraceFree: 'HistGuard: Modo sin rastro activo (Registro global pausado)',
     tooltipRecording: 'HistGuard: Registrando historial (Clic para proteger)',
-    tooltipInternal: 'HistGuard: Página interna del navegador'
+    tooltipInternal: 'HistGuard: Página interna del navegador',
+    tooltipPaused: 'HistGuard: Protección pausada (El historial se está grabando)'
   }
 };

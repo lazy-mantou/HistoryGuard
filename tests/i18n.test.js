@@ -351,6 +351,10 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定与 RTL 适配)', () => {
     setLanguage('zh-CN');
 
     const textEl = new MockElement({ 'data-i18n': 'popup.hideAndClean' });
+    const paramEl = new MockElement({
+      'data-i18n': 'popup.pauseDurationItem',
+      'data-i18n-params': JSON.stringify({ duration: '15m' })
+    });
     const inputEl = new MockElement({ 'data-i18n-placeholder': 'options.searchPlaceholder' });
     const btnEl = new MockElement({
       'data-i18n-title': 'popup.optionsTooltip',
@@ -359,7 +363,7 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定与 RTL 适配)', () => {
 
     const mockRoot = {
       querySelectorAll: (selector) => {
-        if (selector === '[data-i18n]') return [textEl];
+        if (selector === '[data-i18n]') return [textEl, paramEl];
         if (selector === '[data-i18n-placeholder]') return [inputEl];
         if (selector === '[data-i18n-title]') return [btnEl];
         if (selector === '[data-i18n-aria-label]') return [btnEl];
@@ -370,6 +374,7 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定与 RTL 适配)', () => {
     // 应用中文
     applyI18nToDOM(mockRoot);
     assert.strictEqual(textEl.textContent, '防护并清理');
+    assert.strictEqual(paramEl.textContent, '临时关闭 15m');
     assert.strictEqual(inputEl.getAttribute('placeholder'), '搜索域名、URL 路径片段或页面标题...');
     assert.strictEqual(btnEl.getAttribute('title'), '打开管理控制台');
     assert.strictEqual(btnEl.getAttribute('aria-label'), '防护规则管理');
@@ -378,6 +383,7 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定与 RTL 适配)', () => {
     setLanguage('en');
     applyI18nToDOM(mockRoot);
     assert.strictEqual(textEl.textContent, 'Protect & Clean');
+    assert.strictEqual(paramEl.textContent, 'Pause for 15m');
     assert.strictEqual(inputEl.getAttribute('placeholder'), 'Search domain, URL path, or page title...');
     assert.strictEqual(btnEl.getAttribute('title'), 'Open Dashboard');
     assert.strictEqual(btnEl.getAttribute('aria-label'), 'Protection Rules');

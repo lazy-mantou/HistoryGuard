@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'Default',
     silentTooltip: 'Kunjungan baru selama durasi yang dipilih tidak akan dicatat dalam riwayat',
     optionsTooltip: 'Buka Dasbor',
+    pauseBtn: 'Jeda Perlindungan',
+    pauseTooltip: 'Jeda atau nonaktifkan perlindungan riwayat',
+    pauseResume: 'Lanjutkan perlindungan sekarang',
+    pauseForever: 'Sampai dinyalakan kembali',
+    pauseBannerTitle: 'Perlindungan Dijeda',
+    pauseBannerDesc: 'Riwayat saat ini tidak dicegat; peramban akan menyimpan riwayat seperti biasa.',
+    pauseDurationItem: 'Jeda selama {duration}',
+    toastPauseExit: 'Perlindungan dilanjutkan',
+    toastPauseEnter: 'Perlindungan dijeda ({duration})',
+    toastPauseEnterForever: 'Perlindungan dimatikan sampai dinyalakan berikutnya',
     currentTab: 'Tab Aktif',
     statusChecking: '● Memeriksa...',
     statusLoading: 'Memuat...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: 'Bebas Jejak',
     statSilentOff: 'Mati',
     statSilentOn: 'Aktif ({time})',
+    statProtectionStatus: 'Status Berjalan',
+    statStatusRunning: 'Berjalan',
+    statStatusPaused: 'Dijeda ({time})',
+    statStatusPausedForever: 'Dijeda (Mati)',
     navHistoryTitle: 'Cari & Bersihkan Riwayat',
     navHistoryDesc: 'Pencarian & pembersihan mendalam',
     navRulesTitle: 'Aturan Perlindungan',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - aturan: {pattern}',
     tooltipTraceFree: 'HistGuard: Mode bebas jejak aktif (Pencatatan riwayat global dijeda)',
     tooltipRecording: 'HistGuard: Mencatat riwayat (Klik ikon untuk melindungi)',
-    tooltipInternal: 'HistGuard: Halaman internal peramban'
+    tooltipInternal: 'HistGuard: Halaman internal peramban',
+    tooltipPaused: 'HistGuard: Perlindungan dijeda (Riwayat sedang direkam)'
   }
 };

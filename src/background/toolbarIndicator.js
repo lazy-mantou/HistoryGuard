@@ -30,15 +30,16 @@ export const ICON_PATHS = {
     128: '/icons/icon-green128.png'
   },
   DIMMED: {
-    16: '/icons/icon16.png',
-    32: '/icons/icon32.png',
-    48: '/icons/icon48.png',
-    128: '/icons/icon128.png'
+    16: '/icons/icon-dim16.png',
+    32: '/icons/icon-dim32.png',
+    48: '/icons/icon-dim48.png',
+    128: '/icons/icon-dim128.png'
   }
 };
 
 // 状态类型常量
 export const PAGE_PROTECT_STATUS = {
+  PAUSED: 'PAUSED',                     // 处于暂停防护状态，全局不拦截任何历史 (灰度图标 + OFF)
   PROTECTED_RULE: 'PROTECTED_RULE',     // 命中自动隐藏规则，该页不记录历史
   PROTECTED_SILENT: 'PROTECTED_SILENT', // 处于静默免记录模式，全局不记录历史
   RECORDING: 'RECORDING',               // 正常普通页面，会记录历史
@@ -51,9 +52,17 @@ export const PAGE_PROTECT_STATUS = {
  * @param {string} [title='']
  * @param {Array<Object>} [rules=[]]
  * @param {number} [silentUntil=0]
+ * @param {Object|null} [pauseStatus=null]
  * @returns {{ status: string, rule: Object|null }}
  */
-export function evaluatePageStatus(url, title = '', rules = [], silentUntil = 0) {
+export function evaluatePageStatus(url, title = '', rules = [], silentUntil = 0, pauseStatus = null) {
+  if (pauseStatus && pauseStatus.active) {
+    const isPaused = pauseStatus.manual || pauseStatus.until === -1 || pauseStatus.until > Date.now();
+    if (isPaused) {
+      return { status: PAGE_PROTECT_STATUS.PAUSED, rule: null };
+    }
+  }
+
   if (!url || typeof url !== 'string' || (!url.startsWith('http://') && !url.startsWith('https://'))) {
     return { status: PAGE_PROTECT_STATUS.INTERNAL, rule: null };
   }
@@ -75,13 +84,30 @@ export function evaluatePageStatus(url, title = '', rules = [], silentUntil = 0)
  * 刷新扩展全局默认的工具栏图标与提示（不绑定具体标签页）
  * @param {number} [silentUntil=0]
  * @param {string} [lang='zh-CN']
+ * @param {Object|null} [pauseStatus=null]
  */
-export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-CN') {
+export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-CN', pauseStatus = null) {
+  const isPaused = Boolean(
+    pauseStatus &&
+    pauseStatus.active &&
+    (pauseStatus.manual || pauseStatus.until === -1 || pauseStatus.until > Date.now())
+  );
   const now = Date.now();
-  const isSilent = silentUntil > now;
+  const isSilent = !isPaused && silentUntil > now;
 
   try {
-    if (isSilent) {
+    if (isPaused) {
+      await browserApi.action.setIcon({ path: ICON_PATHS.DIMMED });
+      await browserApi.action.setBadgeText({ text: 'OFF' });
+      try {
+        if (typeof browserApi.action.setBadgeBackgroundColor === 'function') {
+          await browserApi.action.setBadgeBackgroundColor({ color: '#f59e0b' });
+        }
+      } catch {}
+      await browserApi.action.setTitle({
+        title: t('toolbar.tooltipPaused', {}, lang)
+      });
+    } else if (isSilent) {
       await browserApi.action.setIcon({ path: ICON_PATHS.PROTECTED });
       await browserApi.action.setBadgeText({ text: '' });
       await browserApi.action.setTitle({
@@ -107,14 +133,28 @@ export async function updateGlobalToolbarIndicator(silentUntil = 0, lang = 'zh-C
  * @param {Array<Object>} rules
  * @param {number} silentUntil
  * @param {string} [lang='zh-CN']
+ * @param {Object|null} [pauseStatus=null]
  */
-export async function updateTabToolbarIndicator(tabId, url, title, rules, silentUntil, lang = 'zh-CN') {
+export async function updateTabToolbarIndicator(tabId, url, title, rules, silentUntil, lang = 'zh-CN', pauseStatus = null) {
   if (!tabId || typeof tabId !== 'number') return;
 
-  const { status, rule } = evaluatePageStatus(url, title, rules, silentUntil);
+  const { status, rule } = evaluatePageStatus(url, title, rules, silentUntil, pauseStatus);
 
   try {
     switch (status) {
+      case PAGE_PROTECT_STATUS.PAUSED: {
+        await browserApi.action.setIcon({ tabId, path: ICON_PATHS.DIMMED });
+        await browserApi.action.setBadgeText({ tabId, text: 'OFF' });
+        try {
+          if (typeof browserApi.action.setBadgeBackgroundColor === 'function') {
+            await browserApi.action.setBadgeBackgroundColor({ tabId, color: '#f59e0b' });
+          }
+        } catch {}
+        const tooltip = t('toolbar.tooltipPaused', {}, lang);
+        await browserApi.action.setTitle({ tabId, title: tooltip });
+        break;
+      }
+
       case PAGE_PROTECT_STATUS.PROTECTED_RULE: {
         await browserApi.action.setIcon({ tabId, path: ICON_PATHS.PROTECTED });
         await browserApi.action.setBadgeText({ tabId, text: '' });

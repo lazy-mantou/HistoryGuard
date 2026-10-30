@@ -67,6 +67,16 @@ describe('toolbarIndicator - evaluatePageStatus (页面防护状态判定算法)
     assert.strictEqual(res.status, PAGE_PROTECT_STATUS.RECORDING);
     assert.strictEqual(res.rule, null);
   });
+
+  it('处于暂停防护状态时，无论是否命中规则或静默模式，恒判定为 PAUSED', () => {
+    const pauseState = { active: true, until: Date.now() + 60000, manual: false };
+    const res1 = evaluatePageStatus('https://www.google.com', 'Google', sampleRules, 0, pauseState);
+    assert.strictEqual(res1.status, PAGE_PROTECT_STATUS.PAUSED);
+
+    const manualPause = { active: true, until: -1, manual: true };
+    const res2 = evaluatePageStatus('https://example.com', '', sampleRules, Date.now() + 60000, manualPause);
+    assert.strictEqual(res2.status, PAGE_PROTECT_STATUS.PAUSED);
+  });
 });
 
 describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器外观与角标渲染)', () => {
@@ -179,6 +189,25 @@ describe('toolbarIndicator - updateTabToolbarIndicator (工具栏状态指示器
     await updateTabToolbarIndicator(0, 'https://example.com', '', [], 0);
     assert.strictEqual(actionLog.length, 0);
   });
+
+  it('防护处于暂停状态时：切换为灰色图标 (DIMMED)、角标显示 OFF、显示暂停 Tooltip', async () => {
+    const pauseStatus = { active: true, until: Date.now() + 60000, manual: false };
+    await updateTabToolbarIndicator(107, 'https://www.google.com', 'Google', [], 0, 'zh-CN', pauseStatus);
+
+    const iconCall = actionLog.find(c => c.type === 'setIcon');
+    const badgeTextCall = actionLog.find(c => c.type === 'setBadgeText');
+    const titleCall = actionLog.find(c => c.type === 'setTitle');
+
+    assert.ok(iconCall);
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.DIMMED);
+    assert.strictEqual(ICON_PATHS.DIMMED[16], '/icons/icon-dim16.png');
+
+    assert.ok(badgeTextCall);
+    assert.strictEqual(badgeTextCall.details.text, 'OFF');
+
+    assert.ok(titleCall);
+    assert.match(titleCall.details.title, /防护已暂停/);
+  });
 });
 
 describe('toolbarIndicator - updateGlobalToolbarIndicator (全局默认工具栏状态渲染)', () => {
@@ -234,5 +263,24 @@ describe('toolbarIndicator - updateGlobalToolbarIndicator (全局默认工具栏
 
     assert.ok(titleCall);
     assert.match(titleCall.details.title, /正常记录历史/);
+  });
+
+  it('防护处于暂停状态时：全局切换为灰色图标 (DIMMED)、角标显示 OFF、设置暂停提示', async () => {
+    const pauseStatus = { active: true, until: Date.now() + 60000, manual: false };
+    await updateGlobalToolbarIndicator(0, 'zh-CN', pauseStatus);
+
+    const iconCall = actionLog.find(c => c.type === 'setIcon');
+    const badgeCall = actionLog.find(c => c.type === 'setBadgeText');
+    const titleCall = actionLog.find(c => c.type === 'setTitle');
+
+    assert.ok(iconCall);
+    assert.deepStrictEqual(iconCall.details.path, ICON_PATHS.DIMMED);
+    assert.strictEqual(ICON_PATHS.DIMMED[48], '/icons/icon-dim48.png');
+
+    assert.ok(badgeCall);
+    assert.strictEqual(badgeCall.details.text, 'OFF');
+
+    assert.ok(titleCall);
+    assert.match(titleCall.details.title, /防护已暂停/);
   });
 });

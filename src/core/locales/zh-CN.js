@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: '默认',
     silentTooltip: '开启后在所选时间内一切新浏览均不留痕',
     optionsTooltip: '打开管理控制台',
+    pauseBtn: '暂停防护',
+    pauseTooltip: '暂停或关闭历史防护',
+    pauseResume: '立即恢复防护',
+    pauseForever: '一直关闭到下次开启',
+    pauseBannerTitle: '防护已暂停',
+    pauseBannerDesc: '当前不会拦截任何历史记录，浏览器将正常保存浏览足迹。',
+    pauseDurationItem: '临时关闭 {duration}',
+    toastPauseExit: '已恢复正常防护',
+    toastPauseEnter: '已暂停历史防护 ({duration})',
+    toastPauseEnterForever: '已关闭历史防护（直到下次开启）',
     currentTab: '当前标签页',
     statusChecking: '● 检测中...',
     statusLoading: '加载中...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: '临时无痕',
     statSilentOff: '未开启',
     statSilentOn: '开启中 ({time})',
+    statProtectionStatus: '运行状态',
+    statStatusRunning: '运行中',
+    statStatusPaused: '已暂停 ({time})',
+    statStatusPausedForever: '已暂停 (常闭)',
     navHistoryTitle: '历史检索与清理',
     navHistoryDesc: '多维检索与深度清理',
     navRulesTitle: '防护规则管理',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - 规则: {pattern}',
     tooltipTraceFree: 'HistGuard: 临时无痕模式中 (全局不记录历史)',
     tooltipRecording: 'HistGuard: 正常记录历史 (点击图标可开启防护)',
-    tooltipInternal: 'HistGuard: 浏览器内部页面 (不可记录)'
+    tooltipInternal: 'HistGuard: 浏览器内部页面 (不可记录)',
+    tooltipPaused: 'HistGuard: 防护已暂停 (不拦截历史记录)'
   }
 };

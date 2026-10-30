@@ -10,6 +10,7 @@ import { filterHistoryByRule, findMatchingRule, computeCandidateStatus, normaliz
 import { cleanHistoryByRule } from '../core/historyCleaner.js';
 import { t, initI18n, localizeCapsule } from '../core/i18n.js';
 import { initTheme } from '../core/theme.js';
+import { updateTabToolbarIndicator, updateGlobalToolbarIndicator } from '../background/toolbarIndicator.js';
 import {
   getRules,
   addRule,
@@ -17,6 +18,9 @@ import {
   getSilentMode,
   setSilentMode,
   clearSilentMode,
+  getPauseStatus,
+  setPauseStatus,
+  clearPauseStatus,
   getSettings,
   RULE_ERROR_I18N_KEYS
 } from '../core/storage.js';
@@ -31,6 +35,16 @@ const elements = {
   silentMenuDivider: document.getElementById('silent-menu-divider'),
   silentDurationItems: document.querySelectorAll('.silent-dropdown-item[data-duration]'),
   btnOpenOptions: document.getElementById('btn-open-options'),
+  pauseDropdown: document.getElementById('pause-dropdown'),
+  btnPauseMode: document.getElementById('btn-pause-mode'),
+  pauseBadgeDot: document.getElementById('pause-badge-dot'),
+  pauseDropdownMenu: document.getElementById('pause-dropdown-menu'),
+  itemPauseResume: document.getElementById('item-pause-resume'),
+  pauseMenuDivider: document.getElementById('pause-menu-divider'),
+  pauseDurationItems: document.querySelectorAll('.pause-dropdown-item[data-duration]'),
+  pausedProtectionBanner: document.getElementById('paused-protection-banner'),
+  pausedCountdownText: document.getElementById('paused-countdown-text'),
+  btnBannerResume: document.getElementById('btn-banner-resume'),
   tabStatusBadge: document.getElementById('tab-status-badge'),
   tabUrlText: document.getElementById('tab-url-text'),
   matchedRuleBanner: document.getElementById('matched-rule-banner'),
@@ -58,7 +72,39 @@ let selectedRule = null;
 let currentMatchedRule = null;
 let cachedHistoryItems = [];
 let silentCountdownTimer = null;
+let pauseCountdownTimer = null;
 let toastDismissTimer = null;
+let isProtectionPaused = false;
+
+/**
+ * 实时同步浏览器工具栏图标外观（普通网页蓝色、拦截页面绿色、暂停时灰色）
+ */
+async function syncCurrentToolbarIndicator() {
+  try {
+    const pause = await getPauseStatus();
+    const silent = await getSilentMode();
+    const rules = await getRules();
+    const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+    const silentUntil = silent.active ? silent.until : 0;
+    const activeRules = rules.filter(r => r.enabled !== false);
+
+    await updateGlobalToolbarIndicator(silentUntil, lang, pause);
+
+    if (currentTab && typeof currentTab.id === 'number') {
+      await updateTabToolbarIndicator(
+        currentTab.id,
+        currentTab.url || '',
+        currentTab.title || '',
+        activeRules,
+        silentUntil,
+        lang,
+        pause
+      );
+    }
+  } catch (err) {
+    // 忽略异常
+  }
+}
 
 /**
  * 显示临时浮层提示 Toast
@@ -134,9 +180,103 @@ function toggleSilentDropdown() {
   if (!elements.silentDropdownMenu) return;
   const isHidden = elements.silentDropdownMenu.classList.contains('hidden');
   if (isHidden) {
+    closePauseDropdown();
     openSilentDropdown();
   } else {
     closeSilentDropdown();
+  }
+}
+
+function openPauseDropdown() {
+  if (!elements.pauseDropdownMenu || !elements.pauseDropdown) return;
+  elements.pauseDropdown.classList.add('open');
+  elements.pauseDropdownMenu.classList.remove('hidden');
+  elements.btnPauseMode.setAttribute('aria-expanded', 'true');
+}
+
+function closePauseDropdown() {
+  if (!elements.pauseDropdownMenu || !elements.pauseDropdown) return;
+  elements.pauseDropdown.classList.remove('open');
+  elements.pauseDropdownMenu.classList.add('hidden');
+  elements.btnPauseMode.setAttribute('aria-expanded', 'false');
+}
+
+function togglePauseDropdown() {
+  if (!elements.pauseDropdownMenu) return;
+  const isHidden = elements.pauseDropdownMenu.classList.contains('hidden');
+  if (isHidden) {
+    closeSilentDropdown();
+    openPauseDropdown();
+  } else {
+    closePauseDropdown();
+  }
+}
+
+/**
+ * 初始化并刷新防护暂停模式按钮与下拉菜单状态
+ */
+async function updatePauseModeState() {
+  if (pauseCountdownTimer) {
+    clearInterval(pauseCountdownTimer);
+    pauseCountdownTimer = null;
+  }
+
+  // 更新各时长选项文字（如“临时关闭 15 分钟”等）
+  if (elements.pauseDurationItems) {
+    elements.pauseDurationItems.forEach(item => {
+      const dur = item.dataset.duration;
+      const textSpan = item.querySelector('.item-text');
+      if (textSpan) {
+        if (dur === 'manual') {
+          textSpan.textContent = t('popup.pauseForever');
+        } else {
+          const durationLabel = getDurationI18nText(Number(dur), true);
+          textSpan.textContent = t('popup.pauseDurationItem', { duration: durationLabel });
+        }
+      }
+    });
+  }
+
+  const pause = await getPauseStatus();
+  isProtectionPaused = Boolean(pause.active);
+
+  // 实时同步扩展工具栏图标（普通网页蓝色、拦截页面绿色、暂停时灰色）
+  await syncCurrentToolbarIndicator();
+
+  if (pause.active) {
+    elements.btnPauseMode.classList.add('paused');
+    if (elements.pauseBadgeDot) elements.pauseBadgeDot.classList.remove('hidden');
+    if (elements.itemPauseResume) elements.itemPauseResume.classList.remove('hidden');
+    if (elements.pauseMenuDivider) elements.pauseMenuDivider.classList.remove('hidden');
+    if (elements.pausedProtectionBanner) elements.pausedProtectionBanner.classList.remove('hidden');
+
+    if (pause.manual) {
+      if (elements.pausedCountdownText) elements.pausedCountdownText.textContent = t('popup.pauseForever');
+      elements.btnPauseMode.title = `${t('popup.pauseBannerTitle')} (${t('popup.pauseForever')})`;
+    } else {
+      if (elements.pausedCountdownText) elements.pausedCountdownText.textContent = formatRemainingTime(pause.remainingMs);
+      elements.btnPauseMode.title = `${t('popup.pauseBannerTitle')} (${formatRemainingTime(pause.remainingMs)})`;
+
+      pauseCountdownTimer = setInterval(async () => {
+        const cur = await getPauseStatus();
+        if (cur.active && !cur.manual && cur.remainingMs > 0) {
+          if (elements.pausedCountdownText) elements.pausedCountdownText.textContent = formatRemainingTime(cur.remainingMs);
+          elements.btnPauseMode.title = `${t('popup.pauseBannerTitle')} (${formatRemainingTime(cur.remainingMs)})`;
+        } else {
+          clearInterval(pauseCountdownTimer);
+          pauseCountdownTimer = null;
+          await updatePauseModeState();
+          await refreshPageData();
+        }
+      }, 1000);
+    }
+  } else {
+    elements.btnPauseMode.classList.remove('paused');
+    if (elements.pauseBadgeDot) elements.pauseBadgeDot.classList.add('hidden');
+    if (elements.itemPauseResume) elements.itemPauseResume.classList.add('hidden');
+    if (elements.pauseMenuDivider) elements.pauseMenuDivider.classList.add('hidden');
+    if (elements.pausedProtectionBanner) elements.pausedProtectionBanner.classList.add('hidden');
+    elements.btnPauseMode.title = t('popup.pauseTooltip');
   }
 }
 
@@ -158,6 +298,7 @@ async function updateSilentModeState() {
   }
 
   const silent = await getSilentMode();
+  await syncCurrentToolbarIndicator();
   const defaultLabel = getDurationI18nText(defaultDuration, true);
 
   // 更新下拉菜单各时长文案（与 options 保持完全同步的 i18n 翻译）及 "默认" 徽标
@@ -218,6 +359,21 @@ async function updateSilentModeState() {
  * 更新选中胶囊所联动的复选框与按钮文字及禁用态
  */
 function updateActionButtons() {
+  if (isProtectionPaused) {
+    elements.btnHideAndClean.disabled = true;
+    elements.btnCleanOnly.disabled = true;
+    if (elements.cbRetroactive) {
+      elements.cbRetroactive.disabled = true;
+    }
+    elements.btnHideText.textContent = t('popup.hideAndClean');
+    elements.btnHideAndClean.title = t('popup.pauseBannerDesc');
+    return;
+  }
+
+  if (elements.cbRetroactive) {
+    elements.cbRetroactive.disabled = false;
+  }
+
   if (!selectedRule) {
     elements.btnHideAndClean.disabled = true;
     elements.btnCleanOnly.disabled = true;
@@ -266,6 +422,7 @@ function updateActionButtons() {
  * @param {Object} candidate
  */
 function selectRuleCapsule(candidate) {
+  if (isProtectionPaused) return;
   if (!candidate) return;
   // 若已被父级域名覆盖，严禁选中
   if (candidate.isCovered) return;
@@ -305,9 +462,10 @@ function renderCapsuleGroup(container, candidates) {
 
   candidates.forEach(cand => {
     const capsuleEl = document.createElement('div');
-    const isSelected = selectedRule?.rule === cand.rule;
+    const isSelected = !isProtectionPaused && selectedRule?.rule === cand.rule;
 
     const stateClasses = [];
+    if (isProtectionPaused) stateClasses.push('paused-disabled');
     if (isSelected && !cand.isCovered) stateClasses.push('selected');
     if (cand.isCovered) stateClasses.push('covered', 'disabled');
     else if (cand.isExactMatch) stateClasses.push('in-list');
@@ -344,8 +502,8 @@ function renderCapsuleGroup(container, candidates) {
     `;
 
     capsuleEl.addEventListener('click', () => {
-      // 若已被上级规则覆盖，变灰且不能选中
-      if (cand.isCovered) return;
+      // 临时关闭防护期间或已被上级规则覆盖时禁止交互
+      if (isProtectionPaused || cand.isCovered) return;
       selectRuleCapsule(cand);
     });
 
@@ -386,47 +544,60 @@ async function refreshPageData() {
     cand.exactRule = status.exactRule;
   });
 
-  // 3. 检查当前 URL 是否已命中现有启用规则
-  const { matched, rule } = findMatchingRule(existingRules, currentTab);
-  currentMatchedRule = matched && rule ? rule : null;
-
-  if (matched && rule) {
-    elements.tabStatusBadge.className = 'badge badge-matched';
-    elements.tabStatusBadge.textContent = t('popup.statusMatched', { pattern: rule.pattern });
-
-    if (elements.matchedRuleBanner) {
-      elements.matchedRuleBanner.classList.remove('hidden');
-      if (elements.matchedRuleText) {
-        elements.matchedRuleText.textContent = t('popup.matchedRuleBanner', { rule: rule.pattern });
-      }
-      if (elements.btnRemoveMatchedRule) {
-        elements.btnRemoveMatchedRule.title = t('popup.removeFromListTitle', { rule: rule.pattern });
-      }
-    }
-  } else {
-    elements.tabStatusBadge.className = 'badge badge-normal';
-    elements.tabStatusBadge.textContent = t('popup.statusNormal');
+  // 3. 检查当前 URL 是否处于暂停模式或命中现有启用规则
+  if (isProtectionPaused) {
+    elements.tabStatusBadge.className = 'badge badge-paused';
+    elements.tabStatusBadge.textContent = '⏸ ' + t('popup.pauseBannerTitle');
 
     if (elements.matchedRuleBanner) {
       elements.matchedRuleBanner.classList.add('hidden');
     }
+  } else {
+    const { matched, rule } = findMatchingRule(existingRules, currentTab);
+    currentMatchedRule = matched && rule ? rule : null;
+
+    if (matched && rule) {
+      elements.tabStatusBadge.className = 'badge badge-matched';
+      elements.tabStatusBadge.textContent = t('popup.statusMatched', { pattern: rule.pattern });
+
+      if (elements.matchedRuleBanner) {
+        elements.matchedRuleBanner.classList.remove('hidden');
+        if (elements.matchedRuleText) {
+          elements.matchedRuleText.textContent = t('popup.matchedRuleBanner', { rule: rule.pattern });
+        }
+        if (elements.btnRemoveMatchedRule) {
+          elements.btnRemoveMatchedRule.title = t('popup.removeFromListTitle', { rule: rule.pattern });
+        }
+      }
+    } else {
+      elements.tabStatusBadge.className = 'badge badge-normal';
+      elements.tabStatusBadge.textContent = t('popup.statusNormal');
+
+      if (elements.matchedRuleBanner) {
+        elements.matchedRuleBanner.classList.add('hidden');
+      }
+    }
   }
 
-  // 4. 智能推荐选中的候选规则：优先选择未在列表且未被覆盖的规则
-  const findBestCandidate = () => {
-    const available = allCandidateRules.find(c => !c.isExactMatch && !c.isCovered);
-    if (available) return available;
-    const exact = allCandidateRules.find(c => c.isExactMatch);
-    if (exact) return exact;
-    return allCandidateRules.find(c => !c.isCovered) || null;
-  };
-
-  if (!selectedRule || selectedRule.isCovered) {
-    selectedRule = findBestCandidate();
+  // 4. 智能推荐选中的候选规则：临时关闭防护期间不选中任何规则
+  if (isProtectionPaused) {
+    selectedRule = null;
   } else {
-    const refreshed = allCandidateRules.find(r => r.rule === selectedRule.rule);
-    if (refreshed) {
-      selectedRule = refreshed.isCovered ? findBestCandidate() : refreshed;
+    const findBestCandidate = () => {
+      const available = allCandidateRules.find(c => !c.isExactMatch && !c.isCovered);
+      if (available) return available;
+      const exact = allCandidateRules.find(c => c.isExactMatch);
+      if (exact) return exact;
+      return allCandidateRules.find(c => !c.isCovered) || null;
+    };
+
+    if (!selectedRule || selectedRule.isCovered) {
+      selectedRule = findBestCandidate();
+    } else {
+      const refreshed = allCandidateRules.find(r => r.rule === selectedRule.rule);
+      if (refreshed) {
+        selectedRule = refreshed.isCovered ? findBestCandidate() : refreshed;
+      }
     }
   }
 
@@ -434,7 +605,7 @@ async function refreshPageData() {
   renderCapsuleGroup(elements.domainCapsulesGroup, parsedUrlInfo.domainRules);
   renderCapsuleGroup(elements.pathCapsulesGroup, parsedUrlInfo.pathRules);
 
-  if (selectedRule && !selectedRule.isCovered) {
+  if (!isProtectionPaused && selectedRule && !selectedRule.isCovered) {
     selectRuleCapsule(selectedRule);
   } else {
     selectedRule = null;
@@ -460,6 +631,10 @@ async function initPopup() {
     initTheme('auto');
   }
 
+  // 全局控制状态初始化（临时无痕 & 暂停模式），确保在内部页面或不可用页面下同样完整就绪
+  await updateSilentModeState();
+  await updatePauseModeState();
+
   // 2. 获取当前活动标签页
   try {
     currentTab = await browserApi.tabs.getCurrentActiveTab();
@@ -471,7 +646,6 @@ async function initPopup() {
     elements.tabUrlText.textContent = t('popup.cannotGetPageInfo');
     elements.tabStatusBadge.className = 'badge badge-internal';
     elements.tabStatusBadge.textContent = t('popup.statusUnavailable');
-    await updateSilentModeState();
     return;
   }
 
@@ -486,12 +660,10 @@ async function initPopup() {
     elements.tabStatusBadge.textContent = t('popup.statusInternal');
     elements.internalPageTip.classList.remove('hidden');
     elements.mainContent.classList.add('hidden');
-    await updateSilentModeState();
     return;
   }
 
   // 4. 正常页面：加载数据与规则
-  await updateSilentModeState();
   await refreshPageData();
 }
 
@@ -532,13 +704,63 @@ document.addEventListener('click', (e) => {
   if (elements.silentDropdown && !elements.silentDropdown.contains(e.target)) {
     closeSilentDropdown();
   }
+  if (elements.pauseDropdown && !elements.pauseDropdown.contains(e.target)) {
+    closePauseDropdown();
+  }
 });
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeSilentDropdown();
+    closePauseDropdown();
   }
 });
+
+// A5. 点击关闭/暂停防护按钮切换下拉菜单显隐
+elements.btnPauseMode.addEventListener('click', (e) => {
+  e.stopPropagation();
+  togglePauseDropdown();
+});
+
+// A6. 点击恢复防护（下拉菜单顶部恢复项或横幅恢复按钮）
+const handleResumeProtection = async (e) => {
+  if (e) e.stopPropagation();
+  closePauseDropdown();
+  await clearPauseStatus();
+  showToast(t('popup.toastPauseExit'));
+  await updatePauseModeState();
+  await refreshPageData();
+};
+
+if (elements.itemPauseResume) {
+  elements.itemPauseResume.addEventListener('click', handleResumeProtection);
+}
+if (elements.btnBannerResume) {
+  elements.btnBannerResume.addEventListener('click', handleResumeProtection);
+}
+
+// A7. 点击暂停时长选项
+if (elements.pauseDurationItems) {
+  elements.pauseDurationItems.forEach(item => {
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      closePauseDropdown();
+      const dur = item.dataset.duration;
+      await setPauseStatus(dur);
+
+      if (dur === 'manual') {
+        showToast(t('popup.toastPauseEnterForever'));
+      } else {
+        const durationLabel = getDurationI18nText(Number(dur), true);
+        showToast(t('popup.toastPauseEnter', { duration: durationLabel }));
+      }
+
+      await updatePauseModeState();
+      await updateSilentModeState();
+      await refreshPageData();
+    });
+  });
+}
 
 // B. 打开设置页齿轮入口
 const openOptions = () => {

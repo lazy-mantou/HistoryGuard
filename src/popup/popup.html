@@ -65,8 +65,63 @@
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
+        <!-- 关闭/暂停防护紧凑下拉按钮 -->
+        <div class="pause-dropdown" id="pause-dropdown">
+          <button id="btn-pause-mode" class="icon-btn pause-btn" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="popup.pauseTooltip" title="暂停或关闭历史防护">
+            <svg class="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+              <line x1="12" y1="2" x2="12" y2="12"></line>
+            </svg>
+            <span id="pause-badge-dot" class="pause-badge-dot hidden"></span>
+          </button>
+          <div id="pause-dropdown-menu" class="pause-dropdown-menu hidden" role="listbox">
+            <button type="button" class="pause-dropdown-item pause-resume-item hidden" id="item-pause-resume" role="option">
+              <span class="item-icon">▶</span>
+              <span class="item-text" data-i18n="popup.pauseResume">立即恢复防护</span>
+            </button>
+            <div class="pause-dropdown-divider hidden" id="pause-menu-divider"></div>
+            <button type="button" class="pause-dropdown-item" data-duration="15" role="option">
+              <span class="item-text">临时关闭 15 分钟</span>
+            </button>
+            <button type="button" class="pause-dropdown-item" data-duration="30" role="option">
+              <span class="item-text">临时关闭 30 分钟</span>
+            </button>
+            <button type="button" class="pause-dropdown-item" data-duration="60" role="option">
+              <span class="item-text">临时关闭 1 小时</span>
+            </button>
+            <button type="button" class="pause-dropdown-item" data-duration="120" role="option">
+              <span class="item-text">临时关闭 2 小时</span>
+            </button>
+            <button type="button" class="pause-dropdown-item" data-duration="240" role="option">
+              <span class="item-text">临时关闭 4 小时</span>
+            </button>
+            <button type="button" class="pause-dropdown-item" data-duration="480" role="option">
+              <span class="item-text">临时关闭 8 小时</span>
+            </button>
+            <button type="button" class="pause-dropdown-item" data-duration="720" role="option">
+              <span class="item-text">临时关闭 12 小时</span>
+            </button>
+            <div class="pause-dropdown-divider"></div>
+            <button type="button" class="pause-dropdown-item" data-duration="manual" role="option">
+              <span class="item-text" data-i18n="popup.pauseForever">一直关闭到下次开启</span>
+            </button>
+          </div>
+        </div>
       </div>
     </header>
+
+    <!-- 防护已暂停提示横幅 (默认隐藏，暂停时显示) -->
+    <div id="paused-protection-banner" class="card paused-banner hidden">
+      <div class="paused-banner-header">
+        <div class="paused-banner-title-box">
+          <span class="paused-icon">⏸️</span>
+          <span class="paused-title" data-i18n="popup.pauseBannerTitle">防护已暂停</span>
+          <span id="paused-countdown-text" class="paused-countdown-badge"></span>
+        </div>
+        <button id="btn-banner-resume" class="btn-banner-resume" data-i18n="popup.pauseResume">立即恢复</button>
+      </div>
+      <div class="paused-desc" data-i18n="popup.pauseBannerDesc">当前不会拦截任何历史记录，浏览器将正常保存浏览足迹。</div>
+    </div>
 
     <!-- 当前页状态框 -->
     <div id="status-card" class="card status-card">

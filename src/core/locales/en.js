@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'Default',
     silentTooltip: 'No browsing history will be recorded for the selected duration',
     optionsTooltip: 'Open Dashboard',
+    pauseBtn: 'Pause Protection',
+    pauseTooltip: 'Pause or disable history protection',
+    pauseResume: 'Resume protection now',
+    pauseForever: 'Until turned back on',
+    pauseBannerTitle: 'Protection Paused',
+    pauseBannerDesc: 'History is currently not being intercepted; browsing history will be saved normally.',
+    pauseDurationItem: 'Pause for {duration}',
+    toastPauseExit: 'Protection resumed',
+    toastPauseEnter: 'Protection paused ({duration})',
+    toastPauseEnterForever: 'Protection turned off until next manual start',
     currentTab: 'Active Tab',
     statusChecking: '● Checking...',
     statusLoading: 'Loading...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: 'Trace-Free',
     statSilentOff: 'Off',
     statSilentOn: 'Active ({time})',
+    statProtectionStatus: 'Running Status',
+    statStatusRunning: 'Running',
+    statStatusPaused: 'Paused ({time})',
+    statStatusPausedForever: 'Paused (Off)',
     navHistoryTitle: 'Search & Clean History',
     navHistoryDesc: 'Search & deep cleanup',
     navRulesTitle: 'Protection Rules',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - rule: {pattern}',
     tooltipTraceFree: 'HistGuard: Trace-free mode active (Global history tracking paused)',
     tooltipRecording: 'HistGuard: Recording history (Click icon to protect)',
-    tooltipInternal: 'HistGuard: Browser internal page'
+    tooltipInternal: 'HistGuard: Browser internal page',
+    tooltipPaused: 'HistGuard: Protection paused (History is being recorded)'
   }
 };

@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: '기본값',
     silentTooltip: '선택한 기간 동안의 모든 새로운 방문 기록이 저장되지 않습니다',
     optionsTooltip: '대시보드 열기',
+    pauseBtn: '보호 일시 중지',
+    pauseTooltip: '방문 기록 보호 일시 중지 또는 끄기',
+    pauseResume: '지금 보호 재개',
+    pauseForever: '다시 켤 때까지',
+    pauseBannerTitle: '보호가 일시 중지되었습니다',
+    pauseBannerDesc: '현재 방문 기록이 차단되지 않으며 브라우저에 정상적으로 기록됩니다.',
+    pauseDurationItem: '{duration} 동안 일시 중지',
+    toastPauseExit: '정상 보호가 재개되었습니다',
+    toastPauseEnter: '방문 기록 보호가 일시 중지되었습니다 ({duration})',
+    toastPauseEnterForever: '다시 켤 때까지 방문 기록 보호가 꺼졌습니다',
     currentTab: '현재 탭',
     statusChecking: '● 확인 중...',
     statusLoading: '로딩 중...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: '흔적 없는 모드',
     statSilentOff: '꺼짐',
     statSilentOn: '활성 중 ({time})',
+    statProtectionStatus: '실행 상태',
+    statStatusRunning: '실행 중',
+    statStatusPaused: '일시 중지 ({time})',
+    statStatusPausedForever: '일시 중지 (꺼짐)',
     navHistoryTitle: '기록 검색 및 정리',
     navHistoryDesc: '검색 및 정밀 정리',
     navRulesTitle: '자동 보호 규칙',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - 규칙: {pattern}',
     tooltipTraceFree: 'HistGuard: 흔적 없는 모드 활성화됨 (전체 방문 기록 일시 중지)',
     tooltipRecording: 'HistGuard: 방문 기록 저장 중 (아이콘을 클릭하여 보호)',
-    tooltipInternal: 'HistGuard: 브라우저 내부 페이지 (기록되지 않음)'
+    tooltipInternal: 'HistGuard: 브라우저 내부 페이지 (기록되지 않음)',
+    tooltipPaused: 'HistGuard: 보호 일시 중지됨 (방문 기록이 정상적으로 기록됩니다)'
   }
 };

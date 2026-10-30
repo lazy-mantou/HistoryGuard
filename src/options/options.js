@@ -16,6 +16,9 @@ import {
   toggleRule,
   deleteRule,
   getSilentMode,
+  getPauseStatus,
+  setPauseStatus,
+  clearPauseStatus,
   exportRules,
   importRules,
   getSettings,
@@ -36,6 +39,8 @@ const elements = {
   statActiveRules: document.getElementById('stat-active-rules'),
   statTotalHits: document.getElementById('stat-total-hits'),
   statSilentStatus: document.getElementById('stat-silent-status'),
+  statProtectionContainer: document.getElementById('stat-protection-container'),
+  statProtectionStatus: document.getElementById('stat-protection-status'),
 
   // 左侧 Tab 导航
   navTabs: document.querySelectorAll('.nav-tab'),
@@ -328,6 +333,64 @@ async function refreshSilentModeStatus() {
   }
 }
 
+let pauseCountdownTimer = null;
+
+/**
+ * 实时刷新顶部运行状态指示
+ */
+async function refreshPauseProtectionStatus() {
+  if (pauseCountdownTimer) {
+    clearInterval(pauseCountdownTimer);
+    pauseCountdownTimer = null;
+  }
+
+  if (!elements.statProtectionStatus) return;
+
+  const pause = await getPauseStatus();
+  if (pause.active) {
+    elements.statProtectionStatus.className = 'stat-value status-paused';
+
+    if (pause.manual) {
+      elements.statProtectionStatus.textContent = t('options.statStatusPausedForever');
+      if (elements.statProtectionContainer) {
+        elements.statProtectionContainer.title = `${t('options.statProtectionStatus')}: ${t('options.statStatusPausedForever')}`;
+      }
+    } else {
+      elements.statProtectionStatus.textContent = t('options.statStatusPaused', {
+        time: formatRemainingTime(pause.remainingMs)
+      });
+      if (elements.statProtectionContainer) {
+        elements.statProtectionContainer.title = `${t('options.statProtectionStatus')}: ${formatRemainingTime(pause.remainingMs)}`;
+      }
+
+      const targetUntil = pause.until;
+      pauseCountdownTimer = setInterval(async () => {
+        const remaining = targetUntil - Date.now();
+        if (remaining > 0) {
+          elements.statProtectionStatus.textContent = t('options.statStatusPaused', {
+            time: formatRemainingTime(remaining)
+          });
+        } else {
+          clearInterval(pauseCountdownTimer);
+          pauseCountdownTimer = null;
+          await getPauseStatus(); // 触发 storage 内部到期重置
+          elements.statProtectionStatus.className = 'stat-value status-running';
+          elements.statProtectionStatus.textContent = '● ' + t('options.statStatusRunning');
+          if (elements.statProtectionContainer) {
+            elements.statProtectionContainer.title = `${t('options.statProtectionStatus')}: ${t('options.statStatusRunning')}`;
+          }
+        }
+      }, 1000);
+    }
+  } else {
+    elements.statProtectionStatus.className = 'stat-value status-running';
+    elements.statProtectionStatus.textContent = '● ' + t('options.statStatusRunning');
+    if (elements.statProtectionContainer) {
+      elements.statProtectionContainer.title = `${t('options.statProtectionStatus')}: ${t('options.statStatusRunning')}`;
+    }
+  }
+}
+
 async function refreshGlobalStats() {
   cachedRules = await getRules();
   const activeCount = cachedRules.filter(r => r.enabled !== false).length;
@@ -354,6 +417,7 @@ async function refreshGlobalStats() {
 
   updateStatsTabVisibility();
   await refreshSilentModeStatus();
+  await refreshPauseProtectionStatus();
 
   const rulesCount = cachedRules.length;
   if (rulesCount >= WARN_RULES_TOTAL_THRESHOLD) {
@@ -1819,12 +1883,16 @@ if (elements.settingToastDuration) {
   });
 }
 
+
 // 监听跨页面存储变更，实现多窗口实时同步
 browserApi.storage.onChanged(async (changes) => {
   const isStatsTab = document.querySelector('.nav-tab.active')?.dataset?.tab === 'stats';
 
   if (changes[STORAGE_KEYS.SILENT_MODE]) {
     await refreshSilentModeStatus();
+  }
+  if (changes[STORAGE_KEYS.PAUSE_STATUS]) {
+    await refreshPauseProtectionStatus();
   }
   if (changes[STORAGE_KEYS.RULES]) {
     await refreshRulesList();
@@ -1852,6 +1920,7 @@ browserApi.storage.onChanged(async (changes) => {
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     refreshSilentModeStatus();
+    refreshPauseProtectionStatus();
     // 切回前台标签时，若期间有历史变更则静默刷新当前视图
     if (isHistoryDirty && elements.panelHistory && !elements.panelHistory.classList.contains('hidden')) {
       isHistoryDirty = false;

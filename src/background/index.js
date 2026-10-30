@@ -11,6 +11,8 @@ import {
   getRules,
   getSilentMode,
   clearSilentMode,
+  getPauseStatus,
+  clearPauseStatus,
   incrementRuleHits,
   getSettings,
   DEFAULT_SETTINGS,
@@ -21,9 +23,10 @@ import {
 } from '../core/storage.js';
 import { updateTabToolbarIndicator, updateGlobalToolbarIndicator, ICON_PATHS } from './toolbarIndicator.js';
 
-// 内存中缓存已启用的规则、静默模式与运行设置，保证在 onVisited 高频触发时毫秒级响应
+// 内存中缓存已启用的规则、静默模式、防护暂停状态与运行设置，保证在 onVisited 高频触发时毫秒级响应
 let cachedRules = [];
 let cachedSilentUntil = 0;
+let cachedPauseStatus = { active: false, until: 0, manual: false };
 let cachedSettings = { ...DEFAULT_SETTINGS };
 let isSettingsLoaded = false;
 let settingsFetchPromise = null;
@@ -53,13 +56,33 @@ async function getOrFetchSettings() {
 }
 
 /**
+ * 统一刷新指定标签页的工具栏指示器（自动携带最新规则、静默状态、当前语言与防护暂停状态）
+ * @param {number} tabId
+ * @param {string} [url='']
+ * @param {string} [title='']
+ */
+async function refreshSingleTabIndicator(tabId, url = '', title = '') {
+  if (!tabId || typeof tabId !== 'number') return;
+  const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
+  await updateTabToolbarIndicator(
+    tabId,
+    url,
+    title,
+    cachedRules,
+    cachedSilentUntil,
+    lang,
+    cachedPauseStatus
+  );
+}
+
+/**
  * 全量同步所有标签页与全局默认的工具栏状态指示器
  */
 async function syncAllTabsToolbarIndicators() {
   const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
 
   // 1. 同步扩展全局默认工具栏状态（不绑定具体 tabId，设置全局兜底外观）
-  await updateGlobalToolbarIndicator(cachedSilentUntil, lang);
+  await updateGlobalToolbarIndicator(cachedSilentUntil, lang, cachedPauseStatus);
 
   // 2. 遍历同步当前已打开的所有标签页具体状态
   try {
@@ -68,28 +91,14 @@ async function syncAllTabsToolbarIndicators() {
       if (Array.isArray(tabs)) {
         for (const tab of tabs) {
           if (tab && typeof tab.id === 'number') {
-            await updateTabToolbarIndicator(
-              tab.id,
-              tab.url || '',
-              tab.title || '',
-              cachedRules,
-              cachedSilentUntil,
-              lang
-            );
+            await refreshSingleTabIndicator(tab.id, tab.url || '', tab.title || '');
           }
         }
       }
     } else {
       const activeTab = await browserApi.tabs.getCurrentActiveTab();
       if (activeTab && typeof activeTab.id === 'number') {
-        await updateTabToolbarIndicator(
-          activeTab.id,
-          activeTab.url,
-          activeTab.title,
-          cachedRules,
-          cachedSilentUntil,
-          lang
-        );
+        await refreshSingleTabIndicator(activeTab.id, activeTab.url || '', activeTab.title || '');
       }
     }
   } catch (err) {
@@ -107,6 +116,8 @@ async function refreshCache() {
 
     const silent = await getSilentMode();
     cachedSilentUntil = silent.active ? silent.until : 0;
+
+    cachedPauseStatus = await getPauseStatus();
 
     cachedSettings = await getSettings();
     isSettingsLoaded = true;
@@ -126,19 +137,25 @@ browserApi.storage.onChanged((changes) => {
   if (
     changes[STORAGE_KEYS.RULES] ||
     changes[STORAGE_KEYS.SILENT_MODE] ||
+    changes[STORAGE_KEYS.PAUSE_STATUS] ||
     changes[STORAGE_KEYS.SETTINGS]
   ) {
     refreshCache();
   }
 });
 
-// 3. 监听 定时器 闹钟事件（处理 30 分钟静默模式到期）
+// 3. 监听 定时器 闹钟事件（处理 30 分钟静默模式到期与防护暂停到期）
 browserApi.alarms.onAlarm(async (alarm) => {
   if (alarm && alarm.name === 'silent_mode_alarm') {
     cachedSilentUntil = 0;
     await clearSilentMode();
     await syncAllTabsToolbarIndicators();
     console.log('[HistGuard BG] 30-minute silent mode expired. Resumed normal history monitoring.');
+  } else if (alarm && alarm.name === 'protection_pause_alarm') {
+    cachedPauseStatus = { active: false, until: 0, manual: false };
+    await clearPauseStatus();
+    await syncAllTabsToolbarIndicators();
+    console.log('[HistGuard BG] Protection pause mode expired. Resumed normal history monitoring.');
   }
 });
 
@@ -156,6 +173,18 @@ async function handleUrlInspectionAndClean(visitUrl, title = '') {
   }
 
   const now = Date.now();
+
+  // 0. 防护暂停状态检测：处于暂停状态时不抹除任何历史，保持正常记录
+  if (cachedPauseStatus && cachedPauseStatus.active) {
+    const isPaused = cachedPauseStatus.manual || cachedPauseStatus.until === -1 || cachedPauseStatus.until > now;
+    if (isPaused) {
+      return;
+    } else {
+      cachedPauseStatus = { active: false, until: 0, manual: false };
+      await clearPauseStatus();
+      await syncAllTabsToolbarIndicators();
+    }
+  }
 
   // A. 临时无痕模式检测：若处于开启中，抹除一切新访问
   if (cachedSilentUntil > now) {
@@ -243,8 +272,7 @@ if (browserApi.tabs && typeof browserApi.tabs.onUpdated === 'function') {
       if (changeInfo.url || changeInfo.status === 'complete') {
         await handleUrlInspectionAndClean(targetUrl, tab?.title || '');
       }
-      const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
-      await updateTabToolbarIndicator(tabId, targetUrl, tab?.title || '', cachedRules, cachedSilentUntil, lang);
+      await refreshSingleTabIndicator(tabId, targetUrl, tab?.title || '');
     }
   });
 }
@@ -261,8 +289,7 @@ if (browserApi.tabs && typeof browserApi.tabs.onActivated === 'function') {
         targetTab = await browserApi.tabs.getCurrentActiveTab();
       }
       if (targetTab && typeof targetTab.id === 'number') {
-        const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
-        await updateTabToolbarIndicator(targetTab.id, targetTab.url, targetTab.title, cachedRules, cachedSilentUntil, lang);
+        await refreshSingleTabIndicator(targetTab.id, targetTab.url, targetTab.title);
       }
     } catch {
       // 忽略非致命异常
@@ -276,8 +303,7 @@ if (browserApi.webNavigation && typeof browserApi.webNavigation.onHistoryStateUp
     if (details && details.url && (details.frameId === 0 || details.frameId === undefined)) {
       await handleUrlInspectionAndClean(details.url);
       if (typeof details.tabId === 'number') {
-        const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
-        await updateTabToolbarIndicator(details.tabId, details.url, '', cachedRules, cachedSilentUntil, lang);
+        await refreshSingleTabIndicator(details.tabId, details.url, '');
       }
     }
   });
@@ -289,8 +315,7 @@ if (browserApi.webNavigation && typeof browserApi.webNavigation.onCommitted === 
     if (details && details.url && (details.frameId === 0 || details.frameId === undefined)) {
       await handleUrlInspectionAndClean(details.url);
       if (typeof details.tabId === 'number') {
-        const lang = browserApi.i18n.getUILanguage() || 'zh-CN';
-        await updateTabToolbarIndicator(details.tabId, details.url, '', cachedRules, cachedSilentUntil, lang);
+        await refreshSingleTabIndicator(details.tabId, details.url, '');
       }
     }
   });

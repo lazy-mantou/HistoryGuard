@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'По умолч.',
     silentTooltip: 'В течение выбранного времени история посещений записываться не будет',
     optionsTooltip: 'Открыть панель управления',
+    pauseBtn: 'Приостановить защиту',
+    pauseTooltip: 'Приостановить или отключить защиту истории',
+    pauseResume: 'Возобновить защиту сейчас',
+    pauseForever: 'До повторного включения',
+    pauseBannerTitle: 'Защита приостановлена',
+    pauseBannerDesc: 'В данный момент история не перехватывается и сохраняется в обычном режиме.',
+    pauseDurationItem: 'Приостановить на {duration}',
+    toastPauseExit: 'Защита возобновлена',
+    toastPauseEnter: 'Защита приостановлена ({duration})',
+    toastPauseEnterForever: 'Защита отключена до следующего включения',
     currentTab: 'Активная вкладка',
     statusChecking: '● Проверка...',
     statusLoading: 'Загрузка...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: 'Режим без следов',
     statSilentOff: 'Выкл',
     statSilentOn: 'Активен ({time})',
+    statProtectionStatus: 'Статус работы',
+    statStatusRunning: 'Работает',
+    statStatusPaused: 'Пауза ({time})',
+    statStatusPausedForever: 'Пауза (Выкл)',
     navHistoryTitle: 'Поиск и очистка истории',
     navHistoryDesc: 'Поиск и глубокая очистка',
     navRulesTitle: 'Правила защиты',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - правило: {pattern}',
     tooltipTraceFree: 'HistGuard: Режим без следов активен (Запись истории приостановлена)',
     tooltipRecording: 'HistGuard: Запись истории (Нажмите для защиты)',
-    tooltipInternal: 'HistGuard: Внутренняя страница браузера'
+    tooltipInternal: 'HistGuard: Внутренняя страница браузера',
+    tooltipPaused: 'HistGuard: Защита приостановлена (История записывается)'
   }
 };

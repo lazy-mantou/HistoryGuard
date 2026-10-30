@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'Standard',
     silentTooltip: 'Während der gewählten Dauer wird kein Browser-Verlauf aufgezeichnet',
     optionsTooltip: 'Dashboard öffnen',
+    pauseBtn: 'Schutz pausieren',
+    pauseTooltip: 'Verlaufsschutz pausieren oder deaktivieren',
+    pauseResume: 'Schutz jetzt fortsetzen',
+    pauseForever: 'Bis zur erneuten Aktivierung',
+    pauseBannerTitle: 'Schutz pausiert',
+    pauseBannerDesc: 'Der Verlauf wird derzeit nicht abgefangen und vom Browser normal gespeichert.',
+    pauseDurationItem: 'Pausieren für {duration}',
+    toastPauseExit: 'Schutz wieder aufgenommen',
+    toastPauseEnter: 'Schutz pausiert ({duration})',
+    toastPauseEnterForever: 'Schutz deaktiviert bis zum nächsten Start',
     currentTab: 'Aktiver Tab',
     statusChecking: '● Prüfung läuft...',
     statusLoading: 'Wird geladen...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: 'Spurenfrei',
     statSilentOff: 'Aus',
     statSilentOn: 'Aktiv ({time})',
+    statProtectionStatus: 'Betriebsstatus',
+    statStatusRunning: 'Aktiv',
+    statStatusPaused: 'Pausiert ({time})',
+    statStatusPausedForever: 'Pausiert (Aus)',
     navHistoryTitle: 'Verlauf durchsuchen & löschen',
     navHistoryDesc: 'Suche & Tiefenbereinigung',
     navRulesTitle: 'Schutzregeln',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - Regel: {pattern}',
     tooltipTraceFree: 'HistGuard: Spurenfreier Modus aktiv (Verlaufsaufzeichnung pausiert)',
     tooltipRecording: 'HistGuard: Verlauf wird aufgezeichnet (Klicken zum Schützen)',
-    tooltipInternal: 'HistGuard: Interne Browserseite'
+    tooltipInternal: 'HistGuard: Interne Browserseite',
+    tooltipPaused: 'HistGuard: Schutz pausiert (Verlauf wird aufgezeichnet)'
   }
 };

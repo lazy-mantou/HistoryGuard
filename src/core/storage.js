@@ -35,6 +35,7 @@ export {
 export const STORAGE_KEYS = {
   RULES: 'histguard_rules',
   SILENT_MODE: 'histguard_silent_mode',
+  PAUSE_STATUS: 'histguard_pause_status',
   SETTINGS: 'histguard_settings',
   PENDING_CLEAN_JOB: 'histguard_pending_clean_job',
   STATS: 'histguard_stats'
@@ -336,6 +337,16 @@ export async function setSilentMode(durationMinutes = 30) {
     console.warn('Alarm creation error:', err);
   }
 
+  // 互斥策略：开启临时无痕时，自动恢复防护（解除暂停状态）
+  try {
+    const pause = await getPauseStatus();
+    if (pause.active) {
+      await clearPauseStatus();
+    }
+  } catch {
+    // ignore
+  }
+
   return state;
 }
 
@@ -352,6 +363,99 @@ export async function clearSilentMode() {
     await browserApi.alarms.clear('silent_mode_alarm');
   } catch (err) {
     console.warn('Alarm clear error:', err);
+  }
+}
+
+/**
+ * 获取当前防护暂停状态
+ * @returns {Promise<{ active: boolean, until: number, manual: boolean, remainingMs: number }>}
+ */
+export async function getPauseStatus() {
+  const data = await browserApi.storage.get([STORAGE_KEYS.PAUSE_STATUS]);
+  const pause = data[STORAGE_KEYS.PAUSE_STATUS];
+
+  if (!pause || typeof pause !== 'object' || !pause.active) {
+    return { active: false, until: 0, manual: false, remainingMs: 0 };
+  }
+
+  // 常闭模式 (一直关闭到下次开启)
+  if (pause.manual === true || pause.until === -1) {
+    return {
+      active: true,
+      until: -1,
+      manual: true,
+      remainingMs: -1
+    };
+  }
+
+  const now = Date.now();
+  if (pause.until > now) {
+    return {
+      active: true,
+      until: pause.until,
+      manual: false,
+      remainingMs: pause.until - now
+    };
+  }
+
+  // 若已到期但仍为 active，自动重置状态
+  await clearPauseStatus();
+  return { active: false, until: 0, manual: false, remainingMs: 0 };
+}
+
+/**
+ * 开启防护暂停模式
+ * @param {number|string} [duration=30] 暂停时长 (分钟) 或 'manual' (一直关闭到下次开启)
+ * @returns {Promise<{ active: boolean, until: number, manual: boolean }>}
+ */
+export async function setPauseStatus(duration = 30) {
+  const isManual = duration === 'manual' || duration === -1 || duration === '-1';
+  const until = isManual ? -1 : (Date.now() + Number(duration) * 60 * 1000);
+  const state = { active: true, until, manual: isManual };
+
+  await browserApi.storage.set({
+    [STORAGE_KEYS.PAUSE_STATUS]: state
+  });
+
+  // 设置 alarms 定时器或清除已有定时器
+  try {
+    if (isManual) {
+      await browserApi.alarms.clear('protection_pause_alarm');
+    } else {
+      await browserApi.alarms.create('protection_pause_alarm', {
+        delayInMinutes: Number(duration)
+      });
+    }
+  } catch (err) {
+    console.warn('Protection pause alarm error:', err);
+  }
+
+  // 互斥策略：开启暂停时，自动解除临时无痕
+  try {
+    const silent = await getSilentMode();
+    if (silent.active) {
+      await clearSilentMode();
+    }
+  } catch {
+    // ignore
+  }
+
+  return state;
+}
+
+/**
+ * 提前恢复防护（解除暂停状态）
+ * @returns {Promise<void>}
+ */
+export async function clearPauseStatus() {
+  await browserApi.storage.set({
+    [STORAGE_KEYS.PAUSE_STATUS]: { active: false, until: 0, manual: false }
+  });
+
+  try {
+    await browserApi.alarms.clear('protection_pause_alarm');
+  } catch (err) {
+    console.warn('Protection pause alarm clear error:', err);
   }
 }
 

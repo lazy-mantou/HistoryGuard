@@ -192,6 +192,18 @@ export function t(key, params = {}, lang = null) {
  * - data-i18n-aria-label: 替换元素的 aria-label 属性
  * @param {HTMLElement|Document} [root=document]
  */
+function parseParams(el, attrName = 'data-i18n-params') {
+  if (!el || typeof el.getAttribute !== 'function') return {};
+  const attr = el.getAttribute(attrName);
+  if (!attr) return {};
+  try {
+    const parsed = JSON.parse(attr);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 export function applyI18nToDOM(root) {
   const domRoot = root || (typeof document !== 'undefined' ? document : null);
   if (!domRoot || typeof domRoot.querySelectorAll !== 'function') return;
@@ -201,7 +213,8 @@ export function applyI18nToDOM(root) {
   textElements.forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (key) {
-      const translation = t(key);
+      const params = parseParams(el, 'data-i18n-params');
+      const translation = t(key, params);
       if (translation && translation !== key) {
         el.textContent = translation;
       }
@@ -213,7 +226,8 @@ export function applyI18nToDOM(root) {
   placeholderElements.forEach(el => {
     const key = el.getAttribute('data-i18n-placeholder');
     if (key) {
-      const translation = t(key);
+      const params = parseParams(el, 'data-i18n-placeholder-params');
+      const translation = t(key, params);
       if (translation && translation !== key) {
         el.setAttribute('placeholder', translation);
       }
@@ -225,7 +239,8 @@ export function applyI18nToDOM(root) {
   titleElements.forEach(el => {
     const key = el.getAttribute('data-i18n-title');
     if (key) {
-      const translation = t(key);
+      const params = parseParams(el, 'data-i18n-title-params');
+      const translation = t(key, params);
       if (translation && translation !== key) {
         el.setAttribute('title', translation);
       }
@@ -237,7 +252,8 @@ export function applyI18nToDOM(root) {
   ariaElements.forEach(el => {
     const key = el.getAttribute('data-i18n-aria-label');
     if (key) {
-      const translation = t(key);
+      const params = parseParams(el, 'data-i18n-aria-label-params');
+      const translation = t(key, params);
       if (translation && translation !== key) {
         el.setAttribute('aria-label', translation);
       }

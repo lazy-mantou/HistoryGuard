@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'افتراضي',
     silentTooltip: 'لن يتم تسجيل أي سجل تصفح خلال المدة المحددة',
     optionsTooltip: 'فتح لوحة التحكم',
+    pauseBtn: 'إيقاف الحماية مؤقتًا',
+    pauseTooltip: 'إيقاف حماية السجل مؤقتًا أو تعطيلها',
+    pauseResume: 'استئناف الحماية الآن',
+    pauseForever: 'حتى إعادة التشغيل يدويًا',
+    pauseBannerTitle: 'الحماية متوقفة مؤقتًا',
+    pauseBannerDesc: 'لا يتم اعتراض السجل حاليًا؛ سيتم حفظ سجل التصفح كالمعتاد.',
+    pauseDurationItem: 'إيقاف مؤقت لمدة {duration}',
+    toastPauseExit: 'تم استئناف الحماية بنجاح',
+    toastPauseEnter: 'تم إيقاف الحماية مؤقتًا ({duration})',
+    toastPauseEnterForever: 'تم إيقاف الحماية حتى إعادة التشغيل التالية',
     currentTab: 'علامة التبويب الحالية',
     statusChecking: '● جاري التحقق...',
     statusLoading: 'جاري التحميل...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: 'بدون أثر',
     statSilentOff: 'معطل',
     statSilentOn: 'نشط ({time})',
+    statProtectionStatus: 'حالة التشغيل',
+    statStatusRunning: 'قيد التشغيل',
+    statStatusPaused: 'متوقف مؤقتًا ({time})',
+    statStatusPausedForever: 'متوقف مؤقتًا (دائم)',
     navHistoryTitle: 'بحث وتنظيف السجل',
     navHistoryDesc: 'بحث وتنظيف شامل',
     navRulesTitle: 'قواعد الحماية',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - القاعدة: {pattern}',
     tooltipTraceFree: 'HistGuard: وضع بدون أثر نشط (إيقاف مؤقت لتسجيل السجل)',
     tooltipRecording: 'HistGuard: يتم تسجيل السجل (انقر على الأيقونة للحماية)',
-    tooltipInternal: 'HistGuard: صفحة داخلية في المتصفح'
+    tooltipInternal: 'HistGuard: صفحة داخلية في المتصفح',
+    tooltipPaused: 'HistGuard: الحماية متوقفة مؤقتًا (يتم تسجيل السجل)'
   }
 };

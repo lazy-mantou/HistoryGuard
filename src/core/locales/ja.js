@@ -18,6 +18,16 @@ export default {
     silentDefaultTag: 'デフォルト',
     silentTooltip: '選択した期間中のすべての新しい閲覧履歴は記録されません',
     optionsTooltip: 'ダッシュボードを開く',
+    pauseBtn: '保護を一時停止',
+    pauseTooltip: '履歴保護を一時停止またはオフにする',
+    pauseResume: '今すぐ保護を再開',
+    pauseForever: '次回オンにするまで',
+    pauseBannerTitle: '保護は一時停止中です',
+    pauseBannerDesc: '現在はいかなる履歴も傍受されず、ブラウザに通常通り閲覧履歴が保存されます。',
+    pauseDurationItem: '{duration} 一時停止',
+    toastPauseExit: '保護を再開しました',
+    toastPauseEnter: '履歴保護を一時停止しました ({duration})',
+    toastPauseEnterForever: '次回オンにするまで履歴保護を停止しました',
     currentTab: '現在のタブ',
     statusChecking: '● 確認中...',
     statusLoading: '読み込み中...',
@@ -75,6 +85,10 @@ export default {
     statSilentStatus: '痕跡なしモード',
     statSilentOff: 'オフ',
     statSilentOn: '有効中 ({time})',
+    statProtectionStatus: '動作ステータス',
+    statStatusRunning: '実行中',
+    statStatusPaused: '一時停止 ({time})',
+    statStatusPausedForever: '一時停止 (停止中)',
     navHistoryTitle: '履歴の検索と削除',
     navHistoryDesc: '検索＆ディープクリーン',
     navRulesTitle: '自動保護ルール',
@@ -312,6 +326,7 @@ export default {
     tooltipProtectedRuleLabel: ' - ルール: {pattern}',
     tooltipTraceFree: 'HistGuard: 痕跡なしモード有効（全履歴の追跡を一時停止）',
     tooltipRecording: 'HistGuard: 履歴を記録中（アイコンをクリックして保護）',
-    tooltipInternal: 'HistGuard: ブラウザ内部ページ（記録対象外）'
+    tooltipInternal: 'HistGuard: ブラウザ内部ページ（記録対象外）',
+    tooltipPaused: 'HistGuard：保護は一時停止中です（履歴は通常通り記録されます）'
   }
 };
