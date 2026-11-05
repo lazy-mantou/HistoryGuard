@@ -8,6 +8,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   resolveLanguage,
   t,
@@ -411,7 +412,9 @@ describe('i18n - applyI18nToDOM (DOM 模板属性绑定与 RTL 适配)', () => {
 });
 
 describe('manifest.json 国际化规范与资源完整性校验', () => {
-  const rootDir = path.resolve('E:/Workspace/HistGuard');
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const rootDir = path.resolve(__dirname, '..');
   const localesDir = path.join(rootDir, '_locales');
 
   it('manifest.chrome.json 与 manifest.firefox.json 必须合法且配置 default_locale 与 __MSG_ 占位符', () => {
