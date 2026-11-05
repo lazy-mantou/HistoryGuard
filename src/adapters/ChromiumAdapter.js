@@ -15,6 +15,10 @@ export class ChromiumAdapter extends IBrowserAdapter {
 
     // History API
     this.history = {
+      isSupported: () => {
+        return Boolean(typeof chrome !== 'undefined' && chrome.history && typeof chrome.history.search === 'function');
+      },
+
       onVisited: (callback) => {
         if (typeof chrome !== 'undefined' && chrome.history?.onVisited) {
           chrome.history.onVisited.addListener(callback);

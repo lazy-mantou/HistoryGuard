@@ -1,0 +1,40 @@
+name: CI (Code Quality & Build Verification)
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    name: Test & Build Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run Native Unit Tests (Zero-Dependency)
+        run: npm test
+
+      - name: Build Dual-Kernel Artifacts
+        run: npm run build
+
+      - name: Verify Build Artifacts
+        run: |
+          test -f dist/chrome/manifest.json || { echo "Missing dist/chrome/manifest.json"; exit 1; }
+          test -f dist/firefox/manifest.json || { echo "Missing dist/firefox/manifest.json"; exit 1; }
+          echo "Build artifacts verified successfully!"
+
+      - name: Verify Packaging & Version Consistency
+        run: npm run package
+

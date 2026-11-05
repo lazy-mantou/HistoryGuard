@@ -1,4 +1,4 @@
-# 🛡️ HistGuard - 智能跨浏览器历史记录即时防护与隐私卫士
+# 🛡️ History Guard - 智能跨浏览器历史记录即时防护与隐私卫士
 
 <p align="center">
   <a href="README.md">English</a> •
@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License MIT" />
 </p>
 
-> **HistGuard** 是一款专为重视隐私安全与浏览效率的用户打造的纯原生、跨浏览器（Chrome / Edge / Brave / Firefox）历史记录即时防护扩展。采用**统一抽象适配器层（Adapter Pattern）**实现双内核 API 无缝解耦，支持基于 URL 智能逐级拆解的零输入快速加规、毫秒级实时隐私抹除与 30 分钟临时无痕模式。
+> **History Guard** 是一款专为重视隐私安全与浏览效率的用户打造的纯原生、跨浏览器（Chrome / Edge / Brave / Firefox）历史记录即时防护扩展。采用**统一抽象适配器层（Adapter Pattern）**实现双内核 API 无缝解耦，支持基于 URL 智能逐级拆解的零输入快速加规、毫秒级实时隐私抹除与 30 分钟临时无痕模式。
 
 ---
 

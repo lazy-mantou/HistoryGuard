@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'Dasbor HistGuard',
+    name: 'History Guard',
+    consoleTitle: 'Dasbor History Guard',
     consoleSubtitle: 'Pengelolaan riwayat pintar & perlindungan privasi otomatis'
   },
   popup: {
-    title: 'HistGuard - Pengelola Riwayat',
+    title: 'History Guard - Pengelola Riwayat',
     silentBtn: 'Bebas Jejak 30m',
     silentBtnParam: 'Bebas Jejak {duration}',
     silentBtnActive: '{time} Bebas Jejak',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: 'Aturan perlindungan [{rule}] dihapus'
   },
   options: {
-    title: 'HistGuard - Pengelola Riwayat & Dasbor',
-    brandTitle: 'Dasbor HistGuard',
+    title: 'History Guard - Pengelola Riwayat & Dasbor',
+    brandTitle: 'Dasbor History Guard',
     brandSubtitle: 'Pengelolaan riwayat pintar & perlindungan privasi otomatis',
     statActiveRules: 'Aturan Aktif',
     statTotalHits: 'Kunjungan Terlindungi',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: 'Membersihkan riwayat... {count} item dihapus',
     emptyHistoryStart: 'Ketik pencarian atau pilih rentang waktu di atas',
     emptyHistoryNoMatch: 'Catatan riwayat yang cocok tidak ditemukan',
+    historyNotSupportedNotice: 'API browser.history tidak didukung di browser seluler. Fitur ini hanya tersedia di browser desktop.',
     loadMoreBtn: 'Muat gelombang berikutnya ({count} item)...',
     loadMoreLoading: 'Mengambil data riwayat...',
     noMoreHint: '—— Semua catatan yang cocok telah dimuat ——',
@@ -219,7 +220,7 @@ export default {
     chunk30: '30 item/batch',
     chunk50: '50 item/batch',
     chunkWarningTitle: '⚠️ Peringatan: Ubah Batas Konkurensi',
-    chunkWarningDesc: 'Jangan ubah pengaturan ini kecuali benar-benar diperlukan! HistGuard menggunakan "Adaptif Otomatis" secara bawaan. Mengubahnya dapat menyebabkan:',
+    chunkWarningDesc: 'Jangan ubah pengaturan ini kecuali benar-benar diperlukan! History Guard menggunakan "Adaptif Otomatis" secara bawaan. Mengubahnya dapat menyebabkan:',
     chunkWarningIssue1: 'Kunci Basis Data Firefox: Places SQLite menggunakan kunci tulis tunggal. Konkurensi tinggi memicu error database terkunci dan membekukan peramban.',
     chunkWarningIssue2: 'Lonjakan Beban & Patah-patah: Konkurensi berlebih membebani disk dan CPU, menimbulkan penurunan frame saat browsing.',
     chunkWarningRecommendation: 'Sangat disarankan untuk tetap pada "Adaptif Otomatis" demi perpaduan optimal antara kecepatan dan stabilitas.',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} kali'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: Dilindungi (Pencatatan riwayat dinonaktifkan{ruleText})',
+    tooltipProtected: 'History Guard: Dilindungi (Pencatatan riwayat dinonaktifkan{ruleText})',
     tooltipProtectedRuleLabel: ' - aturan: {pattern}',
-    tooltipTraceFree: 'HistGuard: Mode bebas jejak aktif (Pencatatan riwayat global dijeda)',
-    tooltipRecording: 'HistGuard: Mencatat riwayat (Klik ikon untuk melindungi)',
-    tooltipInternal: 'HistGuard: Halaman internal peramban',
-    tooltipPaused: 'HistGuard: Perlindungan dijeda (Riwayat sedang direkam)'
+    tooltipTraceFree: 'History Guard: Mode bebas jejak aktif (Pencatatan riwayat global dijeda)',
+    tooltipRecording: 'History Guard: Mencatat riwayat (Klik ikon untuk melindungi)',
+    tooltipInternal: 'History Guard: Halaman internal peramban',
+    tooltipPaused: 'History Guard: Perlindungan dijeda (Riwayat sedang direkam)'
   }
 };

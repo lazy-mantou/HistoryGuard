@@ -22,6 +22,15 @@ export class FirefoxAdapter extends IBrowserAdapter {
 
     // History API
     this.history = {
+      isSupported: () => {
+        try {
+          const api = getApi();
+          return Boolean(api.history && typeof api.history.search === 'function');
+        } catch {
+          return false;
+        }
+      },
+
       onVisited: (callback) => {
         const api = getApi();
         if (api.history?.onVisited) {

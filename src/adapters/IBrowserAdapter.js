@@ -12,6 +12,14 @@ export class IBrowserAdapter {
 
     this.history = {
       /**
+       * 检查当前运行环境是否支持系统历史记录 API (如 Firefox for Android 暂不支持)
+       * @returns {boolean}
+       */
+      isSupported: () => {
+        throw new Error('history.isSupported must be implemented by adapter');
+      },
+
+      /**
        * 监听页面历史记录新增访问事件
        * @param {function(HistoryItem): void} callback
        */

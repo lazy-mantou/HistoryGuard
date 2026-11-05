@@ -122,6 +122,7 @@ html {
   width: 460px;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 body {
@@ -148,6 +149,13 @@ body {
   position: relative;
   box-sizing: border-box;
   width: 100%;
+}
+
+/* 当下拉菜单展开时，撑开容器高度，防止高度不足导致超出 Firefox/Chromium Popup 视口产生滚动条 */
+.popup-container.dropdown-open,
+.popup-container:has(.pause-dropdown.open),
+.popup-container:has(.silent-dropdown.open) {
+  min-height: 380px;
 }
 
 /* 顶部栏 */

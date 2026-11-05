@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "HistGuard - Gestion d'historique et vie privée",
+    "message": "History Guard - Gestion d'historique et vie privée",
     "description": "The name of the extension"
   },
   "appDesc": {
@@ -8,7 +8,7 @@
     "description": "The description of the extension"
   },
   "actionTitle": {
-    "message": "HistGuard Protection de la vie privée",
+    "message": "History Guard Protection de la vie privée",
     "description": "The default title for the toolbar action button"
   }
 }

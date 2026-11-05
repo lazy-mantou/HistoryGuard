@@ -421,7 +421,12 @@ async function refreshGlobalStats() {
 
   const rulesCount = cachedRules.length;
   if (rulesCount >= WARN_RULES_TOTAL_THRESHOLD) {
-    elements.rulesCountSummary.innerHTML = `${t('options.rulesSummary', { count: rulesCount })} <span class="rules-warning-pill" title="${t('options.ruleCapacityWarning')}">${t('options.ruleCapacityWarning')}</span>`;
+    elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: rulesCount }) + ' ';
+    const warnPill = document.createElement('span');
+    warnPill.className = 'rules-warning-pill';
+    warnPill.title = t('options.ruleCapacityWarning');
+    warnPill.textContent = t('options.ruleCapacityWarning');
+    elements.rulesCountSummary.appendChild(warnPill);
   } else {
     elements.rulesCountSummary.textContent = t('options.rulesSummary', { count: rulesCount });
   }
@@ -549,12 +554,15 @@ function renderStatsChart(dailyHits = {}, rangeDays = 7, activeTodayHits = 0) {
   const maxVal = Math.max(...counts, 0);
 
   if (maxVal === 0) {
-    elements.statsChartWrapper.innerHTML = `
-      <div class="chart-empty-state">
-        <span class="chart-empty-icon">📊</span>
-        <span>${t('options.statsChartEmpty')}</span>
-      </div>
-    `;
+    const emptyState = document.createElement('div');
+    emptyState.className = 'chart-empty-state';
+    const emptyIcon = document.createElement('span');
+    emptyIcon.className = 'chart-empty-icon';
+    emptyIcon.textContent = '📊';
+    const emptyText = document.createElement('span');
+    emptyText.textContent = t('options.statsChartEmpty');
+    emptyState.append(emptyIcon, emptyText);
+    elements.statsChartWrapper.replaceChildren(emptyState);
     return;
   }
 
@@ -625,8 +633,8 @@ function renderStatsChart(dailyHits = {}, rangeDays = 7, activeTodayHits = 0) {
     `;
   });
 
-  elements.statsChartWrapper.innerHTML = `
-    <svg class="stats-svg-chart" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none">
+  const svgXml = `
+    <svg xmlns="http://www.w3.org/2000/svg" class="stats-svg-chart" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none">
       <defs>
         <linearGradient id="chart-area-grad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#6366f1" stop-opacity="0.32" />
@@ -641,6 +649,9 @@ function renderStatsChart(dailyHits = {}, rangeDays = 7, activeTodayHits = 0) {
       ${dotsHtml}
     </svg>
   `;
+  const parser = new DOMParser();
+  const svgDoc = parser.parseFromString(svgXml, 'image/svg+xml');
+  elements.statsChartWrapper.replaceChildren(svgDoc.documentElement);
 }
 
 /**
@@ -665,51 +676,71 @@ function renderTypeDistribution(rules, stats) {
   const pathPct = totalHits > 0 ? Math.round((pathHits / totalHits) * 100) : 0;
   const keywordPct = totalHits > 0 ? Math.max(0, 100 - domainPct - pathPct) : 0;
 
-  elements.statsDistributionBody.innerHTML = `
-    <div class="distribution-stacked-bar">
-      <div class="stacked-segment segment-domain" style="width: ${domainPct}%" title="${t('options.tagDomain')}: ${domainHits}"></div>
-      <div class="stacked-segment segment-path" style="width: ${pathPct}%" title="${t('options.tagPath')}: ${pathHits}"></div>
-      <div class="stacked-segment segment-keyword" style="width: ${keywordPct}%" title="${t('options.tagKeyword')}: ${keywordHits}"></div>
-    </div>
-    <div class="distribution-list">
-      <div class="dist-item">
-        <div class="dist-item-top">
-          <span class="dist-item-badge" style="color: var(--primary);">
-            <span>🌐</span>
-            <span>${t('options.tagDomain')}</span>
-          </span>
-          <span class="dist-item-count">${t('options.statsTypePercent', { count: domainHits.toLocaleString(), percent: domainPct })}</span>
-        </div>
-        <div class="dist-progress-track">
-          <div class="dist-progress-fill" style="width: ${domainPct}%; background-color: var(--primary);"></div>
-        </div>
-      </div>
-      <div class="dist-item">
-        <div class="dist-item-top">
-          <span class="dist-item-badge" style="color: var(--success);">
-            <span>🔀</span>
-            <span>${t('options.tagPath')}</span>
-          </span>
-          <span class="dist-item-count">${t('options.statsTypePercent', { count: pathHits.toLocaleString(), percent: pathPct })}</span>
-        </div>
-        <div class="dist-progress-track">
-          <div class="dist-progress-fill" style="width: ${pathPct}%; background-color: var(--success);"></div>
-        </div>
-      </div>
-      <div class="dist-item">
-        <div class="dist-item-top">
-          <span class="dist-item-badge" style="color: var(--warning);">
-            <span>🔤</span>
-            <span>${t('options.tagKeyword')}</span>
-          </span>
-          <span class="dist-item-count">${t('options.statsTypePercent', { count: keywordHits.toLocaleString(), percent: keywordPct })}</span>
-        </div>
-        <div class="dist-progress-track">
-          <div class="dist-progress-fill" style="width: ${keywordPct}%; background-color: var(--warning);"></div>
-        </div>
-      </div>
-    </div>
-  `;
+  const stackedBar = document.createElement('div');
+  stackedBar.className = 'distribution-stacked-bar';
+
+  const segConfigs = [
+    { cls: 'segment-domain', pct: domainPct, label: t('options.tagDomain'), hits: domainHits },
+    { cls: 'segment-path', pct: pathPct, label: t('options.tagPath'), hits: pathHits },
+    { cls: 'segment-keyword', pct: keywordPct, label: t('options.tagKeyword'), hits: keywordHits }
+  ];
+
+  segConfigs.forEach(seg => {
+    const el = document.createElement('div');
+    el.className = `stacked-segment ${seg.cls}`;
+    el.style.width = `${seg.pct}%`;
+    el.title = `${seg.label}: ${seg.hits}`;
+    stackedBar.appendChild(el);
+  });
+
+  const distList = document.createElement('div');
+  distList.className = 'distribution-list';
+
+  const listConfigs = [
+    { icon: '🌐', label: t('options.tagDomain'), hits: domainHits, pct: domainPct, colorVar: 'var(--primary)' },
+    { icon: '🔀', label: t('options.tagPath'), hits: pathHits, pct: pathPct, colorVar: 'var(--success)' },
+    { icon: '🔤', label: t('options.tagKeyword'), hits: keywordHits, pct: keywordPct, colorVar: 'var(--warning)' }
+  ];
+
+  listConfigs.forEach(item => {
+    const distItem = document.createElement('div');
+    distItem.className = 'dist-item';
+
+    const top = document.createElement('div');
+    top.className = 'dist-item-top';
+
+    const badge = document.createElement('span');
+    badge.className = 'dist-item-badge';
+    badge.style.color = item.colorVar;
+
+    const iconSpan = document.createElement('span');
+    iconSpan.textContent = item.icon;
+
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = item.label;
+
+    badge.append(iconSpan, labelSpan);
+
+    const countSpan = document.createElement('span');
+    countSpan.className = 'dist-item-count';
+    countSpan.textContent = t('options.statsTypePercent', { count: item.hits.toLocaleString(), percent: item.pct });
+
+    top.append(badge, countSpan);
+
+    const track = document.createElement('div');
+    track.className = 'dist-progress-track';
+
+    const fill = document.createElement('div');
+    fill.className = 'dist-progress-fill';
+    fill.style.width = `${item.pct}%`;
+    fill.style.backgroundColor = item.colorVar;
+
+    track.appendChild(fill);
+    distItem.append(top, track);
+    distList.appendChild(distItem);
+  });
+
+  elements.statsDistributionBody.replaceChildren(stackedBar, distList);
 }
 
 /**
@@ -725,18 +756,27 @@ function renderTopRulesRanking(rules) {
     .slice(0, 5);
 
   if (rulesWithHits.length === 0) {
-    elements.statsRankingBody.innerHTML = `
-      <div class="ranking-empty">
-        <span style="font-size: 24px; opacity: 0.7;">🌱</span>
-        <span>${t('options.statsTopRulesEmpty')}</span>
-      </div>
-    `;
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'ranking-empty';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.style.fontSize = '24px';
+    iconSpan.style.opacity = '0.7';
+    iconSpan.textContent = '🌱';
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent = t('options.statsTopRulesEmpty');
+
+    emptyDiv.append(iconSpan, textSpan);
+    elements.statsRankingBody.replaceChildren(emptyDiv);
     return;
   }
 
   const topHits = rulesWithHits[0].hits || 1;
 
-  let html = '<div class="ranking-list">';
+  const listContainer = document.createElement('div');
+  listContainer.className = 'ranking-list';
+
   rulesWithHits.forEach((rule, idx) => {
     let typeClass = 'type-domain';
     let typeLabel = t('options.tagDomain');
@@ -750,28 +790,52 @@ function renderTopRulesRanking(rules) {
 
     const relPct = Math.min(100, Math.round((rule.hits / topHits) * 100));
 
-    html += `
-      <div class="ranking-item" data-rule-id="${rule.id}" style="cursor: pointer;" title="点击前往规则管理">
-        <div class="ranking-medal">${idx + 1}</div>
-        <div class="ranking-pattern-box">
-          <div class="ranking-pattern-line">
-            <span class="rule-type-badge ${typeClass}">${typeLabel}</span>
-            <span class="ranking-pattern" title="${escapeHtml(rule.pattern)}">${escapeHtml(rule.pattern)}</span>
-          </div>
-          <div class="dist-progress-track" style="margin-top: 4px;">
-            <div class="dist-progress-fill" style="width: ${relPct}%; background-color: var(--primary);"></div>
-          </div>
-        </div>
-        <div class="ranking-hits-badge">${t('options.statsRulesHitsUnit', { count: rule.hits.toLocaleString() })}</div>
-      </div>
-    `;
-  });
-  html += '</div>';
+    const item = document.createElement('div');
+    item.className = 'ranking-item';
+    item.dataset.ruleId = rule.id;
+    item.style.cursor = 'pointer';
+    item.title = '点击前往规则管理';
 
-  elements.statsRankingBody.innerHTML = html;
+    const medal = document.createElement('div');
+    medal.className = 'ranking-medal';
+    medal.textContent = String(idx + 1);
 
-  // 绑定点击跳转到规则管理并高亮对应规则
-  elements.statsRankingBody.querySelectorAll('.ranking-item').forEach(item => {
+    const patternBox = document.createElement('div');
+    patternBox.className = 'ranking-pattern-box';
+
+    const patternLine = document.createElement('div');
+    patternLine.className = 'ranking-pattern-line';
+
+    const typeBadge = document.createElement('span');
+    typeBadge.className = `rule-type-badge ${typeClass}`;
+    typeBadge.textContent = typeLabel;
+
+    const patternSpan = document.createElement('span');
+    patternSpan.className = 'ranking-pattern';
+    patternSpan.title = rule.pattern;
+    patternSpan.textContent = rule.pattern;
+
+    patternLine.append(typeBadge, patternSpan);
+
+    const track = document.createElement('div');
+    track.className = 'dist-progress-track';
+    track.style.marginTop = '4px';
+
+    const fill = document.createElement('div');
+    fill.className = 'dist-progress-fill';
+    fill.style.width = `${relPct}%`;
+    fill.style.backgroundColor = 'var(--primary)';
+    track.appendChild(fill);
+
+    patternBox.append(patternLine, track);
+
+    const hitsBadge = document.createElement('div');
+    hitsBadge.className = 'ranking-hits-badge';
+    hitsBadge.textContent = t('options.statsRulesHitsUnit', { count: rule.hits.toLocaleString() });
+
+    item.append(medal, patternBox, hitsBadge);
+
+    // 绑定点击跳转到规则管理并高亮对应规则
     item.addEventListener('click', () => {
       const ruleId = item.dataset.ruleId;
       switchTab('rules');
@@ -784,7 +848,11 @@ function renderTopRulesRanking(rules) {
         }
       }, 100);
     });
+
+    listContainer.appendChild(item);
   });
+
+  elements.statsRankingBody.replaceChildren(listContainer);
 }
 
 /* ==========================================================================
@@ -826,18 +894,31 @@ function appendHistoryBatchToDOM(items, autoCheck = false) {
     row.className = `history-item ${isChecked ? 'checked' : ''}`;
     row.dataset.url = item.url;
 
-    row.innerHTML = `
-      <input type="checkbox" class="history-checkbox" ${isChecked ? 'checked' : ''}>
-      <div class="history-details">
-        <div class="history-title" title="${escapeHtml(item.title || item.url)}">
-          ${escapeHtml(item.title || item.url)}
-        </div>
-        <div class="history-url" title="${escapeHtml(item.url)}">
-          ${escapeHtml(item.url)}
-        </div>
-      </div>
-      <div class="history-time">${formatTime(item.lastVisitTime)}</div>
-    `;
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'history-checkbox';
+    checkbox.checked = isChecked;
+
+    const details = document.createElement('div');
+    details.className = 'history-details';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'history-title';
+    titleDiv.title = item.title || item.url;
+    titleDiv.textContent = item.title || item.url;
+
+    const urlDiv = document.createElement('div');
+    urlDiv.className = 'history-url';
+    urlDiv.title = item.url;
+    urlDiv.textContent = item.url;
+
+    details.append(titleDiv, urlDiv);
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'history-time';
+    timeDiv.textContent = formatTime(item.lastVisitTime);
+
+    row.append(checkbox, details, timeDiv);
 
     fragment.appendChild(row);
   });
@@ -865,12 +946,32 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     hasMoreHistory = true;
     currentHistoryResults = [];
     checkedUrls.clear();
-    elements.historyPreviewList.innerHTML = '';
+    elements.historyPreviewList.replaceChildren();
     elements.loadMoreSection.classList.add('hidden');
     elements.noMoreHint.classList.add('hidden');
     if (elements.btnDeepClean) {
       elements.btnDeepClean.disabled = true;
     }
+  }
+
+  // 运行环境检测：若当前浏览器底层未实现 browser.history API（如移动端 Firefox for Android）
+  if (browserApi.history && typeof browserApi.history.isSupported === 'function' && !browserApi.history.isSupported()) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'empty-state';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'empty-icon';
+    iconSpan.textContent = '📱';
+
+    const p = document.createElement('p');
+    p.textContent = t('options.historyNotSupportedNotice');
+
+    emptyDiv.append(iconSpan, p);
+    elements.historyPreviewList.replaceChildren(emptyDiv);
+    elements.loadMoreSection.classList.add('hidden');
+    elements.noMoreHint.classList.add('hidden');
+    updateSelectedSummary();
+    return;
   }
 
   isLoadingBatch = true;
@@ -916,12 +1017,19 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
 
     // 状态与空状态处理
     if (currentHistoryResults.length === 0) {
-      elements.historyPreviewList.innerHTML = `
-        <div class="empty-state">
-          <span class="empty-icon">🔎</span>
-          <p data-i18n="options.emptyHistoryNoMatch">${t('options.emptyHistoryNoMatch')}</p>
-        </div>
-      `;
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'empty-state';
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'empty-icon';
+      iconSpan.textContent = '🔎';
+
+      const p = document.createElement('p');
+      p.setAttribute('data-i18n', 'options.emptyHistoryNoMatch');
+      p.textContent = t('options.emptyHistoryNoMatch');
+
+      emptyDiv.append(iconSpan, p);
+      elements.historyPreviewList.replaceChildren(emptyDiv);
       elements.loadMoreSection.classList.add('hidden');
       elements.noMoreHint.classList.add('hidden');
       updateSelectedSummary();
@@ -950,7 +1058,7 @@ async function fetchHistoryBatch({ isReset = false } = {}) {
     }
   } catch (err) {
     console.error('Fetch history batch failed:', err);
-    showToast(`${t('options.toastImportFailed', { error: err.message })}`);
+    showToast(t('options.toastFailed', { error: err.message }));
   } finally {
     isLoadingBatch = false;
   }
@@ -1239,15 +1347,22 @@ if (elements.btnDeepClean) {
  */
 async function refreshRulesList() {
   await refreshGlobalStats();
-  elements.rulesContainer.innerHTML = '';
+  elements.rulesContainer.replaceChildren();
 
   if (cachedRules.length === 0) {
-    elements.rulesContainer.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">📋</span>
-        <p data-i18n="options.emptyRules">${t('options.emptyRules')}</p>
-      </div>
-    `;
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'empty-state';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'empty-icon';
+    iconSpan.textContent = '📋';
+
+    const p = document.createElement('p');
+    p.setAttribute('data-i18n', 'options.emptyRules');
+    p.textContent = t('options.emptyRules');
+
+    emptyDiv.append(iconSpan, p);
+    elements.rulesContainer.replaceChildren(emptyDiv);
     return;
   }
 
@@ -1276,42 +1391,73 @@ async function refreshRulesList() {
       : '';
     const toggleTitle = rule.enabled !== false ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
 
-    row.innerHTML = `
-      <div class="rule-left">
-        <span class="rule-type-badge ${typeClass}">${typeLabel}</span>
-        <span class="rule-pattern" title="${escapeHtml(rule.pattern)}">${escapeHtml(rule.pattern)}</span>
-      </div>
-      <div class="rule-right">
-        ${hitsBadgeHtml}
-        <label class="toggle-switch" title="${toggleTitle}">
-          <input type="checkbox" class="rule-toggle" ${rule.enabled !== false ? 'checked' : ''}>
-          <span class="toggle-slider"></span>
-        </label>
-        <button class="rule-clean-btn" title="${t('options.ruleCleanTitle')}">🧹</button>
-        <button class="rule-delete-btn" title="${t('options.ruleDeleteTitle')}">🗑️</button>
-      </div>
-    `;
+    const ruleLeft = document.createElement('div');
+    ruleLeft.className = 'rule-left';
+
+    const typeBadge = document.createElement('span');
+    typeBadge.className = `rule-type-badge ${typeClass}`;
+    typeBadge.textContent = typeLabel;
+
+    const patternSpan = document.createElement('span');
+    patternSpan.className = 'rule-pattern';
+    patternSpan.title = rule.pattern;
+    patternSpan.textContent = rule.pattern;
+
+    ruleLeft.append(typeBadge, patternSpan);
+
+    const ruleRight = document.createElement('div');
+    ruleRight.className = 'rule-right';
+
+    if (isHitTrackingEnabled) {
+      const hitsBadge = document.createElement('span');
+      hitsBadge.className = 'hits-badge';
+      hitsBadge.title = t('options.statTotalHitsTitle');
+      hitsBadge.textContent = hitsText;
+      ruleRight.appendChild(hitsBadge);
+    }
+
+    const toggleLabel = document.createElement('label');
+    toggleLabel.className = 'toggle-switch';
+    toggleLabel.title = toggleTitle;
+
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.className = 'rule-toggle';
+    toggle.checked = rule.enabled !== false;
+
+    const toggleSlider = document.createElement('span');
+    toggleSlider.className = 'toggle-slider';
+
+    toggleLabel.append(toggle, toggleSlider);
+
+    const cleanBtn = document.createElement('button');
+    cleanBtn.className = 'rule-clean-btn';
+    cleanBtn.title = t('options.ruleCleanTitle');
+    cleanBtn.textContent = '🧹';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'rule-delete-btn';
+    delBtn.title = t('options.ruleDeleteTitle');
+    delBtn.textContent = '🗑️';
+
+    ruleRight.append(toggleLabel, cleanBtn, delBtn);
+    row.append(ruleLeft, ruleRight);
 
     // 绑定 Toggle 开关
-    const toggle = row.querySelector('.rule-toggle');
-    const cleanBtn = row.querySelector('.rule-clean-btn');
-    const delBtn = row.querySelector('.rule-delete-btn');
-
     toggle.addEventListener('change', async () => {
       await toggleRule(rule.id, toggle.checked);
       row.classList.toggle('disabled', !toggle.checked);
-      toggle.parentElement.title = toggle.checked ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
+      toggleLabel.title = toggle.checked ? t('options.ruleToggleActive') : t('options.ruleToggleDisabled');
       await refreshGlobalStats();
     });
 
     // 绑定清理匹配历史按钮
     cleanBtn.addEventListener('click', async () => {
       if (cleanBtn.disabled) return;
-      const originalCleanHtml = cleanBtn.innerHTML;
       try {
         cleanBtn.disabled = true;
         delBtn.disabled = true;
-        cleanBtn.innerHTML = '⏳';
+        cleanBtn.textContent = '⏳';
         cleanBtn.style.opacity = '0.7';
         showToast(t('options.toastCleaningRule', { pattern: rule.pattern }));
 
@@ -1341,7 +1487,7 @@ async function refreshRulesList() {
       } finally {
         cleanBtn.disabled = false;
         delBtn.disabled = false;
-        cleanBtn.innerHTML = originalCleanHtml;
+        cleanBtn.textContent = '🧹';
         cleanBtn.style.opacity = '1';
         cleanBtn.title = t('options.ruleCleanTitle');
       }
@@ -1372,13 +1518,19 @@ elements.btnAddRule.addEventListener('click', async () => {
     return;
   }
 
-  const originalHtml = elements.btnAddRule.innerHTML;
+  const addRuleSpan = elements.btnAddRule.querySelector('span');
+  const originalAddRuleText = addRuleSpan ? addRuleSpan.textContent : elements.btnAddRule.textContent;
   const shouldClean = elements.cbRulesCleanExisting ? elements.cbRulesCleanExisting.checked : true;
 
   try {
     elements.btnAddRule.disabled = true;
     elements.btnAddRule.style.opacity = '0.7';
-    elements.btnAddRule.innerHTML = `<span>⏳ ${shouldClean ? t('options.btnAddingAndCleaning') : t('options.btnAddingRule')}</span>`;
+    const loadingText = `⏳ ${shouldClean ? t('options.btnAddingAndCleaning') : t('options.btnAddingRule')}`;
+    if (addRuleSpan) {
+      addRuleSpan.textContent = loadingText;
+    } else {
+      elements.btnAddRule.textContent = loadingText;
+    }
 
     // 1. 添加或激活规则
     const { rule, isNew } = await addRule({ pattern, type });
@@ -1391,7 +1543,12 @@ elements.btnAddRule.addEventListener('click', async () => {
         chunkSize,
         onProgress: ({ deleted }) => {
           if (deleted > 0) {
-            elements.btnAddRule.innerHTML = `<span>🧹 ${t('options.btnCleaningWithCount', { count: deleted })}</span>`;
+            const cleanText = `🧹 ${t('options.btnCleaningWithCount', { count: deleted })}`;
+            if (addRuleSpan) {
+              addRuleSpan.textContent = cleanText;
+            } else {
+              elements.btnAddRule.textContent = cleanText;
+            }
           }
         }
       });
@@ -1421,7 +1578,11 @@ elements.btnAddRule.addEventListener('click', async () => {
   } finally {
     elements.btnAddRule.disabled = false;
     elements.btnAddRule.style.opacity = '1';
-    elements.btnAddRule.innerHTML = originalHtml;
+    if (addRuleSpan) {
+      addRuleSpan.textContent = originalAddRuleText;
+    } else {
+      elements.btnAddRule.textContent = originalAddRuleText;
+    }
   }
 });
 

@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'HistGuard Dashboard',
+    name: 'History Guard',
+    consoleTitle: 'History Guard Dashboard',
     consoleSubtitle: 'Lightweight smart history management & automatic privacy protection'
   },
   popup: {
-    title: 'HistGuard - History Manager',
+    title: 'History Guard - History Manager',
     silentBtn: 'Trace-Free 30m',
     silentBtnParam: 'Trace-Free {duration}',
     silentBtnActive: '{time} Trace-Free',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: 'Protection rule [{rule}] removed'
   },
   options: {
-    title: 'HistGuard - History Manager & Console',
-    brandTitle: 'HistGuard Dashboard',
+    title: 'History Guard - History Manager & Console',
+    brandTitle: 'History Guard Dashboard',
     brandSubtitle: 'Lightweight smart history management & automatic privacy protection',
     statActiveRules: 'Active Rules',
     statTotalHits: 'Protected Visits',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: 'Clearing all history... Cleaned {count} items',
     emptyHistoryStart: 'Enter a search query or select a time range above',
     emptyHistoryNoMatch: 'No matching history records found',
+    historyNotSupportedNotice: 'The browser.history API is not supported on mobile browsers. This feature is only available on desktop browsers.',
     loadMoreBtn: 'Load next batch ({count} items)...',
     loadMoreLoading: 'Retrieving history data...',
     noMoreHint: '—— All matching history records loaded ——',
@@ -219,7 +220,7 @@ export default {
     chunk30: '30 items/slice',
     chunk50: '50 items/slice',
     chunkWarningTitle: '⚠️ Concurrency Limit Modification Warning',
-    chunkWarningDesc: 'Do not modify this unless strictly necessary! HistGuard uses "Auto Adaptive" by default, which is deeply tuned for browser engines. Changing it may cause:',
+    chunkWarningDesc: 'Do not modify this unless strictly necessary! History Guard uses "Auto Adaptive" by default, which is deeply tuned for browser engines. Changing it may cause:',
     chunkWarningIssue1: 'Firefox DB Lockups: Firefox Places SQLite uses a single-write lock. Higher concurrency easily causes "database is locked" errors and severe freezes.',
     chunkWarningIssue2: 'Resource Spikes & UI Lag: Excessive concurrency spikes process message queues and disk I/O, causing frame drops or temporary freezes while browsing.',
     chunkWarningRecommendation: 'We strongly recommend keeping "Auto Adaptive", which automatically balances maximum throughput with rock-solid stability.',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} hits'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: Protected (History recording disabled{ruleText})',
+    tooltipProtected: 'History Guard: Protected (History recording disabled{ruleText})',
     tooltipProtectedRuleLabel: ' - rule: {pattern}',
-    tooltipTraceFree: 'HistGuard: Trace-free mode active (Global history tracking paused)',
-    tooltipRecording: 'HistGuard: Recording history (Click icon to protect)',
-    tooltipInternal: 'HistGuard: Browser internal page',
-    tooltipPaused: 'HistGuard: Protection paused (History is being recorded)'
+    tooltipTraceFree: 'History Guard: Trace-free mode active (Global history tracking paused)',
+    tooltipRecording: 'History Guard: Recording history (Click icon to protect)',
+    tooltipInternal: 'History Guard: Browser internal page',
+    tooltipPaused: 'History Guard: Protection paused (History is being recorded)'
   }
 };

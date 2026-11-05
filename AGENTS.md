@@ -1,12 +1,13 @@
-# HistGuard 开发者与智能体开发协作规范 (AGENTS.md)
+# History Guard 开发者与智能体开发协作规范 (AGENTS.md)
 
-本文档是 **HistGuard** 项目的核心架构规范、开发流程指南与 Agent 协作准则。任何在此代码库中进行特性开发、缺陷修复或重构的开发者与 AI Agent，均须严格遵守以下约定。
+本文档是 **History Guard** 项目的核心架构规范、开发流程指南与 Agent 协作准则。任何在此代码库中进行特性开发、缺陷修复或重构的开发者与 AI Agent，均须严格遵守以下约定（注：项目文件夹保持 `HistGuard` 不变，对外产品及项目名统一使用 `History Guard`）。
 
 ---
 
 ## 1. 项目定位与核心设计哲学
 
-* **项目名称**：HistGuard（浏览历史智能防护与隐私卫士）
+* **项目名称**：History Guard（浏览历史智能防护与隐私卫士）
+* **代码库目录**：HistGuard（工作区根目录保持不变）
 * **定位**：纯原生、双内核（Chromium MV3 / Gecko MV3）跨浏览器历史记录即时防护扩展。
 * **三大底线原则**：
   1. **零外部第三方依赖 (Zero-Dependency)**：严禁引入 Webpack/Vite/Rollup、Tailwind、Lodash、Axios、Jest 等任何运行时或构建打包库。保持纯原生 ESM、原生 DOM/CSS 与原生 Node.js 构建/测试。
@@ -87,7 +88,7 @@ HistGuard/
 
 ## 4. 标准开发与交付工作流 (Workflow SOP)
 
-为避免“版本号通胀（Version Inflation）”，HistGuard 严格区分 **“日常迭代开发”** 与 **“阶段性正式发版”** 两套流程：
+为避免“版本号通胀（Version Inflation）”，History Guard 严格区分 **“日常迭代开发”** 与 **“阶段性正式发版”** 两套流程：
 
 ```mermaid
 graph TD
@@ -106,7 +107,7 @@ graph TD
 1. **编码与适配**：修改业务逻辑与界面，确保逻辑纯粹、深浅主题兼容、12国语言对齐；
 2. **全量单测验证**：必须执行全量单测（`& "D:\nodejs\node.exe" --test tests/*.test.js`），确保 100% 通过（0 fail），涉及新特性必须补齐测试断言；
 3. **双端构建打包**：执行 `& "D:\nodejs\node.exe" build.js` 自动同步最新代码至 `dist/chrome` 与 `dist/firefox`，确保本地随时可用；
-4. **版本号与更新记录**：**版本号保持不变**，如有重要变动细节，在 [CHANGELOG.md](file:///e:/Workspace/HistGuard/CHANGELOG.md) 顶部的 `## [Unreleased]` 下简明追加；
+4. **版本号与更新记录**：**版本号保持不变**，如有重要变动细节，在 [CHANGELOG.md](./CHANGELOG.md) 顶部的 `## [Unreleased]` 下简明追加；
 5. **标准 Git 提交**：使用标准约定式提交（Conventional Commits），例如：
    `fix(chrome): fix today hits remaining zero via atomic storage write`
 

@@ -27,6 +27,7 @@ import {
 
 // DOM 元素引用
 const elements = {
+  popupContainer: document.getElementById('popup-container'),
   silentDropdown: document.getElementById('silent-dropdown'),
   btnSilentMode: document.getElementById('btn-silent-mode'),
   silentText: document.getElementById('silent-text'),
@@ -162,11 +163,53 @@ function formatRemainingTime(ms) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+/**
+ * 动态同步下拉菜单展开时的 Popup 页面高度
+ * 当页面自身高度较短（如浏览器内部页面）且展开下拉菜单时，主动撑开容器高度，
+ * 避免超出 Firefox / Chromium Popup 初始视口高度而产生滚动条。
+ */
+function syncDropdownPopupHeight() {
+  if (!elements.popupContainer) return;
+
+  const isPauseOpen = elements.pauseDropdown && elements.pauseDropdown.classList.contains('open');
+  const isSilentOpen = elements.silentDropdown && elements.silentDropdown.classList.contains('open');
+
+  let activeMenu = null;
+  if (isPauseOpen && elements.pauseDropdownMenu && !elements.pauseDropdownMenu.classList.contains('hidden')) {
+    activeMenu = elements.pauseDropdownMenu;
+  } else if (isSilentOpen && elements.silentDropdownMenu && !elements.silentDropdownMenu.classList.contains('hidden')) {
+    activeMenu = elements.silentDropdownMenu;
+  }
+
+  if (activeMenu) {
+    elements.popupContainer.classList.add('dropdown-open');
+
+    // 精准计算下拉菜单完全展示所需的最低高度，避免任何滚动条产生
+    const parent = activeMenu.parentElement;
+    if (parent) {
+      const containerRect = elements.popupContainer.getBoundingClientRect();
+      const parentRect = parent.getBoundingClientRect();
+      const parentTopInContainer = parentRect.top - containerRect.top;
+      const menuTopInContainer = parentTopInContainer + parent.offsetHeight + 6;
+      const menuBottomInContainer = menuTopInContainer + activeMenu.offsetHeight;
+      const requiredHeight = Math.ceil(menuBottomInContainer + 14); // 底部保留 14px 安全边距
+
+      if (requiredHeight > 380) {
+        elements.popupContainer.style.minHeight = `${requiredHeight}px`;
+      }
+    }
+  } else {
+    elements.popupContainer.classList.remove('dropdown-open');
+    elements.popupContainer.style.minHeight = '';
+  }
+}
+
 function openSilentDropdown() {
   if (!elements.silentDropdownMenu || !elements.silentDropdown) return;
   elements.silentDropdown.classList.add('open');
   elements.silentDropdownMenu.classList.remove('hidden');
   elements.btnSilentMode.setAttribute('aria-expanded', 'true');
+  syncDropdownPopupHeight();
 }
 
 function closeSilentDropdown() {
@@ -174,6 +217,7 @@ function closeSilentDropdown() {
   elements.silentDropdown.classList.remove('open');
   elements.silentDropdownMenu.classList.add('hidden');
   elements.btnSilentMode.setAttribute('aria-expanded', 'false');
+  syncDropdownPopupHeight();
 }
 
 function toggleSilentDropdown() {
@@ -192,6 +236,7 @@ function openPauseDropdown() {
   elements.pauseDropdown.classList.add('open');
   elements.pauseDropdownMenu.classList.remove('hidden');
   elements.btnPauseMode.setAttribute('aria-expanded', 'true');
+  syncDropdownPopupHeight();
 }
 
 function closePauseDropdown() {
@@ -199,6 +244,7 @@ function closePauseDropdown() {
   elements.pauseDropdown.classList.remove('open');
   elements.pauseDropdownMenu.classList.add('hidden');
   elements.btnPauseMode.setAttribute('aria-expanded', 'false');
+  syncDropdownPopupHeight();
 }
 
 function togglePauseDropdown() {
@@ -450,7 +496,7 @@ function selectRuleCapsule(candidate) {
  * @param {Array<Object>} candidates
  */
 function renderCapsuleGroup(container, candidates) {
-  container.innerHTML = '';
+  container.replaceChildren();
   if (!candidates || candidates.length === 0) {
     const emptyEl = document.createElement('div');
     emptyEl.className = 'capsule-sub';
@@ -478,28 +524,52 @@ function renderCapsuleGroup(container, candidates) {
     const matchesTitle = t('popup.matchesCount', { count });
     const countText = t('popup.itemsCount', { count });
 
-    let statusTagHtml = '';
+    const capsuleMain = document.createElement('div');
+    capsuleMain.className = 'capsule-main';
+
+    const patternSpan = document.createElement('span');
+    patternSpan.className = 'capsule-pattern';
+    patternSpan.title = cand.rule;
+    patternSpan.textContent = cand.rule;
+
+    const capsuleSub = document.createElement('span');
+    capsuleSub.className = 'capsule-sub';
+
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = label;
+
+    const dotSpan = document.createElement('span');
+    dotSpan.textContent = '·';
+
+    const descSpan = document.createElement('span');
+    descSpan.textContent = cand.isCovered
+      ? (cand.coveringRule ? t('popup.badgeCoveredDetail', { rule: cand.coveringRule.pattern }) : t('popup.coveredByParent'))
+      : description;
+
+    capsuleSub.append(labelSpan, dotSpan, descSpan);
+    capsuleMain.append(patternSpan, capsuleSub);
+
+    let statusTagEl;
     if (cand.isCovered) {
       const coverHint = t('popup.badgeCoveredDetail', { rule: cand.coveringRule?.pattern || '' });
-      statusTagHtml = `<div class="capsule-status-tag tag-covered" title="${coverHint}">${t('popup.badgeCovered')}</div>`;
+      statusTagEl = document.createElement('div');
+      statusTagEl.className = 'capsule-status-tag tag-covered';
+      statusTagEl.title = coverHint;
+      statusTagEl.textContent = t('popup.badgeCovered');
       capsuleEl.title = coverHint;
     } else if (cand.isExactMatch) {
-      statusTagHtml = `<div class="capsule-status-tag tag-in-list" title="${matchesTitle}">${t('popup.badgeInList')}</div>`;
+      statusTagEl = document.createElement('div');
+      statusTagEl.className = 'capsule-status-tag tag-in-list';
+      statusTagEl.title = matchesTitle;
+      statusTagEl.textContent = t('popup.badgeInList');
     } else {
-      statusTagHtml = `<div class="capsule-count" title="${matchesTitle}">${countText}</div>`;
+      statusTagEl = document.createElement('div');
+      statusTagEl.className = 'capsule-count';
+      statusTagEl.title = matchesTitle;
+      statusTagEl.textContent = countText;
     }
 
-    capsuleEl.innerHTML = `
-      <div class="capsule-main">
-        <span class="capsule-pattern" title="${cand.rule}">${cand.rule}</span>
-        <span class="capsule-sub">
-          <span>${label}</span>
-          <span>·</span>
-          <span>${cand.isCovered ? (cand.coveringRule ? t('popup.badgeCoveredDetail', { rule: cand.coveringRule.pattern }) : t('popup.coveredByParent')) : description}</span>
-        </span>
-      </div>
-      ${statusTagHtml}
-    `;
+    capsuleEl.replaceChildren(capsuleMain, statusTagEl);
 
     capsuleEl.addEventListener('click', () => {
       // 临时关闭防护期间或已被上级规则覆盖时禁止交互

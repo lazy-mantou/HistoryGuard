@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "HistGuard - 履歴管理＆自動プライバシー保護",
+    "message": "History Guard - 履歴管理＆自動プライバシー保護",
     "description": "The name of the extension"
   },
   "appDesc": {
@@ -8,7 +8,7 @@
     "description": "The description of the extension"
   },
   "actionTitle": {
-    "message": "HistGuard プライバシーガード",
+    "message": "History Guard プライバシーガード",
     "description": "The default title for the toolbar action button"
   }
 }

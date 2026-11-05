@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'Panel de control HistGuard',
+    name: 'History Guard',
+    consoleTitle: 'Panel de control History Guard',
     consoleSubtitle: 'Gestión inteligente del historial y protección automática de la privacidad'
   },
   popup: {
-    title: 'HistGuard - Gestión del historial',
+    title: 'History Guard - Gestión del historial',
     silentBtn: 'Sin rastro 30 min',
     silentBtnParam: 'Sin rastro {duration}',
     silentBtnActive: '{time} Sin rastro',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: 'Regla de protección [{rule}] eliminada'
   },
   options: {
-    title: 'HistGuard - Panel de control y gestor de historial',
-    brandTitle: 'Panel de control HistGuard',
+    title: 'History Guard - Panel de control y gestor de historial',
+    brandTitle: 'Panel de control History Guard',
     brandSubtitle: 'Gestión inteligente del historial y protección automática de la privacidad',
     statActiveRules: 'Reglas activas',
     statTotalHits: 'Visitas protegidas',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: 'Vaciando historial... {count} elementos eliminados',
     emptyHistoryStart: 'Escriba una búsqueda o seleccione un rango de tiempo arriba',
     emptyHistoryNoMatch: 'No se encontraron registros de historial coincidentes',
+    historyNotSupportedNotice: 'La API browser.history no es compatible con navegadores móviles. Esta función solo está disponible en navegadores de escritorio.',
     loadMoreBtn: 'Cargar siguiente lote ({count} elementos)...',
     loadMoreLoading: 'Recuperando historial...',
     noMoreHint: '—— Todos los registros coincidentes cargados ——',
@@ -219,7 +220,7 @@ export default {
     chunk30: '30 elementos/lote',
     chunk50: '50 elementos/lote',
     chunkWarningTitle: '⚠️ Advertencia: Modificar límite de concurrencia',
-    chunkWarningDesc: '¡No modifiques este ajuste a menos que sea estrictamente necesario! HistGuard usa "Adaptación automática" optimizada. Cambiarlo puede causar:',
+    chunkWarningDesc: '¡No modifiques este ajuste a menos que sea estrictamente necesario! History Guard usa "Adaptación automática" optimizada. Cambiarlo puede causar:',
     chunkWarningIssue1: 'Bloqueo en Firefox: Places SQLite utiliza bloqueo de escritura única. Una concurrencia alta puede bloquear la base de datos y congelar el navegador.',
     chunkWarningIssue2: 'Sobrecarga y tirones: La concurrencia excesiva satura el disco y la CPU, provocando tirones o congelamientos al navegar por la web.',
     chunkWarningRecommendation: 'Recomendamos encarecidamente mantener "Adaptación automática" para un equilibrio perfecto entre velocidad y estabilidad.',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} veces'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: Protegido (Registro de historial deshabilitado{ruleText})',
+    tooltipProtected: 'History Guard: Protegido (Registro de historial deshabilitado{ruleText})',
     tooltipProtectedRuleLabel: ' - regla: {pattern}',
-    tooltipTraceFree: 'HistGuard: Modo sin rastro activo (Registro global pausado)',
-    tooltipRecording: 'HistGuard: Registrando historial (Clic para proteger)',
-    tooltipInternal: 'HistGuard: Página interna del navegador',
-    tooltipPaused: 'HistGuard: Protección pausada (El historial se está grabando)'
+    tooltipTraceFree: 'History Guard: Modo sin rastro activo (Registro global pausado)',
+    tooltipRecording: 'History Guard: Registrando historial (Clic para proteger)',
+    tooltipInternal: 'History Guard: Página interna del navegador',
+    tooltipPaused: 'History Guard: Protección pausada (El historial se está grabando)'
   }
 };

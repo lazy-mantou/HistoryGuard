@@ -1,4 +1,4 @@
-# 🛡️ HistGuard - Intelligent Cross-Browser History Protection & Privacy Guardian
+# 🛡️ History Guard - Intelligent Cross-Browser History Protection & Privacy Guardian
 
 <p align="center">
   <b>English</b> •
@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License MIT" />
 </p>
 
-> **HistGuard** is a pure-native, cross-browser (Chrome, Edge, Brave, and Firefox) history protection and privacy defense extension. Engineered with a unified **Browser Adapter Pattern**, it decouples browser internals across Chromium and Gecko engines. HistGuard provides intelligent zero-input rule generation via URL hierarchy parsing, sub-millisecond instant history wiping upon visit, anti-deadlock Places SQLite flow control, and a one-click 30-minute temporary incognito mode.
+> **History Guard** is a pure-native, cross-browser (Chrome, Edge, Brave, and Firefox) history protection and privacy defense extension. Engineered with a unified **Browser Adapter Pattern**, it decouples browser internals across Chromium and Gecko engines. History Guard provides intelligent zero-input rule generation via URL hierarchy parsing, sub-millisecond instant history wiping upon visit, anti-deadlock Places SQLite flow control, and a one-click 30-minute temporary incognito mode.
 
 ---
 
@@ -85,7 +85,7 @@ HistGuard/
 ## 🚀 Build & Installation
 
 ### 1. Build the Extension
-HistGuard adheres strictly to a **zero third-party dependency** standard. It builds using native Node.js—**no** `npm install` required:
+History Guard adheres strictly to a **zero third-party dependency** standard. It builds using native Node.js—**no** `npm install` required:
 ```bash
 node build.js
 # Or via npm

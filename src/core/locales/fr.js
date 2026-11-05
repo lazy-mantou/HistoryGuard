@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'Tableau de bord HistGuard',
+    name: 'History Guard',
+    consoleTitle: 'Tableau de bord History Guard',
     consoleSubtitle: 'Gestion intelligente de l\'historique et protection automatique de la vie privée'
   },
   popup: {
-    title: 'HistGuard - Gestionnaire d\'historique',
+    title: 'History Guard - Gestionnaire d\'historique',
     silentBtn: 'Sans trace 30 min',
     silentBtnParam: 'Sans trace {duration}',
     silentBtnActive: '{time} Sans trace',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: 'Règle de protection [{rule}] supprimée'
   },
   options: {
-    title: 'HistGuard - Gestionnaire d\'historique et tableau de bord',
-    brandTitle: 'Tableau de bord HistGuard',
+    title: 'History Guard - Gestionnaire d\'historique et tableau de bord',
+    brandTitle: 'Tableau de bord History Guard',
     brandSubtitle: 'Gestion intelligente de l\'historique et protection automatique de la vie privée',
     statActiveRules: 'Règles actives',
     statTotalHits: 'Visites protégées',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: 'Vidage de l\'historique... {count} éléments supprimés',
     emptyHistoryStart: 'Saisissez une recherche ou sélectionnez une période ci-dessus',
     emptyHistoryNoMatch: 'Aucun enregistrement d\'historique correspondant trouvé',
+    historyNotSupportedNotice: 'L\'API browser.history n\'est pas prise en charge sur les navigateurs mobiles. Cette fonctionnalité est disponible uniquement sur les navigateurs de bureau.',
     loadMoreBtn: 'Charger le lot suivant ({count} éléments)...',
     loadMoreLoading: 'Récupération de l\'historique...',
     noMoreHint: '—— Tous les enregistrements correspondants sont chargés ——',
@@ -219,7 +220,7 @@ export default {
     chunk30: '30 éléments/lot',
     chunk50: '50 éléments/lot',
     chunkWarningTitle: '⚠️ Avertissement : Modifier la limite de simultanéité',
-    chunkWarningDesc: 'Ne modifiez pas ce paramètre sauf absolue nécessité ! HistGuard utilise par défaut le mode adaptatif automatique. La modification peut provoquer :',
+    chunkWarningDesc: 'Ne modifiez pas ce paramètre sauf absolue nécessité ! History Guard utilise par défaut le mode adaptatif automatique. La modification peut provoquer :',
     chunkWarningIssue1: 'Blocage de base Firefox : Places SQLite utilise un verrou d’écriture unique. Une simultanéité trop forte peut bloquer la base et figer le navigateur.',
     chunkWarningIssue2: 'Surcharges et saccades : Une concurrence excessive fait grimper les E/S disque, entraînant des gels temporaires pendant la navigation.',
     chunkWarningRecommendation: 'Nous vous conseillons vivement de conserver le mode « Adaptatif automatique » pour un équilibre idéal entre vitesse et stabilité.',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} fois'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard : Protégé (Enregistrement de l\'historique désactivé{ruleText})',
+    tooltipProtected: 'History Guard : Protégé (Enregistrement de l\'historique désactivé{ruleText})',
     tooltipProtectedRuleLabel: ' - règle : {pattern}',
-    tooltipTraceFree: 'HistGuard : Mode sans trace actif (Enregistrement global en pause)',
-    tooltipRecording: 'HistGuard : Enregistrement de l\'historique (Cliquer pour protéger)',
-    tooltipInternal: 'HistGuard : Page interne du navigateur',
-    tooltipPaused: 'HistGuard : Protection en pause (L\'historique est enregistré)'
+    tooltipTraceFree: 'History Guard : Mode sans trace actif (Enregistrement global en pause)',
+    tooltipRecording: 'History Guard : Enregistrement de l\'historique (Cliquer pour protéger)',
+    tooltipInternal: 'History Guard : Page interne du navigateur',
+    tooltipPaused: 'History Guard : Protection en pause (L\'historique est enregistré)'
   }
 };

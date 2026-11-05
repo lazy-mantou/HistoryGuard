@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'Панель управления HistGuard',
+    name: 'History Guard',
+    consoleTitle: 'Панель управления History Guard',
     consoleSubtitle: 'Умное управление историей и автоматическая защита конфиденциальности'
   },
   popup: {
-    title: 'HistGuard - Защита истории',
+    title: 'History Guard - Защита истории',
     silentBtn: 'Без следов 30 мин',
     silentBtnParam: 'Без следов {duration}',
     silentBtnActive: '{time} Без следов',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: 'Правило защиты [{rule}] удалено'
   },
   options: {
-    title: 'HistGuard - Менеджер истории и панель управления',
-    brandTitle: 'Панель управления HistGuard',
+    title: 'History Guard - Менеджер истории и панель управления',
+    brandTitle: 'Панель управления History Guard',
     brandSubtitle: 'Умное управление историей и автоматическая защита конфиденциальности',
     statActiveRules: 'Активные правила',
     statTotalHits: 'Защищенные визиты',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: 'Очистка истории... Удалено {count} записей',
     emptyHistoryStart: 'Введите поисковый запрос или выберите период времени выше',
     emptyHistoryNoMatch: 'Совпадающих записей истории не найдено',
+    historyNotSupportedNotice: 'API browser.history не поддерживается в мобильных браузерах. Эта функция доступна только в браузерах для настольных ПК.',
     loadMoreBtn: 'Загрузить следующую партию ({count} шт.)...',
     loadMoreLoading: 'Получение данных истории...',
     noMoreHint: '—— Все совпадающие записи загружены ——',
@@ -219,7 +220,7 @@ export default {
     chunk30: '30 записей/пакет',
     chunk50: '50 записей/пакет',
     chunkWarningTitle: '⚠️ Предупреждение: изменение лимита параллелизма',
-    chunkWarningDesc: 'Не изменяйте этот параметр без крайней необходимости! HistGuard настроен на оптимальную работу в режиме «Автоадаптация». Изменение может повлечь:',
+    chunkWarningDesc: 'Не изменяйте этот параметр без крайней необходимости! History Guard настроен на оптимальную работу в режиме «Автоадаптация». Изменение может повлечь:',
     chunkWarningIssue1: 'Блокировка базы Firefox: Places SQLite использует монопольную блокировку записи. Высокий параллелизм приводит к ошибкам блокировки и зависанию браузера.',
     chunkWarningIssue2: 'Нагрузка на систему и фризы: Чрезмерный параллелизм перегружает диск и очереди сообщений, вызывая просадку кадров при серфинге.',
     chunkWarningRecommendation: 'Настоятельно рекомендуем оставить «Автоадаптацию» для идеального баланса максимальной скорости и стабильности.',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} раз'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: Защищено (Запись истории отключена{ruleText})',
+    tooltipProtected: 'History Guard: Защищено (Запись истории отключена{ruleText})',
     tooltipProtectedRuleLabel: ' - правило: {pattern}',
-    tooltipTraceFree: 'HistGuard: Режим без следов активен (Запись истории приостановлена)',
-    tooltipRecording: 'HistGuard: Запись истории (Нажмите для защиты)',
-    tooltipInternal: 'HistGuard: Внутренняя страница браузера',
-    tooltipPaused: 'HistGuard: Защита приостановлена (История записывается)'
+    tooltipTraceFree: 'History Guard: Режим без следов активен (Запись истории приостановлена)',
+    tooltipRecording: 'History Guard: Запись истории (Нажмите для защиты)',
+    tooltipInternal: 'History Guard: Внутренняя страница браузера',
+    tooltipPaused: 'History Guard: Защита приостановлена (История записывается)'
   }
 };

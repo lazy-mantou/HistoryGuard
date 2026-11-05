@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'HistGuard ダッシュボード',
+    name: 'History Guard',
+    consoleTitle: 'History Guard ダッシュボード',
     consoleSubtitle: '軽量スマート履歴管理＆全自動プライバシー保護'
   },
   popup: {
-    title: 'HistGuard - 履歴保護',
+    title: 'History Guard - 履歴保護',
     silentBtn: '30分間痕跡なし',
     silentBtnParam: '{duration}痕跡なし',
     silentBtnActive: '{time} 痕跡なし',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: '保護ルール [{rule}] を削除しました'
   },
   options: {
-    title: 'HistGuard - 履歴管理＆ダッシュボード',
-    brandTitle: 'HistGuard ダッシュボード',
+    title: 'History Guard - 履歴管理＆ダッシュボード',
+    brandTitle: 'History Guard ダッシュボード',
     brandSubtitle: '軽量スマート履歴管理＆全自動プライバシー保護',
     statActiveRules: '有効なルール',
     statTotalHits: '保護されたアクセス',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: '履歴を消去中... {count} 件削除済み',
     emptyHistoryStart: 'キーワードを入力するか、上の期間を選択して検索を開始してください',
     emptyHistoryNoMatch: '一致する履歴レコードが見つかりません',
+    historyNotSupportedNotice: 'モバイル版ブラウザでは browser.history API がサポートされていません。この機能はデスクトップ版ブラウザでのみ利用可能です。',
     loadMoreBtn: '次のバッチを読み込む ({count} 件)...',
     loadMoreLoading: '履歴データを取得中...',
     noMoreHint: '—— 一致するすべての履歴を読み込みました ——',
@@ -219,7 +220,7 @@ export default {
     chunk30: '30 件/バッチ',
     chunk50: '50 件/バッチ',
     chunkWarningTitle: '⚠️ 並行処理制限の変更に関する警告',
-    chunkWarningDesc: '特別な理由がない限り、この設定を変更しないでください！HistGuard は「自動適応」で最適化されています。変更すると以下の問題が発生する可能性があります：',
+    chunkWarningDesc: '特別な理由がない限り、この設定を変更しないでください！History Guard は「自動適応」で最適化されています。変更すると以下の問題が発生する可能性があります：',
     chunkWarningIssue1: 'Firefox DB ロック障害：Firefox の Places SQLite は単一書き込みロック機構を採用しています。並行数が高すぎると DB がロックされ、ブラウザがフリーズします。',
     chunkWarningIssue2: 'システム負荷とカクつき：並行数が多すぎるとディスク I/O が急上昇し、通常のウェブブラウジング中にコマ落ちや一時的な停止が発生する恐れがあります。',
     chunkWarningRecommendation: '圧倒的な処理速度と確実な安定性を両立するため、「自動適応」のまま使用することを強く推奨します。',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} 回'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: 保護中（履歴の記録を停止{ruleText}）',
+    tooltipProtected: 'History Guard: 保護中（履歴の記録を停止{ruleText}）',
     tooltipProtectedRuleLabel: ' - ルール: {pattern}',
-    tooltipTraceFree: 'HistGuard: 痕跡なしモード有効（全履歴の追跡を一時停止）',
-    tooltipRecording: 'HistGuard: 履歴を記録中（アイコンをクリックして保護）',
-    tooltipInternal: 'HistGuard: ブラウザ内部ページ（記録対象外）',
-    tooltipPaused: 'HistGuard：保護は一時停止中です（履歴は通常通り記録されます）'
+    tooltipTraceFree: 'History Guard: 痕跡なしモード有効（全履歴の追跡を一時停止）',
+    tooltipRecording: 'History Guard: 履歴を記録中（アイコンをクリックして保護）',
+    tooltipInternal: 'History Guard: ブラウザ内部ページ（記録対象外）',
+    tooltipPaused: 'History Guard：保護は一時停止中です（履歴は通常通り記録されます）'
   }
 };

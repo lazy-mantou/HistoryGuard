@@ -5,6 +5,24 @@
 ---
 
 ## [Unreleased]
+- **品牌名称全面升级为 History Guard (Brand Name Renaming)**：
+  - 将扩展显示名称在全部 14 种语言的 `_locales/*/messages.json`（`appName` 与 `actionTitle`）中统一升级为 `History Guard`；
+  - 同步更新 Popup 弹窗及 Options 控制台的品牌标识与标题、全 12 种语言字典矩阵、商店发布文档（`Introduction.md`、`Permission.md`、各语言 `description.md` 及 250 字符内 `Overview.md`）；
+  - 严格保持本地存储键（`histguard_rules` 等）向后兼容性，确保老用户平滑升级；
+  - 全量单元测试用例对齐，238 项自动化测试 100% 通过（238 pass, 0 fail）。
+- **Firefox AMO 提审合规配置 (Data Collection Consent & Strict Min Version)**：
+  - 针对 Mozilla 审核平台最新实施的内建数据收集披露规范，在 `manifest.firefox.json` 的 `browser_specific_settings.gecko` 中补充 `data_collection_permissions: { "required": ["none"] }`，合规声明扩展程序绝不采集、存储或向外部传输任何用户数据（100% 纯本地离线运行）；
+  - 优化 `gecko.strict_min_version` 提升至 `"140.0"`、`gecko_android.strict_min_version` 提升至 `"142.0"`，消除 AMO 关于 `background.type: module` 与 `data_collection_permissions` 的最低支持版本警告。
+- **全面清除 innerHTML 消除 AMO 审核安全警告 (Zero Unsafe innerHTML)**：
+  - 重构 `src/popup/popup.js` 与 `src/options/options.js` 中的 15 处动态 DOM 渲染与赋值，全面改用纯原生安全 DOM API（`replaceChildren`、`createElement`、`textContent`、`append` 以及对趋势图的 `DOMParser.parseFromString(..., 'image/svg+xml')`）；
+  - 按钮与状态指示的 loading 态切换采用标准 `textContent`；
+  - 零外部依赖，保持 100% 界面视觉与交互一致性，全量 238 项单元测试保持全绿通过。
+- **Firefox / Chromium 下拉菜单高度自适应撑开修复 (Popup Dropdown Auto-Expand)**：
+  - 修复在短内容页面（如浏览器内部页面 `moz-extension://`、`about:blank`）下展开暂停防护或临时无痕下拉菜单时，因绝对定位菜单超出 Popup 初始计算高度而触发浏览器侧边纵向滚动条的问题；
+  - 采用现代 CSS `:has()` 响应式选择器与 `.popup-container.dropdown-open` 机制，结合 JS 精准计算下拉菜单的实际垂直占用（`syncDropdownPopupHeight`），在下拉菜单展开时主动撑开容器常规流高度（至 380px+），促使 Gecko / Chromium 原生窗口观察器自动调整 Popup 窗口高度；下拉菜单收起时即时无痕回退初始紧凑高度，彻底消除多余滚动条。
+- **Firefox 移动端架构约束适配与桌面端专属定位 (Firefox Desktop Focus & History API Guard)**：
+  - 适配 Mozilla GeckoView 移动端核心约束：因 Firefox for Android 官方架构暂未实现 `browser.history` WebExtension API，从 `manifest.firefox.json` 中移除 `gecko_android` 节点，使 AMO 商店精准声明为“仅支持桌面端 Firefox”，防止移动端误装；
+  - 适配器层与接口基类新增 `browserApi.history.isSupported()` 环境嗅探，并在控制台提供全 12 种主流语言的友好说明卡片，杜绝底层未捕获异常与误导性报错。
 
 ---
 

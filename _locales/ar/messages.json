@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "HistGuard - إدارة سجل التصفح وحماية الخصوصية",
+    "message": "History Guard - إدارة سجل التصفح وحماية الخصوصية",
     "description": "The name of the extension"
   },
   "appDesc": {
@@ -8,7 +8,7 @@
     "description": "The description of the extension"
   },
   "actionTitle": {
-    "message": "HistGuard حارس الخصوصية",
+    "message": "History Guard حارس الخصوصية",
     "description": "The default title for the toolbar action button"
   }
 }

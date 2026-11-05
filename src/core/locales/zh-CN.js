@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'HistGuard 控制台',
+    name: 'History Guard',
+    consoleTitle: 'History Guard 控制台',
     consoleSubtitle: '轻量级跨浏览器历史记录智能管理与全自动隐私防护'
   },
   popup: {
-    title: 'HistGuard - 历史记录管理',
+    title: 'History Guard - 历史记录管理',
     silentBtn: '临时无痕 30m',
     silentBtnParam: '临时无痕 {duration}',
     silentBtnActive: '{time} 无痕中',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: '已移除防护规则 [{rule}]'
   },
   options: {
-    title: 'HistGuard - 历史记录管理与控制台',
-    brandTitle: 'HistGuard 控制台',
+    title: 'History Guard - 历史记录管理与控制台',
+    brandTitle: 'History Guard 控制台',
     brandSubtitle: '轻量级跨浏览器历史记录智能管理与全自动隐私防护',
     statActiveRules: '启用规则',
     statTotalHits: '累计防护',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: '正在清空中... 已清理 {count} 条历史',
     emptyHistoryStart: '输入搜索词开始检索，或选择上方时间范围查看历史',
     emptyHistoryNoMatch: '未找到符合条件的历史记录',
+    historyNotSupportedNotice: '当前移动端浏览器未开放系统历史记录 API，该功能仅支持桌面版浏览器。',
     loadMoreBtn: '加载下一批历史记录 ({count} 条)...',
     loadMoreLoading: '正在检索历史数据...',
     noMoreHint: '—— 已加载全部匹配的历史记录 ——',
@@ -219,10 +220,10 @@ export default {
     chunk30: '30 条/切片',
     chunk50: '50 条/切片',
     chunkWarningTitle: '⚠️ 修改并发节流限制警告',
-    chunkWarningDesc: '非必要请勿修改此设置！HistGuard 默认采用“智能自适应”，已针对不同浏览器底层架构进行了极致调优。手动更改并发数可能导致以下问题：',
+    chunkWarningDesc: '非必要请勿修改此设置！History Guard 默认采用“智能自适应”，已针对不同浏览器底层架构进行了极致调优。手动更改并发数可能导致以下问题：',
     chunkWarningIssue1: 'Firefox 数据库锁死：Firefox Places SQLite 采用单写锁机制。并发过高极易引发 database is locked 报错，导致浏览器严重卡顿甚至无响应。',
     chunkWarningIssue2: '性能消耗与卡顿：过高并发会导致浏览器进程与磁盘 I/O 瞬间飙高，在进行大批量删除时可能引起正常网页浏览掉帧或短暂假死。',
-    chunkWarningRecommendation: '强烈建议保持“智能自适应”，HistGuard 会自动匹配当前浏览器的最佳性能与稳定性。',
+    chunkWarningRecommendation: '强烈建议保持“智能自适应”，History Guard 会自动匹配当前浏览器的最佳性能与稳定性。',
     chunkWarningBtnKeep: '保持智能自适应 (推荐)',
     chunkWarningBtnProceed: '仍要修改',
     toastChunkAutoRestored: '已恢复智能自适应内核并发 (推荐)',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} 次'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: 当前页面处于防护中 (不记录历史{ruleText})',
+    tooltipProtected: 'History Guard: 当前页面处于防护中 (不记录历史{ruleText})',
     tooltipProtectedRuleLabel: ' - 规则: {pattern}',
-    tooltipTraceFree: 'HistGuard: 临时无痕模式中 (全局不记录历史)',
-    tooltipRecording: 'HistGuard: 正常记录历史 (点击图标可开启防护)',
-    tooltipInternal: 'HistGuard: 浏览器内部页面 (不可记录)',
-    tooltipPaused: 'HistGuard: 防护已暂停 (不拦截历史记录)'
+    tooltipTraceFree: 'History Guard: 临时无痕模式中 (全局不记录历史)',
+    tooltipRecording: 'History Guard: 正常记录历史 (点击图标可开启防护)',
+    tooltipInternal: 'History Guard: 浏览器内部页面 (不可记录)',
+    tooltipPaused: 'History Guard: 防护已暂停 (不拦截历史记录)'
   }
 };

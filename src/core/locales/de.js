@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'HistGuard Dashboard',
+    name: 'History Guard',
+    consoleTitle: 'History Guard Dashboard',
     consoleSubtitle: 'Intelligente Verlaufsverwaltung & automatischer Schutz der Privatsphäre'
   },
   popup: {
-    title: 'HistGuard - Verlaufs-Manager',
+    title: 'History Guard - Verlaufs-Manager',
     silentBtn: '30 Min. spurenfrei',
     silentBtnParam: '{duration} spurenfrei',
     silentBtnActive: '{time} Spurenfrei',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: 'Schutzregel [{rule}] entfernt'
   },
   options: {
-    title: 'HistGuard - Verlauf-Manager & Dashboard',
-    brandTitle: 'HistGuard Dashboard',
+    title: 'History Guard - Verlauf-Manager & Dashboard',
+    brandTitle: 'History Guard Dashboard',
     brandSubtitle: 'Intelligente Verlaufsverwaltung & automatischer Schutz der Privatsphäre',
     statActiveRules: 'Aktive Regeln',
     statTotalHits: 'Geschützte Besuche',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: 'Gesamter Verlauf wird gelöscht... {count} Einträge bereinigt',
     emptyHistoryStart: 'Geben Sie einen Suchbegriff ein oder wählen Sie oben einen Zeitraum aus',
     emptyHistoryNoMatch: 'Keine übereinstimmenden Verlaufseinträge gefunden',
+    historyNotSupportedNotice: 'Die browser.history-API wird auf mobilen Browsern nicht unterstützt. Diese Funktion ist nur auf Desktop-Browsern verfügbar.',
     loadMoreBtn: 'Nächsten Stapel laden ({count} Einträge)...',
     loadMoreLoading: 'Verlaufsdaten werden abgerufen...',
     noMoreHint: '—— Alle übereinstimmenden Einträge geladen ——',
@@ -219,7 +220,7 @@ export default {
     chunk30: '30 Einträge/Stapel',
     chunk50: '50 Einträge/Stapel',
     chunkWarningTitle: '⚠️ Warnung: Parallelitätslimit ändern',
-    chunkWarningDesc: 'Ändern Sie diese Einstellung nur bei dringendem Bedarf! HistGuard ist im Modus „Automatisch adaptiv“ optimal abgestimmt. Eine manuelle Änderung kann Folgendes bewirken:',
+    chunkWarningDesc: 'Ändern Sie diese Einstellung nur bei dringendem Bedarf! History Guard ist im Modus „Automatisch adaptiv“ optimal abgestimmt. Eine manuelle Änderung kann Folgendes bewirken:',
     chunkWarningIssue1: 'Firefox-Datenbankblockade: Places SQLite nutzt eine Einzelschreibsperre. Zu hohe Parallelität führt leicht zu Sperrfehlern und Browser-Einfrieren.',
     chunkWarningIssue2: 'Hohe Last & Ruckler: Übermäßige Parallelität treibt Festplatten-I/O in die Höhe, was zu Rucklern beim normalen Surfen führen kann.',
     chunkWarningRecommendation: 'Wir empfehlen dringend, „Automatisch adaptiv“ beizubehalten, um maximale Geschwindigkeit und höchste Stabilität zu sichern.',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} Mal'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: Geschützt (Verlaufsaufzeichnung deaktiviert{ruleText})',
+    tooltipProtected: 'History Guard: Geschützt (Verlaufsaufzeichnung deaktiviert{ruleText})',
     tooltipProtectedRuleLabel: ' - Regel: {pattern}',
-    tooltipTraceFree: 'HistGuard: Spurenfreier Modus aktiv (Verlaufsaufzeichnung pausiert)',
-    tooltipRecording: 'HistGuard: Verlauf wird aufgezeichnet (Klicken zum Schützen)',
-    tooltipInternal: 'HistGuard: Interne Browserseite',
-    tooltipPaused: 'HistGuard: Schutz pausiert (Verlauf wird aufgezeichnet)'
+    tooltipTraceFree: 'History Guard: Spurenfreier Modus aktiv (Verlaufsaufzeichnung pausiert)',
+    tooltipRecording: 'History Guard: Verlauf wird aufgezeichnet (Klicken zum Schützen)',
+    tooltipInternal: 'History Guard: Interne Browserseite',
+    tooltipPaused: 'History Guard: Schutz pausiert (Verlauf wird aufgezeichnet)'
   }
 };

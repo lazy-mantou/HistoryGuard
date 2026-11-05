@@ -180,7 +180,7 @@ describe('i18n - t() 文本翻译与动态参数插值', () => {
   });
 
   it('能正确翻译一级与深层嵌套的字典键', () => {
-    assert.strictEqual(t('app.name'), 'HistGuard');
+    assert.strictEqual(t('app.name'), 'History Guard');
     assert.strictEqual(t('options.statActiveRules'), '启用规则');
   });
 
@@ -215,17 +215,17 @@ describe('i18n - t() 文本翻译与动态参数插值', () => {
 
   it('支持显式指定 lang 参数，无需切换全局语言状态即可按指定语言输出', () => {
     // 全局当前语言为 zh-CN
-    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'en'), 'HistGuard: Recording history (Click icon to protect)');
-    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'zh-CN'), 'HistGuard: 正常记录历史 (点击图标可开启防护)');
-    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'ja'), 'HistGuard: 履歴を記録中（アイコンをクリックして保護）');
-    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'ko'), 'HistGuard: 방문 기록 저장 중 (아이콘을 클릭하여 보호)');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'en'), 'History Guard: Recording history (Click icon to protect)');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'zh-CN'), 'History Guard: 正常记录历史 (点击图标可开启防护)');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'ja'), 'History Guard: 履歴を記録中（アイコンをクリックして保護）');
+    assert.strictEqual(t('toolbar.tooltipRecording', {}, 'ko'), 'History Guard: 방문 기록 저장 중 (아이콘을 클릭하여 보호)');
     
     // 测试带插值的规则提示
     const ruleLabelZh = t('toolbar.tooltipProtectedRuleLabel', { pattern: 'youtube.com' }, 'zh-CN');
-    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelZh }, 'zh-CN'), 'HistGuard: 当前页面处于防护中 (不记录历史 - 规则: youtube.com)');
+    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelZh }, 'zh-CN'), 'History Guard: 当前页面处于防护中 (不记录历史 - 规则: youtube.com)');
 
     const ruleLabelEn = t('toolbar.tooltipProtectedRuleLabel', { pattern: 'youtube.com' }, 'en');
-    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelEn }, 'en'), 'HistGuard: Protected (History recording disabled - rule: youtube.com)');
+    assert.strictEqual(t('toolbar.tooltipProtected', { ruleText: ruleLabelEn }, 'en'), 'History Guard: Protected (History recording disabled - rule: youtube.com)');
   });
 
   it('不存在的键应当直接安全回退返回 key 本身', () => {

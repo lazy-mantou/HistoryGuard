@@ -28,6 +28,7 @@ describe('adapters - IBrowserAdapter 抽象基类规范', () => {
 
   it('基类抽象方法未实现时应当抛出异常提示', async () => {
     const adapter = new IBrowserAdapter();
+    assert.throws(() => adapter.history.isSupported(), /must be implemented/);
     assert.throws(() => adapter.history.onVisited(), /must be implemented/);
     assert.throws(() => adapter.history.onVisitRemoved(), /must be implemented/);
     await assert.rejects(async () => adapter.history.search(), /must be implemented/);
@@ -57,6 +58,7 @@ describe('adapters - ChromiumAdapter 实现验证', () => {
     assert.strictEqual(adapter.name, 'chromium');
     assert.strictEqual(adapter.engine, 'chromium');
     assert.strictEqual(adapter.isFirefox, false);
+    assert.strictEqual(typeof adapter.history.isSupported, 'function');
     assert.strictEqual(typeof adapter.history.onVisited, 'function');
     assert.strictEqual(typeof adapter.history.onVisitRemoved, 'function');
     assert.strictEqual(typeof adapter.history.search, 'function');
@@ -161,6 +163,7 @@ describe('adapters - FirefoxAdapter 实现验证', () => {
     assert.strictEqual(adapter.name, 'firefox');
     assert.strictEqual(adapter.engine, 'gecko');
     assert.strictEqual(adapter.isFirefox, true);
+    assert.strictEqual(typeof adapter.history.isSupported, 'function');
     assert.strictEqual(typeof adapter.history.onVisited, 'function');
     assert.strictEqual(typeof adapter.history.onVisitRemoved, 'function');
     assert.strictEqual(typeof adapter.history.search, 'function');

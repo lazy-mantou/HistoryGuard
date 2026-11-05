@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "HistGuard - Pengelola Riwayat & Privasi",
+    "message": "History Guard - Pengelola Riwayat & Privasi",
     "description": "The name of the extension"
   },
   "appDesc": {
@@ -8,7 +8,7 @@
     "description": "The description of the extension"
   },
   "actionTitle": {
-    "message": "HistGuard Pelindung Privasi",
+    "message": "History Guard Pelindung Privasi",
     "description": "The default title for the toolbar action button"
   }
 }

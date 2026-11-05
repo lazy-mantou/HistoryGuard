@@ -5,12 +5,12 @@
 
 export default {
   app: {
-    name: 'HistGuard',
-    consoleTitle: 'HistGuard 管理控制台',
+    name: 'History Guard',
+    consoleTitle: 'History Guard 管理控制台',
     consoleSubtitle: '輕量級跨瀏覽器歷史紀錄智慧管理與全自動隱私防護'
   },
   popup: {
-    title: 'HistGuard - 歷史紀錄防護',
+    title: 'History Guard - 歷史紀錄防護',
     silentBtn: '30分鐘免記錄',
     silentBtnParam: '{duration}免記錄',
     silentBtnActive: '{time} 免記錄中',
@@ -74,8 +74,8 @@ export default {
     toastRuleRemoved: '已移除防護規則 [{rule}]'
   },
   options: {
-    title: 'HistGuard - 歷史紀錄智慧管理與控制台',
-    brandTitle: 'HistGuard 管理控制台',
+    title: 'History Guard - 歷史紀錄智慧管理與控制台',
+    brandTitle: 'History Guard 管理控制台',
     brandSubtitle: '輕量級跨瀏覽器歷史紀錄智慧管理與全自動隱私防護',
     statActiveRules: '啟用規則',
     statTotalHits: '防護次數',
@@ -113,6 +113,7 @@ export default {
     progressStreamCleaning: '正在全量出清歷史中... 已刪除 {count} 條',
     emptyHistoryStart: '請在上方輸入搜尋詞或選擇時間範圍',
     emptyHistoryNoMatch: '未找到匹配的歷史紀錄',
+    historyNotSupportedNotice: '目前行動端瀏覽器未開放系統歷史紀錄 API，該功能僅支援桌面版瀏覽器。',
     loadMoreBtn: '載入下一批 ({count} 條)...',
     loadMoreLoading: '正在檢索歷史資料...',
     noMoreHint: '—— 已載入全部匹配歷史紀錄 ——',
@@ -219,10 +220,10 @@ export default {
     chunk30: '30 條/批',
     chunk50: '50 條/批',
     chunkWarningTitle: '⚠️ 修改並發節流限制警告',
-    chunkWarningDesc: '非必要請勿修改此設定！HistGuard 預設採用「智能自適應」，已針對不同瀏覽器底層架構進行了極致調優。手動更改並發數可能導致以下問題：',
+    chunkWarningDesc: '非必要請勿修改此設定！History Guard 預設採用「智能自適應」，已針對不同瀏覽器底層架構進行了極致調優。手動更改並發數可能導致以下問題：',
     chunkWarningIssue1: 'Firefox 資料庫鎖死：Firefox 的 Places SQLite 採用單寫鎖機制。並發過高極易引發 database is locked 報錯，導致瀏覽器嚴重卡頓甚至無回應。',
     chunkWarningIssue2: '效能消耗與卡頓：過高並發會導致瀏覽器處理程序與磁碟 I/O 瞬間飆高，在進行大批量刪除時可能引起正常網頁瀏覽掉格或短暫假死。',
-    chunkWarningRecommendation: '強烈建議保持「智能自適應」，HistGuard 會自動匹配當前瀏覽器的最佳效能與穩定性。',
+    chunkWarningRecommendation: '強烈建議保持「智能自適應」，History Guard 會自動匹配當前瀏覽器的最佳效能與穩定性。',
     chunkWarningBtnKeep: '保持智能自適應 (推薦)',
     chunkWarningBtnProceed: '仍要修改',
     toastChunkAutoRestored: '已恢復智能自適應內核並發 (推薦)',
@@ -322,11 +323,11 @@ export default {
     statsRulesHitsUnit: '{count} 次'
   },
   toolbar: {
-    tooltipProtected: 'HistGuard: 當前頁面處於防護中 (不記錄歷史{ruleText})',
+    tooltipProtected: 'History Guard: 當前頁面處於防護中 (不記錄歷史{ruleText})',
     tooltipProtectedRuleLabel: ' - 規則: {pattern}',
-    tooltipTraceFree: 'HistGuard: 暫時無痕模式中 (全局不記錄歷史)',
-    tooltipRecording: 'HistGuard: 正常記錄歷史 (點擊圖示可開啟防護)',
-    tooltipInternal: 'HistGuard: 瀏覽器內部頁面 (不可記錄)',
-    tooltipPaused: 'HistGuard: 防護已暫停 (不攔截歷史記錄)'
+    tooltipTraceFree: 'History Guard: 暫時無痕模式中 (全局不記錄歷史)',
+    tooltipRecording: 'History Guard: 正常記錄歷史 (點擊圖示可開啟防護)',
+    tooltipInternal: 'History Guard: 瀏覽器內部頁面 (不可記錄)',
+    tooltipPaused: 'History Guard: 防護已暫停 (不攔截歷史記錄)'
   }
 };
