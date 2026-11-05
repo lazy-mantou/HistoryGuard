@@ -10,13 +10,9 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    name: Build, Package & GitHub Release
+  release:
+    name: Build, Release & Publish
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.VERSION }}
-      chrome_zip: ${{ steps.package.outputs.CHROME_ZIP }}
-      firefox_zip: ${{ steps.package.outputs.FIREFOX_ZIP }}
 
     steps:
       - name: Checkout Codebase
@@ -60,99 +56,53 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-  # ========================================================
-  # Chrome Web Store 自动发布 Job
-  # (仅当配置了 CHROME_CLIENT_ID 等 Secret 时自动触发)
-  # ========================================================
-  publish-chrome:
-    name: Publish to Chrome Web Store
-    needs: build-and-release
-    runs-on: ubuntu-latest
-    if: ${{ env.HAVE_CHROME_SECRET == 'true' }}
-    env:
-      HAVE_CHROME_SECRET: ${{ secrets.CHROME_CLIENT_ID != '' && secrets.CHROME_REFRESH_TOKEN != '' }}
-    steps:
-      - name: Download Artifacts
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Package Chrome ZIP
-        run: npm run package
-
-      - name: Upload & Publish to Chrome Web Store
+      # ========================================================
+      # Chrome Web Store 自动发布
+      # (仅当配置了 CHROME_CLIENT_ID 等 Secret 时执行，未配置自动安全跳过)
+      # ========================================================
+      - name: Publish to Chrome Web Store
+        if: env.CHROME_CLIENT_ID != '' && env.CHROME_REFRESH_TOKEN != ''
+        env:
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
         uses: mnao305/chrome-extension-upload@v5.0.0
         with:
-          file-name: ${{ needs.build-and-release.outputs.chrome_zip }}
+          file-name: ${{ steps.package.outputs.CHROME_ZIP }}
           app-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
           publish: true
 
-  # ========================================================
-  # Firefox AMO (Add-ons) 自动发布 Job
-  # (仅当配置了 FIREFOX_JWT_ISSUER 等 Secret 时自动触发)
-  # ========================================================
-  publish-firefox:
-    name: Publish to Firefox AMO
-    needs: build-and-release
-    runs-on: ubuntu-latest
-    if: ${{ env.HAVE_FIREFOX_SECRET == 'true' }}
-    env:
-      HAVE_FIREFOX_SECRET: ${{ secrets.FIREFOX_JWT_ISSUER != '' && secrets.FIREFOX_JWT_SECRET != '' }}
-    steps:
-      - name: Checkout Codebase
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Package Firefox ZIP
-        run: npm run package
-
-      - name: Upload & Sign on Firefox AMO
+      # ========================================================
+      # Firefox AMO (Add-ons) 自动发布
+      # (仅当配置了 FIREFOX_JWT_ISSUER 等 Secret 时执行，未配置自动安全跳过)
+      # ========================================================
+      - name: Publish to Firefox AMO
+        if: env.FIREFOX_JWT_ISSUER != '' && env.FIREFOX_JWT_SECRET != ''
+        env:
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
         uses: wpl/amo-upload-action@v1.0.3
         with:
           addon-id: ${{ secrets.FIREFOX_EXTENSION_ID }}
           jwt-issuer: ${{ secrets.FIREFOX_JWT_ISSUER }}
           jwt-secret: ${{ secrets.FIREFOX_JWT_SECRET }}
-          xpi: ${{ needs.build-and-release.outputs.firefox_zip }}
+          xpi: ${{ steps.package.outputs.FIREFOX_ZIP }}
 
-  # ========================================================
-  # Microsoft Edge Add-ons 自动发布 Job
-  # (仅当配置了 EDGE_PRODUCT_ID 等 Secret 时自动触发)
-  # ========================================================
-  publish-edge:
-    name: Publish to Microsoft Edge Add-ons
-    needs: build-and-release
-    runs-on: ubuntu-latest
-    if: ${{ env.HAVE_EDGE_SECRET == 'true' }}
-    env:
-      HAVE_EDGE_SECRET: ${{ secrets.EDGE_PRODUCT_ID != '' && secrets.EDGE_API_KEY != '' }}
-    steps:
-      - name: Checkout Codebase
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Package Chrome ZIP for Edge
-        run: npm run package
-
-      - name: Upload & Publish to Edge Add-ons
+      # ========================================================
+      # Microsoft Edge Add-ons 自动发布
+      # (仅当配置了 EDGE_PRODUCT_ID 等 Secret 时执行，未配置自动安全跳过)
+      # ========================================================
+      - name: Publish to Microsoft Edge Add-ons
+        if: env.EDGE_PRODUCT_ID != '' && env.EDGE_API_KEY != ''
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
         uses: wplasmeijer/edge-addon@v1.0.1
         with:
           product-id: ${{ secrets.EDGE_PRODUCT_ID }}
           client-id: ${{ secrets.EDGE_CLIENT_ID }}
           api-key: ${{ secrets.EDGE_API_KEY }}
           access-token-url: https://login.microsoftonline.com/${{ secrets.EDGE_TENANT_ID }}/oauth2/v2.0/token
-          zip-path: ${{ needs.build-and-release.outputs.chrome_zip }}
-
+          zip-path: ${{ steps.package.outputs.CHROME_ZIP }}

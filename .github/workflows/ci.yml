@@ -31,10 +31,15 @@ jobs:
 
       - name: Verify Build Artifacts
         run: |
-          test -f dist/chrome/manifest.json || { echo "Missing dist/chrome/manifest.json"; exit 1; }
-          test -f dist/firefox/manifest.json || { echo "Missing dist/firefox/manifest.json"; exit 1; }
-          echo "Build artifacts verified successfully!"
+          if [ ! -f dist/chrome/manifest.json ]; then
+            echo "Missing dist/chrome/manifest.json"
+            exit 1
+          fi
+          if [ ! -f dist/firefox/manifest.json ]; then
+            echo "Missing dist/firefox/manifest.json"
+            exit 1
+          fi
+          echo "Dual-kernel build artifacts verified successfully!"
 
       - name: Verify Packaging & Version Consistency
         run: npm run package
-

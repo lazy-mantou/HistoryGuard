@@ -454,13 +454,20 @@ export async function checkAndResumePendingCleanJob(delayMs = 2500) {
     return null;
   } finally {
     backgroundCleaningState.isCleaning = false;
-    await clearPendingCleanJob();
+    try {
+      await clearPendingCleanJob();
+    } catch {
+      // 容错兜底：防止存储未就绪或已销毁时打崩清理生命周期
+    }
   }
 }
 
 // 5. 启动自愈机制：延迟检查并恢复因意外退出而中断的历史出清任务
-checkAndResumePendingCleanJob(2500).catch(err => {
-  console.error('[HistGuard BG] Error resuming pending clean job:', err);
-});
+// 仅在真实浏览器扩展环境中自启 (拥有真实 extension id)，避免单测导入时悬挂定时器引发异步未捕获异常
+if (typeof chrome !== 'undefined' && chrome?.runtime?.id) {
+  checkAndResumePendingCleanJob(2500).catch(err => {
+    console.error('[HistGuard BG] Error resuming pending clean job:', err);
+  });
+}
 
 console.log('[HistGuard BG] Background protection service ready (multi-channel interception, toolbar indicator, and clean engine).');
