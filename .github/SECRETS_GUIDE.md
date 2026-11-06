@@ -8,7 +8,7 @@
 
 ## 如何在 GitHub 仓库配置 Secrets
 
-1. 打开 GitHub 仓库页面：`https://github.com/lazy-mantou/HistGuard`
+1. 打开 GitHub 仓库页面：`https://github.com/lazy-mantou/HistoryGuard`
 2. 点击顶部导航栏的 **Settings**（设置）
 3. 在左侧菜单找到 **Secrets and variables** -> **Actions**
 4. 点击 **New repository secret** 按钮，分别添加以下变量：
