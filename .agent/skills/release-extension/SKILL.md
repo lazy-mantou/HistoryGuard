@@ -36,8 +36,9 @@ graph TD
 
 ### 步骤 2：执行自动化质量门禁
 发版前**必须**运行全量单元测试，测试失败严禁发版：
-```powershell
-& "D:\nodejs\node.exe" --test tests/*.test.js
+```bash
+npm test
+# 或直接运行: node --test tests/*.test.js
 ```
 * 确认控制台输出 `fail 0`；
 * 详细门禁要求可参阅 [release.md](../../rules/release.md)。
@@ -50,12 +51,12 @@ graph TD
 
 ### 步骤 4：执行构建与生成商店 ZIP 归档包
 运行原生构建与打包工具：
-```powershell
+```bash
 # 1. 编译输出 Chromium 与 Gecko 产物至 dist/chrome 与 dist/firefox
-& "D:\nodejs\node.exe" build.js
+node build.js
 
 # 2. 自动化生成符合商店规范的 ZIP 归档包至 dist/releases/
-& "D:\nodejs\node.exe" package.js
+node package.js
 ```
 * 验证生成产物：
   - `dist/releases/history-guard-chrome-v<version>.zip`（用于 Chrome Web Store）
@@ -84,17 +85,17 @@ graph TD
 
 ### 步骤 7：Git 提交流程与打标
 执行标准发布提交与 Tag 打标：
-```powershell
-& "d:\Git\cmd\git.exe" add package.json manifest.chrome.json manifest.firefox.json CHANGELOG.md dist/
-& "d:\Git\cmd\git.exe" commit -m "chore(release): bump version to X.Y.Z"
-& "d:\Git\cmd\git.exe" tag -a "vX.Y.Z" -m "Release vX.Y.Z"
+```bash
+git add package.json manifest.chrome.json manifest.firefox.json CHANGELOG.md dist/
+git commit -m "chore(release): bump version to X.Y.Z"
+git tag -a "vX.Y.Z" -m "Release vX.Y.Z"
 ```
 
 ### 步骤 8：推送至 GitHub 触发云端自动化流水线 (CI/CD)
 将本地提交与发布 Tag 推送至远程仓库，GitHub Actions 将全自动执行质量门禁、生成 GitHub Releases 下载包，并根据配置自动推送至 Chrome / Firefox / Edge 应用商店：
-```powershell
-& "d:\Git\cmd\git.exe" push origin master
-& "d:\Git\cmd\git.exe" push origin vX.Y.Z
+```bash
+git push origin master
+git push origin vX.Y.Z
 ```
 * 详细的商店发布密钥配置可参阅 [SECRETS_GUIDE.md](../../../.github/SECRETS_GUIDE.md)。
 

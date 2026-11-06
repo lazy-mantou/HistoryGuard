@@ -23,8 +23,9 @@
 
 ### 1.3 自动化测试 100% 通过 (Quality Gate)
 - 执行原生单元测试套件：
-  ```powershell
-  & "D:\nodejs\node.exe" --test tests/*.test.js
+  ```bash
+  npm test
+  # 或直接运行: node --test tests/*.test.js
   ```
 - 必须确保 **100% 测试通过（0 fail）**。任何存在测试失败或 Flaky 的情况下，严禁进行打包与发布。
 
@@ -38,8 +39,8 @@
 
 ### 2.1 执行构建脚本
 - 运行原生构建脚本（构建产物自动输出至 `dist/`）：
-  ```powershell
-  & "D:\nodejs\node.exe" build.js
+  ```bash
+  node build.js
   ```
 
 ### 2.2 产物完整性检验清单
@@ -121,15 +122,15 @@
 
 ### 5.2 Git 提交与 Tag 打标
 必须使用标准约定式提交（Conventional Commits），严禁提交未追踪的临时脏文件：
-```powershell
+```bash
 # 1. 查看暂存状态
-& "d:\Git\cmd\git.exe" status
+git status
 
 # 2. 提交版本变更
-& "d:\Git\cmd\git.exe" add package.json manifest.chrome.json manifest.firefox.json CHANGELOG.md
-& "d:\Git\cmd\git.exe" commit -m "chore(release): bump version to X.Y.Z"
+git add package.json manifest.chrome.json manifest.firefox.json CHANGELOG.md
+git commit -m "chore(release): bump version to X.Y.Z"
 
 # 3. 创建发布 Tag
-& "d:\Git\cmd\git.exe" tag -a "vX.Y.Z" -m "Release vX.Y.Z"
+git tag -a "vX.Y.Z" -m "Release vX.Y.Z"
 ```
 

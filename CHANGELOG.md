@@ -250,9 +250,9 @@
    - **地道非生硬翻译标准**：
      - 所有语言包全面摒弃机器直译生硬语法，遵循各语言中浏览器扩展、隐私安全工具与操作系统界面的标准本土化习惯用词；
      - 每种语言包均拥有严格 100% 对齐的 244 个叶子翻译键（0 缺失、0 多余）；
-     - 语言切换下拉选单 ([options.html](file:///e:/Workspace/HistGuard/src/options/options.html)) 同步挂载 12 种语言原生选择项。
+     - 语言切换下拉选单 ([options.html](./src/options/options.html)) 同步挂载 12 种语言原生选择项。
 
-2. **核心驱动引擎升级 ([src/core/i18n.js](file:///e:/Workspace/HistGuard/src/core/i18n.js))**:
+2. **核心驱动引擎升级 ([src/core/i18n.js](./src/core/i18n.js))**:
    - **智能自动语言识别 (Auto Detection)**：
      - 细分中文繁体变体：精确将 `zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant` 解析映射至 `zh-TW`，其余中文变体归入 `zh-CN`；
      - 完整覆盖 `ja`, `ko`, `es`, `ar`, `id`/`ms`, `pt`, `fr`, `de`, `ru` 前缀识别；
@@ -263,7 +263,7 @@
      - 针对弹窗（Popup）中的自动识别规则胶囊，在繁体中文、日语、韩语、英语等各语言环境下提供自然本土化标签与描述映射。
 
 3. **测试套件与双端构建**:
-   - [tests/i18n.test.js](file:///e:/Workspace/HistGuard/tests/i18n.test.js) 扩展全部 12 种语言包严格等价性断言与解析算法覆盖；
+   - [tests/i18n.test.js](./tests/i18n.test.js) 扩展全部 12 种语言包严格等价性断言与解析算法覆盖；
    - 212 项自动化单元测试全绿通过；
    - 重新构建输出 Chrome / Firefox 双端 1.0.40 分发产物。
 
@@ -329,7 +329,7 @@
      - `toastCleanOnAddRuleChanged`: 修复词序倒装语病，由 `{state} clean existing history by default` 纠正为标准语法 `Clean existing history by default: {state}`。
 
 3. **测试套件与产物同步**:
-   - 同步更新 [tests/i18n.test.js](file:///e:/Workspace/HistGuard/tests/i18n.test.js) 与 [tests/toolbarIndicator.test.js](file:///e:/Workspace/HistGuard/tests/toolbarIndicator.test.js) 中针对防护指示器文案与正则断言；
+   - 同步更新 [tests/i18n.test.js](./tests/i18n.test.js) 与 [tests/toolbarIndicator.test.js](./tests/toolbarIndicator.test.js) 中针对防护指示器文案与正则断言；
    - 保持 186 项单元测试全部高质通过，重新生成 Chrome 与 Firefox 双端发布版本。
 
 ---

@@ -105,8 +105,8 @@ graph TD
 ### 4.1 日常迭代开发流程（默认模式）
 在承接常规日常功能开发、缺陷修复、UI优化等任务时，**严禁每次交互或提交都递增版本号**：
 1. **编码与适配**：修改业务逻辑与界面，确保逻辑纯粹、深浅主题兼容、12国语言对齐；
-2. **全量单测验证**：必须执行全量单测（`& "D:\nodejs\node.exe" --test tests/*.test.js`），确保 100% 通过（0 fail），涉及新特性必须补齐测试断言；
-3. **双端构建打包**：执行 `& "D:\nodejs\node.exe" build.js` 自动同步最新代码至 `dist/chrome` 与 `dist/firefox`，确保本地随时可用；
+2. **全量单测验证**：必须执行全量单测（`npm test` 或 `node --test tests/*.test.js`），确保 100% 通过（0 fail），涉及新特性必须补齐测试断言；
+3. **双端构建打包**：执行 `node build.js` 自动同步最新代码至 `dist/chrome` 与 `dist/firefox`，确保本地随时可用；
 4. **版本号与更新记录**：**版本号保持不变**，如有重要变动细节，在 [CHANGELOG.md](./CHANGELOG.md) 顶部的 `## [Unreleased]` 下简明追加；
 5. **标准 Git 提交**：使用标准约定式提交（Conventional Commits），例如：
    `fix(chrome): fix today hits remaining zero via atomic storage write`
@@ -126,12 +126,13 @@ graph TD
 
 ## 5. 常用环境与维护指令速查
 
-| 操作事项 | 推荐指令 (Windows PowerShell) |
+| 操作事项 | 推荐指令 (跨平台 / PowerShell) |
 | :--- | :--- |
-| **运行全量测试** | `& "D:\nodejs\node.exe" --test tests/*.test.js` |
-| **运行单模块测试** | `& "D:\nodejs\node.exe" --test tests/storage.test.js` |
-| **执行双端构建** | `& "D:\nodejs\node.exe" build.js` |
-| **查看 Git 状态** | `& "d:\Git\cmd\git.exe" status` |
-| **提交代码变更** | `& "d:\Git\cmd\git.exe" commit -am "feat(...): ..."` |
+| **运行全量测试** | `npm test` 或 `node --test tests/*.test.js` |
+| **运行单模块测试** | `node --test tests/storage.test.js` |
+| **执行双端构建** | `npm run build` 或 `node build.js` |
+| **生成发布压缩包**| `npm run package` 或 `node package.js` |
+| **查看 Git 状态** | `git status` |
+| **提交代码变更** | `git commit -am "feat(...): ..."` |
 | **Chrome 本地调试** | 访问 `chrome://extensions` -> 打开开发者模式 -> 加载已解压的扩展程序 `dist/chrome/` |
 | **Firefox 本地调试**| 访问 `about:debugging#/runtime/this-firefox` -> 临时载入附加组件 `dist/firefox/manifest.json` |
