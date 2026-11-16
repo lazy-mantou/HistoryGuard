@@ -5,6 +5,12 @@
 ---
 
 ## [Unreleased]
+
+---
+
+## [1.0.1] - 2026-11-16
+
+### 优化与修复 (Improvements & Fixes)
 - **Options 控制台 Tab 气泡徽标大数格式化优化 (Tab Badge Number Cap)**：
   - 左侧导航栏 Tab（规则管理与拦截统计）的气泡计数徽标（`.tab-count-badge`）支持大数格式化：当数字大于 999 时自动显示为 `999+`；
   - 核心国际化层新增解耦纯函数 `formatBadgeCount`，支持异常入参与负数安全兜底，并补齐单测覆盖；
