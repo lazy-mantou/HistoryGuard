@@ -5,6 +5,10 @@
 ---
 
 ## [Unreleased]
+- **Options 控制台 Tab 气泡徽标大数格式化优化 (Tab Badge Number Cap)**：
+  - 左侧导航栏 Tab（规则管理与拦截统计）的气泡计数徽标（`.tab-count-badge`）支持大数格式化：当数字大于 999 时自动显示为 `999+`；
+  - 核心国际化层新增解耦纯函数 `formatBadgeCount`，支持异常入参与负数安全兜底，并补齐单测覆盖；
+  - 样式层增加 `white-space: nowrap` 与居中对齐，保证高数值场景下微标视觉精致不换行。
 - **品牌名称全面升级为 History Guard (Brand Name Renaming)**：
   - 将扩展显示名称在全部 14 种语言的 `_locales/*/messages.json`（`appName` 与 `actionTitle`）中统一升级为 `History Guard`；
   - 同步更新 Popup 弹窗及 Options 控制台的品牌标识与标题、全 12 种语言字典矩阵、商店发布文档（`Introduction.md`、`Permission.md`、各语言 `description.md` 及 250 字符内 `Overview.md`）；

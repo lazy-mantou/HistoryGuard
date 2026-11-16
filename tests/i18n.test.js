@@ -14,6 +14,7 @@ import {
   t,
   localizeCapsule,
   formatRelativeTime,
+  formatBadgeCount,
   getCurrentLanguage,
   getConfiguredPreference,
   setLanguage,
@@ -333,6 +334,37 @@ describe('i18n - formatRelativeTime 相对时间格式化', () => {
     const fixedTime = new Date('2026-05-01T14:30:00').getTime();
     const formatted = formatRelativeTime(fixedTime);
     assert.strictEqual(formatted, '2026-05-01 14:30');
+  });
+});
+
+describe('i18n - formatBadgeCount 徽标气泡数字格式化', () => {
+  it('小于等于 999 的正常数值应当显示原始数值字符串', () => {
+    assert.strictEqual(formatBadgeCount(0), '0');
+    assert.strictEqual(formatBadgeCount(1), '1');
+    assert.strictEqual(formatBadgeCount(42), '42');
+    assert.strictEqual(formatBadgeCount(999), '999');
+  });
+
+  it('大于 999 的数值应当显示为 999+', () => {
+    assert.strictEqual(formatBadgeCount(1000), '999+');
+    assert.strictEqual(formatBadgeCount(1001), '999+');
+    assert.strictEqual(formatBadgeCount(50000), '999+');
+    assert.strictEqual(formatBadgeCount(999999), '999+');
+  });
+
+  it('支持字符串数字入参并正确判断边界', () => {
+    assert.strictEqual(formatBadgeCount('999'), '999');
+    assert.strictEqual(formatBadgeCount('1000'), '999+');
+    assert.strictEqual(formatBadgeCount('12345'), '999+');
+  });
+
+  it('非正常或负数等非法入参应当安全兜底为 0', () => {
+    assert.strictEqual(formatBadgeCount(-1), '0');
+    assert.strictEqual(formatBadgeCount(-999), '0');
+    assert.strictEqual(formatBadgeCount(NaN), '0');
+    assert.strictEqual(formatBadgeCount(null), '0');
+    assert.strictEqual(formatBadgeCount(undefined), '0');
+    assert.strictEqual(formatBadgeCount('invalid'), '0');
   });
 });
 

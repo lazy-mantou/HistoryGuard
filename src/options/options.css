@@ -499,6 +499,8 @@ button, input, select, textarea {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   flex-shrink: 0;
   line-height: 1.2;
+  white-space: nowrap;
+  text-align: center;
 }
 
 /* 右侧主内容区域 */

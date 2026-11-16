@@ -91,11 +91,11 @@ git commit -m "chore(release): bump version to X.Y.Z"
 git tag -a "vX.Y.Z" -m "Release vX.Y.Z"
 ```
 
-### 步骤 8：推送至 GitHub 触发云端自动化流水线 (CI/CD)
-将本地提交与发布 Tag 推送至远程仓库，GitHub Actions 将全自动执行质量门禁、生成 GitHub Releases 下载包，并根据配置自动推送至 Chrome / Firefox / Edge 应用商店：
+### 步骤 8：推送代码与 Tag 至远程仓库
+将本地发版提交与版本 Tag 推送至远程仓库归档：
 ```bash
 git push origin master
 git push origin vX.Y.Z
 ```
-* 详细的商店发布密钥配置可参阅 [SECRETS_GUIDE.md](../../../.github/SECRETS_GUIDE.md)。
+* 构建产物位于 `dist/releases/`（`history-guard-chrome-v<version>.zip` 与 `history-guard-firefox-v<version>.zip`），可直接在各大应用商店开发者控制台手动上传分发。
 

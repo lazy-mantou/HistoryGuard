@@ -7,7 +7,7 @@
 import { browserApi } from '../adapters/index.js';
 import { convertSearchTermToRule } from '../core/ruleMatcher.js';
 import { cleanHistoryByRule, deleteUrlsConcurrently, resolveDeleteConcurrency } from '../core/historyCleaner.js';
-import { t, initI18n, setLanguage, formatRelativeTime } from '../core/i18n.js';
+import { t, initI18n, setLanguage, formatRelativeTime, formatBadgeCount } from '../core/i18n.js';
 import { initTheme } from '../core/theme.js';
 import {
   getRules,
@@ -409,10 +409,10 @@ async function refreshGlobalStats() {
   }
 
   if (elements.tabRulesBadge) {
-    elements.tabRulesBadge.textContent = cachedRules.length;
+    elements.tabRulesBadge.textContent = formatBadgeCount(cachedRules.length);
   }
   if (elements.tabStatsBadge) {
-    elements.tabStatsBadge.textContent = totalHits.toLocaleString();
+    elements.tabStatsBadge.textContent = formatBadgeCount(totalHits);
   }
 
   updateStatsTabVisibility();
@@ -509,7 +509,7 @@ async function renderStatsDashboard() {
     });
   }
   if (elements.tabStatsBadge) {
-    elements.tabStatsBadge.textContent = totalHits.toLocaleString();
+    elements.tabStatsBadge.textContent = formatBadgeCount(totalHits);
   }
 
   // 2. 渲染每日拦截趋势曲线图

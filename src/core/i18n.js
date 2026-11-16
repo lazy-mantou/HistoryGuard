@@ -366,6 +366,23 @@ export function formatRelativeTime(timestamp) {
 }
 
 /**
+ * 格式化气泡/角标徽标数字
+ * 若数值大于 999，显示为 999+；否则显示千分位数字字符串
+ * @param {number|string} count
+ * @returns {string}
+ */
+export function formatBadgeCount(count) {
+  const num = Number(count);
+  if (!Number.isFinite(num) || num <= 0) {
+    return '0';
+  }
+  if (num > 999) {
+    return '999+';
+  }
+  return num.toLocaleString();
+}
+
+/**
  * 获取当前生效的语言
  * @returns {string}
  */
